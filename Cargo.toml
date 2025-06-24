@@ -1,0 +1,12 @@
+[package]
+name = "soft-posit"
+version = "0.1.0"
+edition = "2024"
+description = "Software implementation of the Posit floating point format"
+documentation = "https://docs.rs/soft-posit"
+repository = "https://github.com/andrepd/posit-rust"
+keywords = ["float", "arithmetic", "posit", "unum"]
+categories = ["algorithms", "mathematics", "no-std", "no-std::no-alloc"]
+license = "LGPL-3.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
