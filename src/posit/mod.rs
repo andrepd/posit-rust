@@ -35,3 +35,6 @@ pub struct Posit<
   const ES: u32,
   Int: crate::Int,
 > (Int);
+
+/// Basics
+mod basics;
