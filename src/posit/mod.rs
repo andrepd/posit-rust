@@ -36,6 +36,31 @@ pub struct Posit<
   Int: crate::Int,
 > (Int);
 
+/// In order to perform most nontrivial operations, a `Posit<N, Es, Int>` needs to be decoded into
+/// a fraction (i.e. mantissa) and an exponent, represented as a `Decoded<N, ES, Int>`. This
+/// struct is such that it represents a posit
+///
+/// ```md
+/// `frac` / `FRAC_DENOM` × 2 ^ `exp`
+/// ```
+///
+/// where both `frac` and `exp` are signed `Int`s, and `FRAC_DENOM` is a fixed power of two. See
+/// the docstrings for [both](Decoded::frac)[fields](Decoded::exp) for more detail about their
+/// values.
+///
+/// Extracting these fields from a posit, and converting back to a posit with correct rounding, can
+/// be done *very* efficiently.
+#[derive(Clone, Copy)]
+#[derive(Eq, PartialEq, Hash)]
+pub struct Decoded<
+  const N: u32,
+  const ES: u32,
+  Int: crate::Int,
+> {
+  pub frac: Int,
+  pub exp: Int,
+}
+
 /// Basics
 mod basics;
 
