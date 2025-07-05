@@ -25,7 +25,7 @@ pub trait Sealed:
   core::ops::BitXor<Output=Self> +
   core::ops::Not<Output=Self> +
   core::ops::Neg<Output=Self> +
-  From<bool>
+  From<bool> + Into<i128>
 {
   type Unsigned;
 
@@ -40,6 +40,19 @@ pub trait Sealed:
 
   fn as_u32(self) -> u32;
   fn of_u32(x: u32) -> Self;
+
+  fn is_positive(self) -> bool;
+  fn abs(self) -> Self;
+
+  /// Logical shift right (rather than arithmetic shift). Short for `(self as uX >> n) as iX`.
+  fn lshr(self, n: u32) -> Self;
+
+  /// Set all bits more significant than `n` to 0.
+  fn mask_lsb(self, n: u32) -> Self;
+
+  /// Number of leading (most significant) 0 bits until the first 1.
+  fn leading_zeros(self) -> u32;
+
 }
 
 /// Implementation of almost all functions, a couple nasty ones need handwritten impls!
@@ -53,18 +66,48 @@ macro_rules! impl_common {
     const MAX: Self = <$int>::MAX;
     const BITS: u32 = <$int>::BITS;
 
+    #[inline]
     fn as_unsigned(self) -> $uint { self as $uint }
 
+    #[inline]
     fn of_unsigned(x: $uint) -> Self { x as $int }
 
+    #[inline]
     fn as_u32(self) -> u32 {
       debug_assert!(u32::try_from(self).is_ok());
       self as u32
     }
 
+    #[inline]
     fn of_u32(x: u32) -> Self {
       debug_assert!(Self::try_from(x).is_ok());
       x as $int
+    }
+
+    #[inline]
+    fn is_positive(self) -> bool {
+      self >= 0
+      // let mask = self >> (Self::BITS - 1);
+      // unsafe { core::mem::transmute::<u8, bool>((mask & 1) as u8) }
+    }
+
+    #[inline]
+    fn abs(self) -> Self {
+      self.abs()
+    }
+
+    #[inline]
+    fn lshr(self, n: u32) -> Self { ((self as $uint) >> n) as $int }
+
+    #[inline]
+    fn mask_lsb(self, n: u32) -> Self {
+      let mask = (1 << n) - 1;
+      self & mask
+    }
+
+    fn leading_zeros(self) -> u32 {
+      const { assert!(Self::BITS < u8::MAX as u32 - 1) }
+      self.leading_zeros()
     }
   }
 }

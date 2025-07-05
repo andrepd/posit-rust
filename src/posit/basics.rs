@@ -1,4 +1,5 @@
 use super::*;
+use crate::underlying::const_i128_as_int;
 
 impl<
   const N: u32,
@@ -97,6 +98,28 @@ impl<
   pub(crate) fn to_bits_unsigned(self) -> Int::Unsigned {
     self.to_bits().as_unsigned()
   }
+}
+
+impl<
+  const N: u32,
+  const ES: u32,
+  Int: crate::Int,
+> Decoded<N, ES, Int> {
+  /// The [Decoded::frac] field represents the fraction / mantissa of a posit as a fixed-point
+  /// number, with absolute value between 1 and 2.
+  ///
+  /// What this means is that an (integer) number `frac` represents the (rational) number `frac` /
+  /// `FRAC_DENOM`, where `FRAC_DENOM` is the bit pattern `0b01000...`. For instance
+  ///
+  ///   | `frac`        | rational value |
+  ///   | `0b01_000000` | +1             |
+  ///   | `0b01_100000` | +1.5           |
+  ///   | `0b01_010000` | +1.25          |
+  ///   | `0b10_010000` | -1.75          |
+  ///   | `0b10_110000` | -1.25          |
+  ///
+  /// and so on.
+  pub(crate) const FRAC_DENOM: Int = const_i128_as_int(1 << (Int::BITS - 2));
 }
 
 #[cfg(test)]

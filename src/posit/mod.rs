@@ -8,7 +8,8 @@
 //! everything else we try to explain.
 //!
 //! If you know nothing about Posits and want to learn more, a good place to start is
-//! <https://posithub.org/docs/Posits4.pdf>.
+//! <https://posithub.org/docs/Posits4.pdf>. The most up to date standard is at
+//! <https://posithub.org/docs/posit_standard-2.pdf>.
 //!
 //! Some notation used in the comments:
 //!
@@ -69,3 +70,7 @@ mod consts;
 
 /// Formatting
 mod fmt;
+
+/// Conversions to and from [malachite::Rational], primarily for testing.
+#[cfg(test)]
+mod rational;
