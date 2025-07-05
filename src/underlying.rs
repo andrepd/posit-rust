@@ -93,3 +93,15 @@ impl Int for i8 {}
 impl Sealed for i8 {
   impl_common!{i8, u8, NonZeroI8}
 }
+
+/// Hack to cast const values (as `i128`) back to `Int` in const as well.
+pub const fn const_i128_as_int<T: Int>(x: i128) -> T {
+  // What a roundabout way to do this... Needed because no `const` traits.
+  let le_bytes = x.to_le_bytes();
+  if cfg!(target_endian = "little") {
+    // SAFETY: In a little endian architecture, this is equivalent to `x as T`
+    unsafe { core::mem::transmute_copy(&le_bytes) }
+  } else {
+    unimplemented!()
+  }
+}

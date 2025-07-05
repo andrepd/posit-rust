@@ -38,3 +38,6 @@ pub struct Posit<
 
 /// Basics
 mod basics;
+
+/// Constants (zero, min, min_positive, etc)
+mod consts;
