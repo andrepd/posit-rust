@@ -88,16 +88,14 @@ mod tests {
     assert_eq!(Posit::<32, 2, i64>::ZERO.to_bits(), 0);
   }*/
 
-  use crate::underlying::Sealed;
-
   #[test]
   fn zero() {
     assert_eq!(
-      Posit::<16, 2, i16>::ZERO.to_bits(),
+      Posit::<16, 2, i16>::ZERO.to_bits_unsigned(),
       0,
     );
     assert_eq!(
-      Posit::<10, 2, i16>::ZERO.to_bits(),
+      Posit::<10, 1, i16>::ZERO.to_bits_unsigned(),
       0,
     );
   }
@@ -105,84 +103,84 @@ mod tests {
   #[test]
   fn nar() {
     assert_eq!(
-      Posit::<16, 2, i16>::NAR.to_bits(),
-      i16::of_unsigned(0b1000_0000_0000_0000),
+      Posit::<16, 2, i16>::NAR.to_bits_unsigned(),
+      0b1000_0000_0000_0000,
     );
     assert_eq!(
-      Posit::<10, 2, i16>::NAR.to_bits(),
-      i16::of_unsigned(0b111111_10_0000_0000),
+      Posit::<10, 1, i16>::NAR.to_bits_unsigned(),
+      0b111111_10_0000_0000,
     );
   }
 
   #[test]
   fn min_positive() {
     assert_eq!(
-      Posit::<16, 2, i16>::MIN_POSITIVE.to_bits(),
-      i16::of_unsigned(0b0000_0000_0000_0001),
+      Posit::<16, 2, i16>::MIN_POSITIVE.to_bits_unsigned(),
+      0b0000_0000_0000_0001,
     );
     assert_eq!(
-      Posit::<10, 2, i16>::MIN_POSITIVE.to_bits(),
-      i16::of_unsigned(0b000000_00_0000_0001),
+      Posit::<10, 1, i16>::MIN_POSITIVE.to_bits_unsigned(),
+      0b000000_00_0000_0001,
     );
   }
 
   #[test]
   fn max() {
     assert_eq!(
-      Posit::<16, 2, i16>::MAX.to_bits(),
-      i16::of_unsigned(0b0111_1111_1111_1111),
+      Posit::<16, 2, i16>::MAX.to_bits_unsigned(),
+      0b0111_1111_1111_1111,
     );
     assert_eq!(
-      Posit::<10, 2, i16>::MAX.to_bits(),
-      i16::of_unsigned(0b000000_01_1111_1111),
+      Posit::<10, 1, i16>::MAX.to_bits_unsigned(),
+      0b000000_01_1111_1111,
     );
   }
 
   #[test]
   fn max_negative() {
     assert_eq!(
-      Posit::<16, 2, i16>::MAX_NEGATIVE.to_bits(),
-      i16::of_unsigned(0b1111_1111_1111_1111),
+      Posit::<16, 2, i16>::MAX_NEGATIVE.to_bits_unsigned(),
+      0b1111_1111_1111_1111,
     );
     assert_eq!(
-      Posit::<10, 2, i16>::MAX_NEGATIVE.to_bits(),
-      i16::of_unsigned(0b111111_11_1111_1111),
+      Posit::<10, 1, i16>::MAX_NEGATIVE.to_bits_unsigned(),
+      0b111111_11_1111_1111,
     );
   }
 
   #[test]
   fn min() {
     assert_eq!(
-      Posit::<16, 2, i16>::MIN.to_bits(),
-      i16::of_unsigned(0b1000_0000_0000_0001),
+      Posit::<16, 2, i16>::MIN.to_bits_unsigned(),
+      0b1000_0000_0000_0001,
     );
     assert_eq!(
-      Posit::<10, 2, i16>::MIN.to_bits(),
-      i16::of_unsigned(0b111111_10_0000_0001),
+      Posit::<10, 1, i16>::MIN.to_bits_unsigned(),
+      0b111111_10_0000_0001,
     );
   }
 
   #[test]
   fn one() {
     assert_eq!(
-      Posit::<16, 2, i16>::ONE.to_bits(),
-      i16::of_unsigned(0b0100_0000_0000_0000),
+      Posit::<16, 2, i16>::ONE.to_bits_unsigned(),
+      0b0100_0000_0000_0000,
     );
     assert_eq!(
-      Posit::<10, 2, i16>::ONE.to_bits(),
-      i16::of_unsigned(0b000000_01_0000_0000),
+      Posit::<10, 1, i16>::ONE.to_bits_unsigned(),
+      0b000000_01_0000_0000,
     );
   }
 
   #[test]
   fn minus_one() {
     assert_eq!(
-      Posit::<16, 2, i16>::MINUS_ONE.to_bits(),
-      i16::of_unsigned(0b1100_0000_0000_0000),
+      Posit::<16, 2, i16>::MINUS_ONE.to_bits_unsigned(),
+      0b1100_0000_0000_0000,
     );
     assert_eq!(
-      Posit::<10, 2, i16>::MINUS_ONE.to_bits(),
-      i16::of_unsigned(0b111111_11_0000_0000),
+      Posit::<10, 1, i16>::MINUS_ONE.to_bits_unsigned(),
+      0b111111_11_0000_0000,
     );
   }
 }
