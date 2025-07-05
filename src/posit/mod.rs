@@ -66,3 +66,6 @@ mod basics;
 
 /// Constants (zero, min, min_positive, etc)
 mod consts;
+
+/// Formatting
+mod fmt;
