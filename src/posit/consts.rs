@@ -88,6 +88,8 @@ mod tests {
     assert_eq!(Posit::<32, 2, i64>::ZERO.to_bits(), 0);
   }*/
 
+  use malachite::rational::Rational;
+
   #[test]
   fn zero() {
     assert_eq!(
@@ -97,6 +99,10 @@ mod tests {
     assert_eq!(
       Posit::<10, 1, i16>::ZERO.to_bits_unsigned(),
       0,
+    );
+    assert_eq!(
+      Rational::try_from(Posit::<10, 1, i16>::ZERO),
+      Ok(Rational::from(0)),
     );
   }
 
@@ -110,6 +116,10 @@ mod tests {
       Posit::<10, 1, i16>::NAR.to_bits_unsigned(),
       0b111111_10_0000_0000,
     );
+    assert_eq!(
+      Rational::try_from(Posit::<10, 1, i16>::NAR),
+      Err(super::rational::IsNaR),
+    );
   }
 
   #[test]
@@ -121,6 +131,10 @@ mod tests {
     assert_eq!(
       Posit::<10, 1, i16>::MIN_POSITIVE.to_bits_unsigned(),
       0b000000_00_0000_0001,
+    );
+    assert_eq!(
+      Rational::try_from(Posit::<10, 1, i16>::MIN_POSITIVE),
+      Ok(Rational::from_signeds(1, (1i64 << 2).pow(10 - 2))),
     );
   }
 
@@ -134,6 +148,10 @@ mod tests {
       Posit::<10, 1, i16>::MAX.to_bits_unsigned(),
       0b000000_01_1111_1111,
     );
+    assert_eq!(
+      Rational::try_from(Posit::<10, 1, i16>::MAX),
+      Ok(Rational::from((1i64 << 2).pow(10 - 2))),
+    );
   }
 
   #[test]
@@ -145,6 +163,10 @@ mod tests {
     assert_eq!(
       Posit::<10, 1, i16>::MAX_NEGATIVE.to_bits_unsigned(),
       0b111111_11_1111_1111,
+    );
+    assert_eq!(
+      Rational::try_from(Posit::<10, 1, i16>::MAX_NEGATIVE),
+      Ok(-Rational::from_signeds(1, (1i64 << 2).pow(10 - 2))),
     );
   }
 
@@ -158,6 +180,10 @@ mod tests {
       Posit::<10, 1, i16>::MIN.to_bits_unsigned(),
       0b111111_10_0000_0001,
     );
+    assert_eq!(
+      Rational::try_from(Posit::<10, 1, i16>::MIN),
+      Ok(-Rational::from((1i64 << 2).pow(10 - 2))),
+    );
   }
 
   #[test]
@@ -169,6 +195,10 @@ mod tests {
     assert_eq!(
       Posit::<10, 1, i16>::ONE.to_bits_unsigned(),
       0b000000_01_0000_0000,
+    );
+    assert_eq!(
+      Rational::try_from(Posit::<10, 1, i16>::ONE),
+      Ok(Rational::from(1)),
     );
   }
 
@@ -182,5 +212,71 @@ mod tests {
       Posit::<10, 1, i16>::MINUS_ONE.to_bits_unsigned(),
       0b111111_11_0000_0000,
     );
+    assert_eq!(
+      Rational::try_from(Posit::<10, 1, i16>::MINUS_ONE),
+      Ok(-Rational::from(1)),
+    );
   }
+
+  /// Aux function: the max value of an n-bit posit with 2-bit exponent (as per the standard).
+  /// max = -min = 1/min_positive = -1/max_negative.
+  fn std_max(n: u32) -> Rational {
+    use malachite::base::num::arithmetic::traits::PowerOf2;
+    let n = i64::from(n);
+    Rational::power_of_2(4*n - 8)
+  }
+
+  macro_rules! std_tests {
+    ($t:ident) => {
+      mod $t {
+        use super::*;
+        use malachite::base::num::arithmetic::traits::Reciprocal;
+
+        #[test]
+        fn zero() {
+          assert_eq!(crate::$t::ZERO.try_into(), Ok(Rational::from(0)));
+        }
+
+        #[test]
+        fn nar() {
+          assert_eq!(Rational::try_from(crate::$t::NAR), Err(super::rational::IsNaR));
+        }
+
+        #[test]
+        fn min_positive() {
+          assert_eq!(crate::$t::MIN_POSITIVE.try_into(), Ok(std_max(crate::$t::BITS).reciprocal()));
+        }
+
+        #[test]
+        fn max() {
+          assert_eq!(crate::$t::MAX.try_into(), Ok(std_max(crate::$t::BITS)));
+        }
+
+        #[test]
+        fn max_negative() {
+          assert_eq!(crate::$t::MAX_NEGATIVE.try_into(), Ok(-std_max(crate::$t::BITS).reciprocal()));
+        }
+
+        #[test]
+        fn min() {
+          assert_eq!(crate::$t::MIN.try_into(), Ok(-std_max(crate::$t::BITS)));
+        }
+
+        #[test]
+        fn one() {
+          assert_eq!(crate::$t::ONE.try_into(), Ok(Rational::from(1)));
+        }
+
+        #[test]
+        fn minus_one() {
+          assert_eq!(crate::$t::MINUS_ONE.try_into(), Ok(-Rational::from(1)));
+        }
+      }
+    };
+  }
+
+  std_tests!{p8}
+  std_tests!{p16}
+  std_tests!{p32}
+  std_tests!{p64}
 }
