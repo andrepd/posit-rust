@@ -21,3 +21,7 @@ pub type p32 = Posit<32, 2, i32>;
 /// Standard-compliant 64-bit posit.
 #[allow(non_camel_case_types)]
 pub type p64 = Posit<64, 2, i64>;
+
+// Re-export some internals for benchmarking purposes, only on feature = "bench"
+#[cfg(feature = "bench")]
+mod bench;
