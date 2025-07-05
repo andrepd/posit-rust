@@ -68,6 +68,9 @@ mod basics;
 /// Constants (zero, min, min_positive, etc)
 mod consts;
 
+/// Encoding and decoding
+mod decode;
+
 /// Formatting
 mod fmt;
 

@@ -53,6 +53,24 @@ pub trait Sealed:
   /// Number of leading (most significant) 0 bits until the first 1.
   fn leading_zeros(self) -> u32;
 
+  /// As [Sealed::leading_zeros], but is undefined if `self` is zero.
+  unsafe fn leading_zeros_nonzero(self) -> u32;
+
+  /// Number of leading (most significant) 0 bits until the first 1 OR number of leading 1 bits
+  /// until the first 0, *minus 1*.
+  //
+  // ```
+  // # use crate::underlying::Sealed;
+  // assert_eq!((0b00010101u8 as i8).leading_run_minus_one(), 2);
+  // assert_eq!((0b11111000u8 as i8).leading_run_minus_one(), 4);
+  // ```
+  fn leading_run_minus_one(self) -> u32;
+
+  /// Short for `if control < 0 { self } else { !self }`.
+  fn not_if_negative(self, control: Self) -> Self;
+
+  /// Short for `if control >= 0 { !self } else { self }`.
+  fn not_if_positive(self, control: Self) -> Self;
 }
 
 /// Implementation of almost all functions, a couple nasty ones need handwritten impls!
@@ -108,6 +126,32 @@ macro_rules! impl_common {
     fn leading_zeros(self) -> u32 {
       const { assert!(Self::BITS < u8::MAX as u32 - 1) }
       self.leading_zeros()
+    }
+
+    #[inline]
+    unsafe fn leading_zeros_nonzero(self) -> u32 {
+      const { assert!(Self::BITS < u8::MAX as u32 - 1) }
+      unsafe{core::num::$nonzero::new_unchecked(self)}.leading_zeros()
+    }
+
+    fn leading_run_minus_one(self) -> u32 {
+      let y = self ^ (self << 1);
+      let z = unsafe { core::num::$nonzero::new_unchecked(y) };
+      z.leading_zeros()
+    }
+
+    #[inline]
+    fn not_if_positive(self, control: Self) -> Self {
+      // !self.not_if_negative(control)
+      // Slightly more ILP
+      let mask = control >> (Self::BITS - 1);
+      !self ^ mask
+    }
+
+    #[inline]
+    fn not_if_negative(self, control: Self) -> Self {
+      let mask = control >> (Self::BITS - 1);
+      self ^ mask
     }
   }
 }
