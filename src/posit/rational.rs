@@ -50,7 +50,7 @@ where
   Rational: From<Int>,
   Rational: From<Int::Unsigned>,
 {
-  /// Convert a posit **that is not 0 or NaR** into a [Rational] value. Panics if `self` is 0 or
+  /// Convert a posit **which is not 0 or NaR** into a [Rational] value. Panics if `self` is 0 or
   /// NaR.
   ///
   /// This is a **super-explicit** and **super-obvious** rendition of the algorithm for decoding a

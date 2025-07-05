@@ -1,10 +1,32 @@
 use super::*;
 
+pub enum TryDecoded<
+  const N: u32,
+  const ES: u32,
+  Int: crate::Int,
+> {
+  Zero,
+  NaR,
+  Regular(Decoded<N, ES, Int>),
+}
+
 impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
 > Posit<N, ES, Int> {
+  /// Decode a posit. The core logic lives in [Self::decode_regular].
+  pub(crate) fn try_decode(self) -> TryDecoded<N, ES, Int> {
+    if self == Self::ZERO {
+      TryDecoded::Zero
+    } else if self == Self::NAR {
+      TryDecoded::NaR
+    } else {
+      // SAFETY: `self` is not 0 or NaR
+      TryDecoded::Regular(unsafe { self.decode_regular() })
+    }
+  }
+
   /// Decode a posit **which is not 0 or NaR** into its constituent `frac`tion and `exp`onent.
   ///
   /// `self` cannot be 0 or NaR, or calling this is undefined behaviour.
@@ -174,10 +196,10 @@ mod tests {
       #[test]
       fn $name() {
         for sign in [true, false] {
-          for abs in (1 .. (1i128 << (<$t>::BITS - 1))) {
+          for abs in (1 ..= (i128::MAX >> (128 - <$t>::BITS))) {
             let bits = if sign {abs} else {-abs};
             let posit = <$t>::from_bits(bits.try_into().unwrap());
-            let decoded = unsafe { posit.decode_regular() };
+            let TryDecoded::Regular(decoded) = posit.try_decode() else { panic!("Invalid test case") };
             assert_eq!(Rational::try_from(posit), Ok(Rational::from(decoded)))
           }
         }
@@ -194,11 +216,11 @@ mod tests {
         #[test]
         fn $name(
           sign in any::<bool>(),
-          abs in (0 .. (1i128 << (<$t>::BITS - 1))),
+          abs in (1 ..= (i128::MAX >> (128 - <$t>::BITS))),
         ) {
           let bits = if sign {abs} else {-abs};
           let posit = <$t>::from_bits(bits.try_into().unwrap());
-          let decoded = unsafe { posit.decode_regular() };
+          let TryDecoded::Regular(decoded) = posit.try_decode() else { panic!("Invalid test case") };
           assert_eq!(Rational::try_from(posit), Ok(Rational::from(decoded)))
         }
       }
@@ -227,4 +249,6 @@ mod tests {
   make_exhaustive!{posit_6_2_exhaustive, Posit::<6, 2, i8>}
 
   make_exhaustive!{posit_10_1_exhaustive, Posit::<10, 1, i32>}
+
+  make_exhaustive!{posit_20_4_exhaustive, Posit::<20, 4, i32>}
 }
