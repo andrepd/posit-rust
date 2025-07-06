@@ -190,65 +190,66 @@ mod tests {
   use malachite::rational::Rational;
   use proptest::prelude::*;
 
-  /// Check correctness of decode by enumerating all posits
-  macro_rules! make_exhaustive {
-    ($name:ident, $t:ty) => {
+  mod decode {
+    use super::*;
+
+    fn decode<const N: u32, const ES: u32, Int: crate::Int>(p: Posit<N, ES, Int>) -> Decoded<N, ES, Int> {
+      let TryDecoded::Regular(decoded) = p.try_decode() else { panic!("Invalid test case") };
+      decoded
+    }
+
+    // Rule of thumb: in release builds, including the conversions to rational, 1-3us per iteration,
+    // or 300k-1000k checks per second.
+
+    #[test]
+    fn p8_exhaustive() {
+      for p in Posit::<8, 2, i8>::cases_exhaustive() {
+        assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
+      }
+    }
+
+    #[test]
+    fn p16_exhaustive() {
+      for p in Posit::<16, 2, i16>::cases_exhaustive() {
+        assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
+      }
+    }
+
+    const PROPTEST_CASES: u32 = if cfg!(debug_assertions) {0x8_0000} else {0x100_0000};
+    proptest!{
+      #![proptest_config(ProptestConfig::with_cases(PROPTEST_CASES))]
+
       #[test]
-      fn $name() {
-        for sign in [true, false] {
-          for abs in (1 ..= (i128::MAX >> (128 - <$t>::BITS))) {
-            let bits = if sign {abs} else {-abs};
-            let posit = <$t>::from_bits(bits.try_into().unwrap());
-            let TryDecoded::Regular(decoded) = posit.try_decode() else { panic!("Invalid test case") };
-            assert_eq!(Rational::try_from(posit), Ok(Rational::from(decoded)))
-          }
-        }
+      fn p32_exhaustive(p in Posit::<32, 2, i32>::cases_proptest()) {
+        assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
+      }
+
+      #[test]
+      fn p64_exhaustive(p in Posit::<64, 2, i64>::cases_proptest()) {
+        assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
+      }
+    }
+
+    #[test]
+    fn posit_6_2_exhaustive() {
+      for p in Posit::<6, 2, i8>::cases_exhaustive() {
+        assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
+      }
+    }
+
+    #[test]
+    fn posit_10_1_exhaustive() {
+      for p in Posit::<10, 1, i32>::cases_exhaustive() {
+        assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
+      }
+    }
+
+    #[test]
+    fn posit_20_4_exhaustive() {
+      for p in Posit::<20, 4, i32>::cases_exhaustive() {
+        assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
       }
     }
   }
 
-  /// Check correctness of decode by using proptest
-  macro_rules! make_proptest {
-    ($name:ident, $t:ty, $cases:literal) => {
-      proptest! {
-        #![proptest_config(ProptestConfig::with_cases($cases))]
-
-        #[test]
-        fn $name(
-          sign in any::<bool>(),
-          abs in (1 ..= (i128::MAX >> (128 - <$t>::BITS))),
-        ) {
-          let bits = if sign {abs} else {-abs};
-          let posit = <$t>::from_bits(bits.try_into().unwrap());
-          let TryDecoded::Regular(decoded) = posit.try_decode() else { panic!("Invalid test case") };
-          assert_eq!(Rational::try_from(posit), Ok(Rational::from(decoded)))
-        }
-      }
-    }
-  }
-
-  // Rule of thumb: in release builds, including the conversions to rational, 1-3us per iteration,
-  // or 300k-1000k checks per second.
-
-  make_exhaustive!{p8_exhaustive, Posit::<8, 2, i8>}
-
-  make_exhaustive!{p16_exhaustive, Posit::<16, 2, i16>}
-
-  #[cfg(debug_assertions)]
-  make_proptest!{p32_exhaustive, Posit::<32, 2, i32>, 0x8_0000}
-
-  #[cfg(not(debug_assertions))]
-  make_proptest!{p32_exhaustive, Posit::<32, 2, i32>, 0x100_0000}
-
-  #[cfg(debug_assertions)]
-  make_proptest!{p64_exhaustive, Posit::<64, 2, i64>, 0x8_0000}
-
-  #[cfg(not(debug_assertions))]
-  make_proptest!{p64_exhaustive, Posit::<64, 2, i64>, 0x100_0000}
-
-  make_exhaustive!{posit_6_2_exhaustive, Posit::<6, 2, i8>}
-
-  make_exhaustive!{posit_10_1_exhaustive, Posit::<10, 1, i32>}
-
-  make_exhaustive!{posit_20_4_exhaustive, Posit::<20, 4, i32>}
 }

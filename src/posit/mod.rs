@@ -77,3 +77,7 @@ mod fmt;
 /// Conversions to and from [malachite::Rational], primarily for testing.
 #[cfg(test)]
 mod rational;
+
+/// Helpers for testing.
+#[cfg(test)]
+mod test;
