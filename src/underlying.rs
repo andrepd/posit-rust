@@ -192,3 +192,34 @@ pub const fn const_i128_as_int<T: Int>(x: i128) -> T {
     unimplemented!()
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn const_i128_as_int_1() {
+    const VALUE: i32 = const_i128_as_int(1i128);
+    assert_eq!(VALUE, 1i32);
+  }
+
+  #[test]
+  fn const_i128_as_int_2() {
+    const VALUE: i32 = const_i128_as_int(-1i128);
+    assert_eq!(VALUE, -1i32);
+  }
+
+  #[test]
+  fn const_i128_as_int_3() {
+    const VALUE: i32 = const_i128_as_int(0i128);
+    assert_eq!(VALUE, 0i32);
+  }
+
+  #[test]
+  fn const_i128_as_int_4() {
+    const VALUE: i32 = const_i128_as_int(0xdeadbeefi128);
+    assert_eq!(VALUE, 0xdeadbeefu32 as i32);
+  }
+
+  // TODO more tests for the trickier fns in Int
+}
