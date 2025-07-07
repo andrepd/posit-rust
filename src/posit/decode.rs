@@ -120,6 +120,7 @@ impl<
       // Compile-time special case if ES == 2 case, since it's a common choice (the standard's
       // choice!) and we can do it with 1 less instruction.
       if const { Self::ES == 2 } {
+        // TODO Benchmark whether this is actually faster! It's a movabs+and instead of a shl+shr
         y.mask_lsb(Int::BITS - 2)
       } else {
         y.shl(Self::ES).lshr(2)
@@ -252,29 +253,38 @@ impl<
     let frac_xor_regime = frac ^ exp;
     let regime_raw = regime.not_if_negative(regime).as_u32();
     let regime_bits = (!frac_xor_regime).mask_msb(2) >> regime_raw;
-    let regime_bits = regime_bits.lshr(1);
     /*dbg!(regime_raw);*/
 
-    // Next we need to place the exponent in the right place, which is easy. But we also need to
-    // remember that if the posit is negative, these bits have to be negated as well.
-    let exponent_abs = exp.not_if_negative(frac);
-    let exponent_bits = (exponent_abs << (Int::BITS - ES)).lshr(3).lshr(regime_raw);
-
-    // And the fraction bits (sans the hidden bits)
-    /*let fraction_bits = frac.mask_msb(2).lshr(Self::ES + 3).lshr(regime_raw);*/
-    let fraction_bits = (frac << 2).lshr(Self::ES + 3).lshr(regime_raw);
+    // Next we need to place the exponent bits in the right place, just after the regime bits. This
+    // is in total 1 bit (sign) + regime_raw + 1 bits (run of 0s/1s) + 1 bit (regime terminating
+    // 1/0); exponent bits go this amount of bits from the left. The fraction bits (sans the
+    // hidden bits) go immediately after that.
+    //
+    // To do this, we will first assemble the exponent and fraction bits in a register, then shift
+    // them to the right place (saves 1/2 instructions and—more importantly—makes rounding
+    // calculations easier, compared to shifting them separately).
+    //
+    // Just one thing to remember: that if the posit is negative, these exponent bits have to be
+    // negated as well.
+    let exponent_bits = exp.not_if_negative(frac) << (Int::BITS - ES);
+    let fraction_bits = (frac << 2).lshr(Self::ES);
+    let exponent_fraction_bits = exponent_bits | fraction_bits;
 
     let round = Int::ZERO;  // TODO
 
     // Assemble the final result, and return
     /*dbg!(
       Posit::<N, ES, Int>(sign_bits >> Posit::<N, ES, Int>::JUNK_BITS),
-      Posit::<N, ES, Int>(regime_bits >> Posit::<N, ES, Int>::JUNK_BITS),
-      Posit::<N, ES, Int>(exponent_bits >> Posit::<N, ES, Int>::JUNK_BITS),
-      Posit::<N, ES, Int>(fraction_bits >> Posit::<N, ES, Int>::JUNK_BITS),
+      Posit::<N, ES, Int>(regime_bits.lshr(1) >> Posit::<N, ES, Int>::JUNK_BITS),
+      Posit::<N, ES, Int>(exponent_bits.lshr(3).lshr(regime_raw) >> Posit::<N, ES, Int>::JUNK_BITS),
+      Posit::<N, ES, Int>(fraction_bits.lshr(3).lshr(regime_raw) >> Posit::<N, ES, Int>::JUNK_BITS),
       round,
     );*/
-    let bits = sign_bits + regime_bits + exponent_bits + fraction_bits + round;
+    let bits = 
+      sign_bits 
+      + regime_bits.lshr(1) 
+      + exponent_fraction_bits.lshr(3).lshr(regime_raw) 
+      + round;
     unsafe { Posit::from_bits_unchecked(bits >> Posit::<N, ES, Int>::JUNK_BITS) }
   }
 
