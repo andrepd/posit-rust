@@ -1,5 +1,7 @@
 use super::*;
 
+#[derive(Debug)]
+#[derive(PartialEq, Eq)]
 pub enum TryDecoded<
   const N: u32,
   const ES: u32,
@@ -48,7 +50,10 @@ impl<
 
     // Shift out the JUNK_BITS, if they exist
     let x = self.0 << Self::JUNK_BITS;
-    debug_assert!(x != Int::ZERO && x != Int::MIN, "Safety precondition violated: {:?} cannot be 0 or NaR", self);
+    debug_assert!(
+      x != Int::ZERO && x != Int::MIN,
+      "Safety precondition violated: {self:?} cannot be 0 or NaR",
+    );
 
     // Shift out the sign bit and count length of the initial run of 0s or 1s. `regime_raw` will be
     // that value minus 1.
@@ -136,11 +141,14 @@ impl<
 mod tests {
   use super::*;
 
-  #[test]
-  fn posit_6_2_manual() {
-    // Hand-written examples for a 6-bit positive with 2-bit exponent (cf. Posit Arithmetic, John
-    // L. Gustafson, Chapter 2).
-    for (x, frac, exp) in [
+  use malachite::rational::Rational;
+  use proptest::prelude::*;
+
+  /// Hand-written examples for a 6-bit positive with 2-bit exponent (cf. Posit Arithmetic, John L.
+  /// Gustafson, Chapter 2).
+  // const POSIT_6_2: &[(Posit<6, 2, i32>, Decoded<6, 2, i32>)] = &[
+  fn posit_6_2() -> impl Iterator<Item = (Posit<6, 2, i32>, Decoded<6, 2, i32>)> {
+    [
       // Pos
       (0b000001, 0b01_000_0, -16),
       (0b000010, 0b01_000_0, -12),
@@ -149,7 +157,10 @@ mod tests {
       (0b000101, 0b01_000_0, -7),
       (0b000110, 0b01_000_0, -6),
       (0b000111, 0b01_000_0, -5),
-
+      (0b001000, 0b01_000_0, -4),
+      (0b001001, 0b01_100_0, -4),
+      (0b001010, 0b01_000_0, -3),
+      (0b001011, 0b01_100_0, -3),
       (0b001100, 0b01_000_0, -2),
       (0b001101, 0b01_100_0, -2),
       (0b001110, 0b01_000_0, -1),
@@ -159,7 +170,17 @@ mod tests {
       (0b010010, 0b01_000_0, 1),
       (0b010011, 0b01_100_0, 1),
       (0b010100, 0b01_000_0, 2),
-
+      (0b010101, 0b01_100_0, 2),
+      (0b010110, 0b01_000_0, 3),
+      (0b010111, 0b01_100_0, 3),
+      (0b011000, 0b01_000_0, 4),
+      (0b011001, 0b01_000_0, 5),
+      (0b011010, 0b01_000_0, 6),
+      (0b011011, 0b01_000_0, 7),
+      (0b011100, 0b01_000_0, 8),
+      (0b011101, 0b01_000_0, 10),
+      (0b011110, 0b01_000_0, 12),
+      (0b011111, 0b01_000_0, 16),
       // Neg
       (-0b000001, 0b10_000_0, -16 - 1),
       (-0b000010, 0b10_000_0, -12 - 1),
@@ -168,7 +189,10 @@ mod tests {
       (-0b000101, 0b10_000_0, -7 - 1),
       (-0b000110, 0b10_000_0, -6 - 1),
       (-0b000111, 0b10_000_0, -5 - 1),
-
+      (-0b001000, 0b10_000_0, -4 - 1),
+      (-0b001001, 0b10_100_0, -4),
+      (-0b001010, 0b10_000_0, -3 - 1),
+      (-0b001011, 0b10_100_0, -3),
       (-0b001100, 0b10_000_0, -2 - 1),
       (-0b001101, 0b10_100_0, -2),
       (-0b001110, 0b10_000_0, -1 - 1),
@@ -178,20 +202,45 @@ mod tests {
       (-0b010010, 0b10_000_0, 1 - 1),
       (-0b010011, 0b10_100_0, 1),
       (-0b010100, 0b10_000_0, 2 - 1),
-    ] {
-      let frac = frac << (64 - 6);
-      assert_eq!(
-        unsafe { Posit::<6, 2, i64>::from_bits(x).decode_regular() },
-        Decoded { frac, exp },
-      )
+      (-0b010101, 0b10_100_0, 2),
+      (-0b010110, 0b10_000_0, 3 - 1),
+      (-0b010111, 0b10_100_0, 3),
+      (-0b011000, 0b10_000_0, 4 - 1),
+      (-0b011001, 0b10_000_0, 5 - 1),
+      (-0b011010, 0b10_000_0, 6 - 1),
+      (-0b011011, 0b10_000_0, 7 - 1),
+      (-0b011100, 0b10_000_0, 8 - 1),
+      (-0b011101, 0b10_000_0, 10 - 1),
+      (-0b011110, 0b10_000_0, 12 - 1),
+      (-0b011111, 0b10_000_0, 16 - 1),
+    ].iter().map(|&(bits, frac, exp)| {
+      let frac = frac << (32 - 6);
+      (Posit::from_bits(bits), Decoded { frac, exp })
+    })
+  }
+
+  #[test]
+  fn posit_6_2_correctness() {
+    // Assert that `posit_6_2()` contains all posits
+    assert_eq!(
+      posit_6_2().map(|(posit, _)| posit).collect::<Vec<_>>().as_slice(),
+      Posit::<6, 2, i32>::cases_exhaustive().collect::<Vec<_>>().as_slice(),
+    );
+    // And that the decoded values are correct
+    for (posit, decoded) in posit_6_2() {
+      assert_eq!(Rational::try_from(posit), Ok(Rational::from(decoded)))
     }
   }
 
-  use malachite::rational::Rational;
-  use proptest::prelude::*;
-
   mod decode {
     use super::*;
+
+    #[test]
+    fn posit_6_2_manual() {
+      for (posit, decoded) in posit_6_2() {
+        assert_eq!(unsafe { posit.decode_regular() }, decoded)
+      }
+    }
 
     fn decode<const N: u32, const ES: u32, Int: crate::Int>(p: Posit<N, ES, Int>) -> Decoded<N, ES, Int> {
       let TryDecoded::Regular(decoded) = p.try_decode() else { panic!("Invalid test case") };
@@ -231,13 +280,6 @@ mod tests {
     }
 
     #[test]
-    fn posit_6_2_exhaustive() {
-      for p in Posit::<6, 2, i8>::cases_exhaustive() {
-        assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
-      }
-    }
-
-    #[test]
     fn posit_10_1_exhaustive() {
       for p in Posit::<10, 1, i32>::cases_exhaustive() {
         assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
@@ -251,5 +293,4 @@ mod tests {
       }
     }
   }
-
 }
