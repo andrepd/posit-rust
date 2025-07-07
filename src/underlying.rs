@@ -48,7 +48,18 @@ pub trait Sealed:
   fn lshr(self, n: u32) -> Self;
 
   /// Set all bits more significant than `n` to 0.
+  ///
+  /// ```ignore
+  /// assert_eq!(0xabcd_i16.mask_lsb(4), 0xabc0_i16)
+  /// ```
   fn mask_lsb(self, n: u32) -> Self;
+
+  /// Set all bits less significant than `BITS - n` to 0.
+  ///
+  /// ```ignore
+  /// assert_eq!(0xabcd_i16.mask_msb(4), 0x0bcd_i16)
+  /// ```
+  fn mask_msb(self, n: u32) -> Self;
 
   /// Number of leading (most significant) 0 bits until the first 1.
   fn leading_zeros(self) -> u32;
@@ -58,12 +69,12 @@ pub trait Sealed:
 
   /// Number of leading (most significant) 0 bits until the first 1 OR number of leading 1 bits
   /// until the first 0, *minus 1*.
-  //
-  // ```
-  // # use crate::underlying::Sealed;
-  // assert_eq!((0b00010101u8 as i8).leading_run_minus_one(), 2);
-  // assert_eq!((0b11111000u8 as i8).leading_run_minus_one(), 4);
-  // ```
+  ///
+  /// ```ignore
+  /// # use crate::underlying::Sealed;
+  /// assert_eq!((0b00010101u8 as i8).leading_run_minus_one(), 2);
+  /// assert_eq!((0b11111000u8 as i8).leading_run_minus_one(), 4);
+  /// ```
   fn leading_run_minus_one(self) -> u32;
 
   /// Short for `if control < 0 { self } else { !self }`.
@@ -119,8 +130,14 @@ macro_rules! impl_common {
 
     #[inline]
     fn mask_lsb(self, n: u32) -> Self {
-      let mask = (1 << n) - 1;
+      let mask = (1 as $int << n).wrapping_sub(1);
       self & mask
+    }
+
+    #[inline]
+    fn mask_msb(self, n: u32) -> Self {
+      let mask = (1 as $int << (Self::BITS - n)).wrapping_sub(1);
+      self & !mask
     }
 
     fn leading_zeros(self) -> u32 {

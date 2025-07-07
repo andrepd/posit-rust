@@ -36,6 +36,18 @@ fn decode_p32(c: &mut Criterion) {
   g.finish();
 }
 
+fn encode_p32(c: &mut Criterion) {
+  let mut g = c.benchmark_group("encode_p32");
+  for num in NUMS_32 {
+    let dec = unsafe { num.bench_decode_regular() };
+    g.throughput(Throughput::Elements(1));
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:032b}", num.to_bits())), &num, |b, &num| {
+      b.iter(|| unsafe { black_box(dec).bench_encode_regular() } );
+    });
+  }
+  g.finish();
+}
+
 const NUMS_64: [p64; 4] = [
   unsafe { p64::from_bits_unchecked(0b0010101110010111011011110110001100101001101111011111000111100111u64 as _) },
   unsafe { p64::from_bits_unchecked(0b0000000001010101010011110010010100011000100101110110100010000011u64 as _) },
@@ -54,6 +66,18 @@ fn decode_p64(c: &mut Criterion) {
   g.finish();
 }
 
+fn encode_p64(c: &mut Criterion) {
+  let mut g = c.benchmark_group("encode_p64");
+  for num in NUMS_64 {
+    let dec = unsafe { num.bench_decode_regular() };
+    g.throughput(Throughput::Elements(1));
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:032b}", num.to_bits())), &num, |b, &num| {
+      b.iter(|| unsafe { black_box(dec).bench_encode_regular() } );
+    });
+  }
+  g.finish();
+}
+
 criterion_group!(baseline_fpu,
   baseline_fpu_add_f32,
   baseline_fpu_add_f64,
@@ -64,4 +88,9 @@ criterion_group!(decode,
   decode_p64,
 );
 
-criterion_main!(baseline_fpu, decode);
+criterion_group!(encode,
+  encode_p32,
+  encode_p64,
+);
+
+criterion_main!(baseline_fpu, decode, encode);

@@ -120,6 +120,20 @@ impl<
   ///
   /// and so on.
   pub(crate) const FRAC_DENOM: Int = const_i128_as_int(1 << (Int::BITS - 2));
+
+  /// The size of this Posit type in bits.
+  ///
+  /// Note: this is the logical size, not necessarily the size of the underlying type.
+  pub const BITS: u32 = Posit::<N, ES, Int>::BITS;
+
+  /// The number of exponent bits.
+  pub const ES: u32 = Posit::<N, ES, Int>::ES;
+
+  /// Checks whether `self` is normalised, i.e. whether `self.frac` starts with `0b01` or `0b10`.
+  pub(crate) fn is_normalised(self) -> bool {
+    let x = self.frac >> (Int::BITS - 2);
+    x == Int::ONE || x == !Int::ONE
+  }
 }
 
 #[cfg(test)]
