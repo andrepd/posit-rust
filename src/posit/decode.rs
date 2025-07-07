@@ -207,9 +207,9 @@ impl<
     //   A run of -n  1s followed by a 0, if n is negative and s is negative
     //   A run of n+1 0s followed by a 1, if n is positive and s is negative
     //
-    // We can reformulate this in two ways: we can again note that `-n = !n + 1`, and also condense
-    // the n is positive/negative and s is positive/negative conditions using the xor of n and s,
-    // yielding
+    // We can reformulate this in two ways: (1) we can again note that `-n = !n + 1`, and (2) also
+    // condense the "n is positive/negative" and "s is positive/negative" conditions using the xor
+    // of n and s, yielding
     //
     //   A run of !n+1 0s followed by a 1, if n ^ s is negative
     //   A run of  n+1 1s followed by a 0, if n ^ s is positive
@@ -217,9 +217,9 @@ impl<
     // Great! But how do we build the bit pattern?
     //
     // Now note the following: the two msb of regime are always 11 or 00, since the regime is never
-    // bigger than ±Int::BITS, and represented in a value with the same number of bits (e.g. never
-    // more than the number ±64 represented in an i64), and the two msb of frac are always 10 or
-    // 01.
+    // bigger than ±Int::BITS, and is represented in a value with the same number of bits (e.g.
+    // never more than the number ±64 represented in an i64). Note also that the two msb of frac
+    // are always 10 or 01.
     //
     // Therefore, if `n ^ s` is positive, its two msb will be 01, and if it is negative, its two
     // msb will be 10. So just negate them, and this is precisely what we want! We just need
@@ -230,23 +230,23 @@ impl<
     // Example:
     //   regime         = 3
     //   sign           = 0b01...
-    //   !(regime^sign) = 0b01...
+    //   !(regime^sign) = 0b10...
     //   regime_raw     = 3
-    //   !(regime^sign) >> regime_raw = 0b00001...  (4 0s followed by a 1, correct)
+    //   !(regime^sign) >> regime_raw = 0b11110...  (4 1s followed by a 0 = regime 4-1, correct)
     //
     // Example:
     //   regime         = -3
     //   sign           = 0b01...
-    //   !(regime^sign) = 0b10...
+    //   !(regime^sign) = 0b01...
     //   regime_raw     = 2
-    //   !(regime^sign) >> regime_raw = 0b1110....  (3 1s followed by a 0, correct)
+    //   !(regime^sign) >> regime_raw = 0b0001....  (3 0s followed by a 1 = regime -3, correct)
     //
     // Example:
     //   regime         = 3
     //   sign           = 0b10...
-    //   !(regime^sign) = 0b10...
+    //   !(regime^sign) = 0b01...
     //   regime_raw     = 3
-    //   !(regime^sign) >> regime_raw = 0b11110...  (4 1s followed by a 0, correct)
+    //   !(regime^sign) >> regime_raw = 0b00001...  (4 0s followed by a 1 = regime !(-4), correct)
     //
     // We can now assemble the whole thing
     let frac_xor_regime = frac ^ exp;
