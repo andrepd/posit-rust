@@ -50,14 +50,14 @@ pub trait Sealed:
   /// Set all bits more significant than `n` to 0.
   ///
   /// ```ignore
-  /// assert_eq!(0xabcd_i16.mask_lsb(4), 0xabc0_i16)
+  /// assert_eq!(0xabcd_i16.mask_lsb(4), 0x000d_i16)
   /// ```
   fn mask_lsb(self, n: u32) -> Self;
 
   /// Set all bits less significant than `BITS - n` to 0.
   ///
   /// ```ignore
-  /// assert_eq!(0xabcd_i16.mask_msb(4), 0x0bcd_i16)
+  /// assert_eq!(0xabcd_i16.mask_msb(4), 0xa000_i16)
   /// ```
   fn mask_msb(self, n: u32) -> Self;
 
@@ -238,5 +238,59 @@ mod tests {
     assert_eq!(VALUE, 0xdeadbeefu32 as i32);
   }
 
-  // TODO more tests for the trickier fns in Int
+  #[test]
+  fn mask_lsb() {
+    assert_eq!(0b01111110_i8.mask_lsb(3), 0b00000110_i8);
+    assert_eq!((0xabcd_u16 as i16).mask_lsb(4), 0x000d_u16 as i16);
+    assert_eq!((0xabcdabcd_u32 as i32).mask_lsb(4), 0x0000000d_u32 as i32);
+    assert_eq!((0xdeadbeefdeadbeef_u64 as i64).mask_lsb(6), 0x2f_i64);
+  }
+
+  #[test]
+  fn mask_msb() {
+    assert_eq!(0b01111110_i8.mask_msb(3), 0b01100000_i8);
+    assert_eq!((0xabcd_u16 as i16).mask_msb(4), 0xa000_u16 as i16);
+    assert_eq!((0xabcdabcd_u32 as i32).mask_msb(4), 0xa0000000_u32 as i32);
+    assert_eq!((0xdeadbeefdeadbeef_u64 as i64).mask_msb(12), 0xdea_i64 << 52);
+  }
+
+  #[test]
+  fn leading_run_minus_one_zeroes() {
+    assert_eq!((0b00010101u8 as i8 as i8).leading_run_minus_one(), 2);
+    assert_eq!((0b00010101u8 as i8 as i16).leading_run_minus_one(), 8 + 2);
+    assert_eq!((0b00010101u8 as i8 as i32).leading_run_minus_one(), 24 + 2);
+    assert_eq!((0b00010101u8 as i8 as i64).leading_run_minus_one(), 56 + 2);
+  }
+
+  #[test]
+  fn leading_run_minus_one_ones() {
+    assert_eq!((0b11111000u8 as i8 as i8).leading_run_minus_one(), 4);
+    assert_eq!((0b11111000u8 as i8 as i16).leading_run_minus_one(), 8 + 4);
+    assert_eq!((0b11111000u8 as i8 as i32).leading_run_minus_one(), 24 + 4);
+    assert_eq!((0b11111000u8 as i8 as i64).leading_run_minus_one(), 56 + 4);
+  }
+
+  #[test]
+  fn not_if_negative() {
+    assert_eq!((0b01110110u8 as i8 as i8).not_if_negative(1),  0b01110110u8 as i8 as i8);
+    assert_eq!((0b01110110u8 as i8 as i8).not_if_negative(-1), 0b10001001u8 as i8 as i8);
+    assert_eq!((0b01110110u8 as i8 as i16).not_if_negative(1),  0b01110110u8 as i8 as i16);
+    assert_eq!((0b01110110u8 as i8 as i16).not_if_negative(-1), 0b10001001u8 as i8 as i16);
+    assert_eq!((0b01110110u8 as i8 as i32).not_if_negative(1),  0b01110110u8 as i8 as i32);
+    assert_eq!((0b01110110u8 as i8 as i32).not_if_negative(-1), 0b10001001u8 as i8 as i32);
+    assert_eq!((0b01110110u8 as i8 as i64).not_if_negative(1),  0b01110110u8 as i8 as i64);
+    assert_eq!((0b01110110u8 as i8 as i64).not_if_negative(-1), 0b10001001u8 as i8 as i64);
+  }
+
+  #[test]
+  fn not_if_positive() {
+    assert_eq!((0b11100110u8 as i8 as i8).not_if_positive(1),  0b00011001u8 as i8 as i8);
+    assert_eq!((0b11100110u8 as i8 as i8).not_if_positive(-1), 0b11100110u8 as i8 as i8);
+    assert_eq!((0b11100110u8 as i8 as i16).not_if_positive(1),  0b00011001u8 as i8 as i16);
+    assert_eq!((0b11100110u8 as i8 as i16).not_if_positive(-1), 0b11100110u8 as i8 as i16);
+    assert_eq!((0b11100110u8 as i8 as i32).not_if_positive(1),  0b00011001u8 as i8 as i32);
+    assert_eq!((0b11100110u8 as i8 as i32).not_if_positive(-1), 0b11100110u8 as i8 as i32);
+    assert_eq!((0b11100110u8 as i8 as i64).not_if_positive(1),  0b00011001u8 as i8 as i64);
+    assert_eq!((0b11100110u8 as i8 as i64).not_if_positive(-1), 0b11100110u8 as i8 as i64);
+  }
 }
