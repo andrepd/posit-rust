@@ -144,7 +144,7 @@ impl<
   Int: crate::Int,
 > Decoded<N, ES, Int> {
   /// Aux function, for debug prints
-  fn bin(x: Int) -> Posit<N, ES, Int> { Posit(x >> Posit::<N, ES, Int>::JUNK_BITS) }
+  fn bin(x: Int) -> Posit<N, ES, Int> { Posit(x) }
 
   /// Encode a posit, rounding if necessary. The core logic lives in [Self::encode_regular_round].
   pub(crate) fn try_encode_round(self, sticky: Int) -> Option<Posit<N, ES, Int>> {
@@ -195,9 +195,6 @@ impl<
 
     // Extract the regime part of the exponent (bits higher than the lowest ES)
     let regime = exp >> ES;
-
-    // The msb of the result, i.e. the sign bit, is the msb of `frac`.
-    let sign_bits = frac.mask_msb(1);
 
     // Now for the regime bits, we want to create the following bits (let n be the value of
     // `regime` and s be the `sign` of the overall posit):
@@ -257,6 +254,11 @@ impl<
     let regime_raw = regime.not_if_negative(regime).as_u32();
     let regime_bits = (!frac_xor_regime).mask_msb(2) >> regime_raw;
     /*dbg!(regime_raw);*/
+
+    // The msb of the result, i.e. the sign bit, is the msb of `frac`.
+    let sign_and_regime_bits = frac.mask_msb(1) | regime_bits.lshr(1);
+    /*dbg!(Self::bin(sign_and_regime_bits));*/
+    let sign_and_regime_bits = sign_and_regime_bits >> Posit::<N, ES, Int>::JUNK_BITS;
 
     // Next we need to place the exponent bits in the right place, just after the regime bits. This
     // is in total 1 bit (sign) + regime_raw + 1 bits (run of 0s/1s) + 1 bit (regime terminating
@@ -329,22 +331,22 @@ impl<
     // and the bit after that (i.e. the lowest bit actually in the final result), tells us whether
     // the unrounded bit pattern is even.
     let exponent_and_fraction_bits = exponent_and_fraction_bits.lshr(1);
-    let even = exponent_and_fraction_bits.get_lsb();
+    let mut even = exponent_and_fraction_bits.get_lsb();
+    // But if we shift the *whole thing* out, then the even bit is actually the lsb of regime_bits
+    if regime_raw >= Self::BITS - 3 { even = sign_and_regime_bits.get_lsb() }  // TODO find better way of doing this + clamping exp (= clamping regime_raw)
     // Finally, we have the result of whether we need to round or not
     let round_up: bool = round & (even | (sticky != Int::ZERO));
-    /*dbg!(round, even, sticky, round_up);*/
+    /*dbg!(round, even, sticky);*/
 
 
     // Assemble the final result, and return
     /*dbg!(
-      Self::bin(sign_bits),
-      Self::bin(regime_bits.lshr(1)),
-      Self::bin(exponent_bits.lshr(3).lshr(regime_raw)),
-      Self::bin(fraction_bits.lshr(3).lshr(regime_raw)),
-      round,
+      Self::bin(sign_and_regime_bits),
+      Self::bin(exponent_and_fraction_bits),
+      round_up,
     );*/
     let bits =
-      ((sign_bits + regime_bits.lshr(1)) >> Posit::<N, ES, Int>::JUNK_BITS)
+      sign_and_regime_bits
       + exponent_and_fraction_bits
       + Int::from(round_up);
     unsafe { Posit::from_bits_unchecked(bits) }
@@ -661,6 +663,110 @@ mod tests {
       assert_encode_rounded("-1050/100", D { frac: 0b10_101100u8 as _, exp: 3 }, 0b10100110);  // -10.5  → -10
       assert_encode_rounded("-1075/100", D { frac: 0b10_101010u8 as _, exp: 3 }, 0b10100101);  // -10.75 → -11
       assert_encode_rounded("-1100/100", D { frac: 0b10_101000u8 as _, exp: 3 }, 0b10100101);  // -11    → -11
+    }
+
+    /// Aux function: check that `decoded` is rounded correctly.
+    fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(decoded: Decoded<N, ES, Int>) -> bool
+    where
+      Rational: From<Decoded<N, ES, Int>> + TryFrom<Posit<N, ES, Int>>,
+      <Rational as TryFrom<Posit<N, ES, Int>>>::Error: core::fmt::Debug
+    {
+      let posit = decoded.try_encode().expect("Invalid test case!");
+      let exact = Rational::from(decoded);
+
+      // If `1 + regime_len + 1 + Self::ES > Self::BITS`, i.e. on the edges of the posit's dynamic
+      // range, some exponent bits are chopped and hence we are in a region of geometric rounding
+      // So cutoff_exp = 2 ^ ((Self::BITS - Self::ES - 2) << ES).
+      use malachite::base::num::arithmetic::traits::{Abs, PowerOf2, Reciprocal};
+      let is_arithmetic_rounding = {
+        let geometric_cutoff = Rational::power_of_2(((N - 2 - ES) as i64) << ES);  // TODO factor into a constant
+        let arithmetic_range = (&geometric_cutoff).reciprocal() ..= geometric_cutoff;
+        arithmetic_range.contains(&(&exact).abs())
+      };
+
+      // Overflow case: if exact is > MAX, < MIN, > 0 and < MIN_POSITIVE, or < 0 and > MAX_NEGATIVE
+      if exact > Rational::from_signeds(0, 1) {
+        if exact >= Rational::try_from(Posit::<N, ES, Int>::MAX).unwrap() {
+          return posit == Posit::<N, ES, Int>::MAX
+        }
+        else if exact <= Rational::try_from(Posit::<N, ES, Int>::MIN_POSITIVE).unwrap() {
+          return posit == Posit::<N, ES, Int>::MIN_POSITIVE
+        }
+      } else if exact < Rational::from_signeds(0, 1) {
+        if exact <= Rational::try_from(Posit::<N, ES, Int>::MIN).unwrap() {
+          return posit == Posit::<N, ES, Int>::MIN
+        }
+        else if exact >= Rational::try_from(Posit::<N, ES, Int>::MAX_NEGATIVE).unwrap() {
+          return posit == Posit::<N, ES, Int>::MAX_NEGATIVE
+        }
+      } else {
+        unreachable!()
+      }
+
+      // Normal case: round to nearest (arithmetic nearest, or geometric nearest only if exponent
+      // bits are cut)
+      let prev = Rational::try_from(posit.prior()).unwrap_or(Rational::from_signeds(0, 1));
+      let curr = Rational::try_from(posit).unwrap();
+      let next = Rational::try_from(posit.next()).unwrap_or(Rational::from_signeds(0, 1));
+      /*dbg!(&exact, &prev, &curr, &next, is_arithmetic_rounding);*/
+      let distance = |x: &Rational, y: &Rational| if is_arithmetic_rounding {x-y} else if x.abs() >= y.abs() {x/y} else {y/x};
+      if exact == curr {
+        // `decoded` is exactly represented by `posit`
+        true
+      } else if /*let Ok(prev) = prev &&*/ prev < exact && exact < curr {
+        // `decoded` lies in interval `]posit.prior(), posit[`, needs to be closer to `posit` than
+        // to `posit.prior()`, or same distance if `posit` is even.
+        let distance_curr = distance(&curr, &exact);
+        let distance_prev = distance(&exact, &prev);
+        distance_curr < distance_prev
+          || distance_curr == distance_prev && (posit.to_bits() & Int::ONE == Int::ZERO)
+      } else if /*let Ok(next) = next &&*/ curr < exact && exact < next {
+        // `decoded` lies in interval `]posit, posit.next()[`, needs to be closer to `posit` than
+        // to `posit.next()`, or same distance if `posit` is even.
+        let distance_curr = distance(&exact, &curr);
+        let distance_next = distance(&next, &exact);
+        distance_curr < distance_next
+          || distance_curr == distance_next && (posit.to_bits() & Int::ONE == Int::ZERO)
+      } else {
+        // Not in interval
+        false
+      }
+    }
+
+    #[test]
+    fn posit_6_2_exhaustive() {
+      for decoded in Decoded::<6, 2, i16>::cases_exhaustive() {
+        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
+      }
+    }
+
+    #[test]
+    fn p8_exhaustive() {
+      for decoded in Decoded::<8, 2, i8>::cases_exhaustive() {
+        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
+      }
+    }
+
+    #[test]
+    fn p16_exhaustive() {
+      for decoded in Decoded::<16, 2, i16>::cases_exhaustive() {
+        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
+      }
+    }
+
+    const PROPTEST_CASES: u32 = if cfg!(debug_assertions) {0x1_0000} else {0x80_0000};
+    proptest!{
+      #![proptest_config(ProptestConfig::with_cases(PROPTEST_CASES))]
+
+      #[test]
+      fn p32_proptest(decoded in Decoded::<32, 2, i32>::cases_proptest()) {
+        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
+      }
+
+      #[test]
+      fn p64_proptest(decoded in Decoded::<64, 2, i64>::cases_proptest()) {
+        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
+      }
     }
 
     #[test]
