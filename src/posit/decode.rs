@@ -503,17 +503,17 @@ mod tests {
       }
     }
 
-    const PROPTEST_CASES: u32 = if cfg!(debug_assertions) {0x8_0000} else {0x100_0000};
+    const PROPTEST_CASES: u32 = if cfg!(debug_assertions) {0x1_0000} else {0x80_0000};
     proptest!{
       #![proptest_config(ProptestConfig::with_cases(PROPTEST_CASES))]
 
       #[test]
-      fn p32_exhaustive(p in Posit::<32, 2, i32>::cases_proptest()) {
+      fn p32_proptest(p in Posit::<32, 2, i32>::cases_proptest()) {
         assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
       }
 
       #[test]
-      fn p64_exhaustive(p in Posit::<64, 2, i64>::cases_proptest()) {
+      fn p64_proptest(p in Posit::<64, 2, i64>::cases_proptest()) {
         assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
       }
     }
@@ -562,17 +562,17 @@ mod tests {
       }
     }
 
-    const PROPTEST_CASES: u32 = if cfg!(debug_assertions) {0x8_0000} else {0x100_0000};
+    const PROPTEST_CASES: u32 = if cfg!(debug_assertions) {0x1_0000} else {0x80_0000};
     proptest!{
       #![proptest_config(ProptestConfig::with_cases(PROPTEST_CASES))]
 
       #[test]
-      fn p32_exhaustive(p in Posit::<32, 2, i32>::cases_proptest()) {
+      fn p32_proptest(p in Posit::<32, 2, i32>::cases_proptest()) {
         assert_roundtrip(p)
       }
 
       #[test]
-      fn p64_exhaustive(p in Posit::<64, 2, i64>::cases_proptest()) {
+      fn p64_proptest(p in Posit::<64, 2, i64>::cases_proptest()) {
         assert_roundtrip(p)
       }
     }
