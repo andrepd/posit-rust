@@ -1,26 +1,26 @@
 use super::*;
 use crate::underlying::const_i128_as_int;
+use core::ops::{RangeInclusive, Range};
 
 impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
 > Posit<N, ES, Int> {
+  /// Range of the absolute values of posit bit patterns, excluding 0 and NaR.
+  const RANGE_ABS: RangeInclusive<i128> = 1 ..= (i128::MAX >> (128 - Self::BITS));
+
   /// An iterator through all the posits except 0 and NaR.
   pub(crate) fn cases_exhaustive() -> impl Iterator<Item = Self> {
-    let abs = 1 ..= (i128::MAX >> (128 - Self::BITS));
-    let pos = abs.clone().map(|abs| Self::from_bits(const_i128_as_int(abs)));
-    let neg = abs.clone().map(|abs| Self::from_bits(const_i128_as_int(-abs)));
+    let pos = Self::RANGE_ABS.map(|abs| Self::from_bits(const_i128_as_int(abs)));
+    let neg = Self::RANGE_ABS.map(|abs| Self::from_bits(const_i128_as_int(-abs)));
     pos.chain(neg)
   }
 
   /// A [proptest Strategy](proptest::strategy::Strategy) that yields posits except 0 and NaR.
   pub(crate) fn cases_proptest() -> impl proptest::strategy::Strategy<Value = Self> {
     use proptest::prelude::*;
-    (
-      any::<bool>(),
-      (1 ..= (i128::MAX >> (128 - Self::BITS))),
-    ).prop_map(|(sign, abs)| {
+    (any::<bool>(), Self::RANGE_ABS).prop_map(|(sign, abs)| {
       let bits = if sign {abs} else {-abs};
       Self::from_bits(const_i128_as_int(bits))
     })
