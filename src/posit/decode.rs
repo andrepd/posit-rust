@@ -143,6 +143,9 @@ impl<
   const ES: u32,
   Int: crate::Int,
 > Decoded<N, ES, Int> {
+  /// Aux function, for debug prints
+  fn bin(x: Int) -> Posit<N, ES, Int> { Posit(x >> Posit::<N, ES, Int>::JUNK_BITS) }
+
   /// Encode a posit, rounding if necessary. The core logic lives in [Self::encode_regular_round].
   pub(crate) fn try_encode_round(self, sticky: Int) -> Option<Posit<N, ES, Int>> {
     if self.is_normalised() {
@@ -162,7 +165,7 @@ impl<
   /// This function is suitable for encoding a [`Decoded`] that might need rounding to produce a
   /// valid Posit (for example, if it was obtained from doing an arithmetic operation). If you
   /// don't need to round, see [`Self::encode`].
-  pub(crate) unsafe fn encode_regular_round(self, _sticky: Int) -> Posit<N, ES, Int> {
+  pub(crate) unsafe fn encode_regular_round(self, mut sticky: Int) -> Posit<N, ES, Int> {
     debug_assert!(
       self.is_normalised(),
       "Safety precondition violated: {:?} cannot have an underflowing frac", self.frac,
@@ -268,24 +271,83 @@ impl<
     // negated as well.
     let exponent_bits = exp.not_if_negative(frac) << (Int::BITS - ES);
     let fraction_bits = (frac << 2).lshr(Self::ES);
-    let exponent_fraction_bits = exponent_bits | fraction_bits;
+    let exponent_and_fraction_bits = exponent_bits | fraction_bits;
+    /*dbg!(Self::bin(exponent_and_fraction_bits));*/
+    let exponent_and_fraction_bits = exponent_and_fraction_bits.lshr(Posit::<N, ES, Int>::JUNK_BITS);
 
-    let round = Int::ZERO;  // TODO
+    // Now comes the tricky part: the rounding. The rounding rules translate to a very simple rule
+    // in terms of bit patterns: just "represent as an infinite-precision bit string, then
+    // round to nearest, if tied round to even bit pattern".
+    //
+    // Some examples: let's say we have a bit string that we want to round at the |
+    //
+    //   0b010101|011011 -> round to nearest = down    -> 0b010101
+    //   0b010101|111011 -> round to nearest = up      -> 0b010110
+    //   0b010101|100000 -> tied, round to even = up   -> 0b010110
+    //   0b010100|100000 -> tied, round to even = down -> 0b010100
+    //
+    // How do we achieve this in practice? Let's call the lsb of the bits we want to keep (the bit
+    // just before the |) `even`, the first bit afterwards `round`, and the remaining bits
+    // `sticky`. In terms of these, we have
+    //
+    //   even | round | sticky | result
+    //   ...x | 0     |  x     | round down (+0)
+    //   ...0 | 1     | =0     | round down to even (+0)
+    //   ...1 | 1     | =0     | round up to even (+1)
+    //   ...x | 1     | ≠1     | round up (+1)
+    //
+    // So this means that if we keep track of these three things, that is: (1) set `round` equal to
+    // the leftmost of all the shifted out bits, (2) accumulate into `sticky` all the rest of the
+    // shifted out bits, and (3) set `even` to the lsb of the unrounded result, we have a boolean
+    // formula
+    //
+    //   round & (even | (sticky != 0))
+    //
+    // that tells us whether to round down (0) or up (+1).
+
+    // If Self::ES > 2, then we lost some bits of fraction already
+    if const { Self::ES > 2 } {
+      sticky |= frac.mask_lsb(Self::ES - 2)
+    };
+    // If there are JUNK_BITS, likewise
+    if const { Posit::<N, ES, Int>::JUNK_BITS > 0 } {
+      sticky |= frac.mask_lsb(Posit::<N, ES, Int>::JUNK_BITS);
+    };
+    // There is at least 3 bits we shift out (srr, 1 sign bit and 2 regime bits, is the shortest
+    // thing possible before the exponent_and_fraction_bits). Accumulate 2 onto sticky and shift 2
+    // out.
+    sticky |= exponent_and_fraction_bits.mask_lsb(2);
+    let exponent_and_fraction_bits = exponent_and_fraction_bits.lshr(2);
+    // Now remember, we need to shift out exponent_and_fraction_bits in total by `regime_raw + 3`
+    // bits, the lowest `regime_raw + 2` of which need to be accumulated to `sticky`, and the last
+    // one to `round`. We have already shifted 2 bits to sticky, so we need to shift `regime_raw`
+    // more bits there,
+    sticky |= exponent_and_fraction_bits.mask_lsb(regime_raw);
+    // and the bit afterwards to sticky,
+    let exponent_and_fraction_bits = exponent_and_fraction_bits.lshr(regime_raw);
+    let round = exponent_and_fraction_bits.get_lsb();
+    // and the bit after that (i.e. the lowest bit actually in the final result), tells us whether
+    // the unrounded bit pattern is even.
+    let exponent_and_fraction_bits = exponent_and_fraction_bits.lshr(1);
+    let even = exponent_and_fraction_bits.get_lsb();
+    // Finally, we have the result of whether we need to round or not
+    let round_up: bool = round & (even | (sticky != Int::ZERO));
+    /*dbg!(round, even, sticky, round_up);*/
+
 
     // Assemble the final result, and return
     /*dbg!(
-      Posit::<N, ES, Int>(sign_bits >> Posit::<N, ES, Int>::JUNK_BITS),
-      Posit::<N, ES, Int>(regime_bits.lshr(1) >> Posit::<N, ES, Int>::JUNK_BITS),
-      Posit::<N, ES, Int>(exponent_bits.lshr(3).lshr(regime_raw) >> Posit::<N, ES, Int>::JUNK_BITS),
-      Posit::<N, ES, Int>(fraction_bits.lshr(3).lshr(regime_raw) >> Posit::<N, ES, Int>::JUNK_BITS),
+      Self::bin(sign_bits),
+      Self::bin(regime_bits.lshr(1)),
+      Self::bin(exponent_bits.lshr(3).lshr(regime_raw)),
+      Self::bin(fraction_bits.lshr(3).lshr(regime_raw)),
       round,
     );*/
-    let bits = 
-      sign_bits 
-      + regime_bits.lshr(1) 
-      + exponent_fraction_bits.lshr(3).lshr(regime_raw) 
-      + round;
-    unsafe { Posit::from_bits_unchecked(bits >> Posit::<N, ES, Int>::JUNK_BITS) }
+    let bits =
+      ((sign_bits + regime_bits.lshr(1)) >> Posit::<N, ES, Int>::JUNK_BITS)
+      + exponent_and_fraction_bits
+      + Int::from(round_up);
+    unsafe { Posit::from_bits_unchecked(bits) }
   }
 
   /// Encode a posit, **ignoring rounding**. The core logic lives in [Self::encode_regular].
@@ -532,6 +594,74 @@ mod tests {
 
   mod rounding {
     use super::*;
+
+    /// Aux function: assert that `decoded` is indeed `rational`, and that it is encoded
+    /// (after rounding) into `posit`.
+    fn assert_encode_rounded<const N: u32, const ES: u32, Int: crate::Int>(
+      rational: &str,
+      decoded: Decoded<N, ES, Int>,
+      posit: Int::Unsigned,
+    ) where Rational: From<Decoded<N, ES, Int>>,  {
+      use core::str::FromStr;
+      assert_eq!(Rational::from(decoded), Rational::from_str(rational).unwrap());
+      assert_eq!(decoded.try_encode(), Some(Posit::<N, ES, Int>::from_bits_unsigned(posit)));
+    }
+
+    #[test]
+    fn posit_6_2_manual_pos() {
+      type D = Decoded<6, 2, i8>;
+      assert_encode_rounded("200/100", D { frac: 0b01_0000 << 2, exp: 1 }, 0b010010);  // 2    → 2
+      assert_encode_rounded("225/100", D { frac: 0b01_0010 << 2, exp: 1 }, 0b010010);  // 2.25 → 2
+      assert_encode_rounded("250/100", D { frac: 0b01_0100 << 2, exp: 1 }, 0b010010);  // 2.5  → 2
+      assert_encode_rounded("275/100", D { frac: 0b01_0110 << 2, exp: 1 }, 0b010011);  // 2.75 → 3
+      assert_encode_rounded("300/100", D { frac: 0b01_1000 << 2, exp: 1 }, 0b010011);  // 3    → 3
+      assert_encode_rounded("325/100", D { frac: 0b01_1010 << 2, exp: 1 }, 0b010011);  // 3.25 → 3
+      assert_encode_rounded("350/100", D { frac: 0b01_1100 << 2, exp: 1 }, 0b010100);  // 3.5  → 4
+      assert_encode_rounded("375/100", D { frac: 0b01_1110 << 2, exp: 1 }, 0b010100);  // 3.75 → 4
+      assert_encode_rounded("400/100", D { frac: 0b01_0000 << 2, exp: 2 }, 0b010100);  // 4    → 4
+    }
+
+    #[test]
+    fn posit_6_2_manual_neg() {
+      type D = Decoded<6, 2, i8>;
+      assert_encode_rounded("-200/100", D { frac: 0b10_0000 << 2, exp: 0 }, 0b101110);  // -2    → -2
+      assert_encode_rounded("-225/100", D { frac: 0b10_1110 << 2, exp: 1 }, 0b101110);  // -2.25 → -2
+      assert_encode_rounded("-250/100", D { frac: 0b10_1100 << 2, exp: 1 }, 0b101110);  // -2.5  → -2
+      assert_encode_rounded("-275/100", D { frac: 0b10_1010 << 2, exp: 1 }, 0b101101);  // -2.75 → -3
+      assert_encode_rounded("-300/100", D { frac: 0b10_1000 << 2, exp: 1 }, 0b101101);  // -3    → -3
+      assert_encode_rounded("-325/100", D { frac: 0b10_0110 << 2, exp: 1 }, 0b101101);  // -3.25 → -3
+      assert_encode_rounded("-350/100", D { frac: 0b10_0100 << 2, exp: 1 }, 0b101100);  // -3.5  → -4
+      assert_encode_rounded("-375/100", D { frac: 0b10_0010 << 2, exp: 1 }, 0b101100);  // -3.75 → -4
+      assert_encode_rounded("-400/100", D { frac: 0b10_0000 << 2, exp: 1 }, 0b101100);  // -4    → -4
+    }
+
+    #[test]
+    fn p8_manual_pos() {
+      type D = Decoded<8, 2, i8>;
+      assert_encode_rounded("900/100",  D { frac: 0b01_001000, exp: 3 }, 0b01011001);  // 9     → 9
+      assert_encode_rounded("925/100",  D { frac: 0b01_001010, exp: 3 }, 0b01011001);  // 9.25  → 9
+      assert_encode_rounded("950/100",  D { frac: 0b01_001100, exp: 3 }, 0b01011010);  // 9.5   → 10
+      assert_encode_rounded("975/100",  D { frac: 0b01_001110, exp: 3 }, 0b01011010);  // 9.75  → 10
+      assert_encode_rounded("1000/100", D { frac: 0b01_010000, exp: 3 }, 0b01011010);  // 10    → 10
+      assert_encode_rounded("1025/100", D { frac: 0b01_010010, exp: 3 }, 0b01011010);  // 10.25 → 10
+      assert_encode_rounded("1050/100", D { frac: 0b01_010100, exp: 3 }, 0b01011010);  // 10.5  → 10
+      assert_encode_rounded("1075/100", D { frac: 0b01_010110, exp: 3 }, 0b01011011);  // 10.75 → 11
+      assert_encode_rounded("1100/100", D { frac: 0b01_011000, exp: 3 }, 0b01011011);  // 11    → 11
+    }
+
+    #[test]
+    fn p8_manual_neg() {
+      type D = Decoded<8, 2, i8>;
+      assert_encode_rounded("-900/100",  D { frac: 0b10_111000u8 as _, exp: 3 }, 0b10100111);  // -9     → -9
+      assert_encode_rounded("-925/100",  D { frac: 0b10_110110u8 as _, exp: 3 }, 0b10100111);  // -9.25  → -9
+      assert_encode_rounded("-950/100",  D { frac: 0b10_110100u8 as _, exp: 3 }, 0b10100110);  // -9.5   → -10
+      assert_encode_rounded("-975/100",  D { frac: 0b10_110010u8 as _, exp: 3 }, 0b10100110);  // -9.75  → -10
+      assert_encode_rounded("-1000/100", D { frac: 0b10_110000u8 as _, exp: 3 }, 0b10100110);  // -10    → -10
+      assert_encode_rounded("-1025/100", D { frac: 0b10_101110u8 as _, exp: 3 }, 0b10100110);  // -10.25 → -10
+      assert_encode_rounded("-1050/100", D { frac: 0b10_101100u8 as _, exp: 3 }, 0b10100110);  // -10.5  → -10
+      assert_encode_rounded("-1075/100", D { frac: 0b10_101010u8 as _, exp: 3 }, 0b10100101);  // -10.75 → -11
+      assert_encode_rounded("-1100/100", D { frac: 0b10_101000u8 as _, exp: 3 }, 0b10100101);  // -11    → -11
+    }
 
     #[test]
     fn p8_max() {

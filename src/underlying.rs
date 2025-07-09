@@ -21,7 +21,7 @@ pub trait Sealed:
   core::ops::Shl<u32, Output=Self> +
   core::ops::Shr<u32, Output=Self> +
   core::ops::BitAnd<Output=Self> +
-  core::ops::BitOr<Output=Self> +
+  core::ops::BitOr<Output=Self> + core::ops::BitOrAssign +
   core::ops::BitXor<Output=Self> +
   core::ops::Not<Output=Self> +
   core::ops::Neg<Output=Self> +
@@ -60,6 +60,9 @@ pub trait Sealed:
   /// assert_eq!(0xabcd_i16.mask_msb(4), 0xa000_i16)
   /// ```
   fn mask_msb(self, n: u32) -> Self;
+
+  /// Get the lsb of `self` as a bool
+  fn get_lsb(self) -> bool;
 
   /// Number of leading (most significant) 0 bits until the first 1.
   fn leading_zeros(self) -> u32;
@@ -138,6 +141,12 @@ macro_rules! impl_common {
     fn mask_msb(self, n: u32) -> Self {
       let mask = (1 as $int << (Self::BITS - n)).wrapping_sub(1);
       self & !mask
+    }
+
+    #[inline]
+    fn get_lsb(self) -> bool {
+      // SAFETY: `self as u8 & 1` can only be 0 or 1
+      unsafe { core::mem::transmute::<u8, bool>(self as u8 & 1) }
     }
 
     fn leading_zeros(self) -> u32 {
