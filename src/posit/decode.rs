@@ -673,64 +673,7 @@ mod tests {
     {
       let posit = decoded.try_encode().expect("Invalid test case!");
       let exact = Rational::from(decoded);
-
-      // If `1 + regime_len + 1 + Self::ES > Self::BITS`, i.e. on the edges of the posit's dynamic
-      // range, some exponent bits are chopped and hence we are in a region of geometric rounding
-      // So cutoff_exp = 2 ^ ((Self::BITS - Self::ES - 2) << ES).
-      use malachite::base::num::arithmetic::traits::{Abs, PowerOf2, Reciprocal};
-      let is_arithmetic_rounding = {
-        let geometric_cutoff = Rational::power_of_2(((N - 2 - ES) as i64) << ES);  // TODO factor into a constant
-        let arithmetic_range = (&geometric_cutoff).reciprocal() ..= geometric_cutoff;
-        arithmetic_range.contains(&(&exact).abs())
-      };
-
-      // Overflow case: if exact is > MAX, < MIN, > 0 and < MIN_POSITIVE, or < 0 and > MAX_NEGATIVE
-      if exact > Rational::from_signeds(0, 1) {
-        if exact >= Rational::try_from(Posit::<N, ES, Int>::MAX).unwrap() {
-          return posit == Posit::<N, ES, Int>::MAX
-        }
-        else if exact <= Rational::try_from(Posit::<N, ES, Int>::MIN_POSITIVE).unwrap() {
-          return posit == Posit::<N, ES, Int>::MIN_POSITIVE
-        }
-      } else if exact < Rational::from_signeds(0, 1) {
-        if exact <= Rational::try_from(Posit::<N, ES, Int>::MIN).unwrap() {
-          return posit == Posit::<N, ES, Int>::MIN
-        }
-        else if exact >= Rational::try_from(Posit::<N, ES, Int>::MAX_NEGATIVE).unwrap() {
-          return posit == Posit::<N, ES, Int>::MAX_NEGATIVE
-        }
-      } else {
-        unreachable!()
-      }
-
-      // Normal case: round to nearest (arithmetic nearest, or geometric nearest only if exponent
-      // bits are cut)
-      let prev = Rational::try_from(posit.prior()).unwrap_or(Rational::from_signeds(0, 1));
-      let curr = Rational::try_from(posit).unwrap();
-      let next = Rational::try_from(posit.next()).unwrap_or(Rational::from_signeds(0, 1));
-      /*dbg!(&exact, &prev, &curr, &next, is_arithmetic_rounding);*/
-      let distance = |x: &Rational, y: &Rational| if is_arithmetic_rounding {x-y} else if x.abs() >= y.abs() {x/y} else {y/x};
-      if exact == curr {
-        // `decoded` is exactly represented by `posit`
-        true
-      } else if /*let Ok(prev) = prev &&*/ prev < exact && exact < curr {
-        // `decoded` lies in interval `]posit.prior(), posit[`, needs to be closer to `posit` than
-        // to `posit.prior()`, or same distance if `posit` is even.
-        let distance_curr = distance(&curr, &exact);
-        let distance_prev = distance(&exact, &prev);
-        distance_curr < distance_prev
-          || distance_curr == distance_prev && (posit.to_bits() & Int::ONE == Int::ZERO)
-      } else if /*let Ok(next) = next &&*/ curr < exact && exact < next {
-        // `decoded` lies in interval `]posit, posit.next()[`, needs to be closer to `posit` than
-        // to `posit.next()`, or same distance if `posit` is even.
-        let distance_curr = distance(&exact, &curr);
-        let distance_next = distance(&next, &exact);
-        distance_curr < distance_next
-          || distance_curr == distance_next && (posit.to_bits() & Int::ONE == Int::ZERO)
-      } else {
-        // Not in interval
-        false
-      }
+      super::rational::is_correct_rounded(exact, posit)
     }
 
     #[test]
