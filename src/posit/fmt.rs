@@ -14,7 +14,7 @@ impl<
         .field(&format_args!("0b{bits:0w$b}", w=Int::BITS as usize))
         .finish()
     } else {
-      let bits_junk = (self.0 >> Self::BITS).mask_lsb(Self::JUNK_BITS);
+      let bits_junk = self.0.lshr(Self::BITS);
       let bits_significant = self.0.mask_lsb(Self::BITS);
       f.debug_tuple("Posit")
         .field(&format_args!("0b{bits_junk:0wj$b}_{bits_significant:0ws$b}", wj=Self::JUNK_BITS as usize, ws=Self::BITS as usize))
