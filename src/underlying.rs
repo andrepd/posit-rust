@@ -85,6 +85,9 @@ pub trait Sealed:
 
   /// Short for `if control >= 0 { !self } else { self }`.
   fn not_if_positive(self, control: Self) -> Self;
+
+  fn wrapping_add(self, other: Self) -> Self;
+  fn wrapping_sub(self, other: Self) -> Self;
 }
 
 /// Implementation of almost all functions, a couple nasty ones need handwritten impls!
@@ -179,6 +182,12 @@ macro_rules! impl_common {
       let mask = control >> (Self::BITS - 1);
       self ^ mask
     }
+
+    #[inline]
+    fn wrapping_add(self, other: Self) -> Self { self.wrapping_add(other) }
+
+    #[inline]
+    fn wrapping_sub(self, other: Self) -> Self { self.wrapping_sub(other) }
   }
 }
 
