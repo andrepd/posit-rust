@@ -74,6 +74,9 @@ mod decode;
 /// Small fns of one posit argument
 mod unary;
 
+/// Addition and subtraction
+mod add;
+
 /// Formatting
 mod fmt;
 

@@ -90,6 +90,13 @@ pub trait Sealed:
 
   fn wrapping_add(self, other: Self) -> Self;
   fn wrapping_sub(self, other: Self) -> Self;
+
+  fn overflowing_add(self, other: Self) -> (Self, bool);
+
+  /// If `self + other` doesn't overflow, return `(self + other, false)`. If it does overflow,
+  /// return `(self.midpoint(other), true)` (i.e. `(self + other) / 2` as if it were evaluated in
+  /// a sufficiently large type).
+  fn overflowing_add_shift(self, other: Self) -> (Self, bool);
 }
 
 /// Implementation of almost all functions, a couple nasty ones need handwritten impls!
@@ -190,32 +197,70 @@ macro_rules! impl_common {
 
     #[inline]
     fn wrapping_sub(self, other: Self) -> Self { self.wrapping_sub(other) }
+
+    #[inline]
+    fn overflowing_add(self, other: Self) -> (Self, bool) { self.overflowing_add(other) }
   }
 }
 
 impl Int for i128 {}
 impl Sealed for i128 {
   impl_common!{i128, u128, NonZeroI128}
+
+  fn overflowing_add_shift(self, rhs: Self) -> (Self, bool) {
+    let (mut result, carry) = self.overflowing_add(rhs);
+    result >>= u32::from(carry);
+    result ^= Self::from(carry) << (Self::BITS - 1);
+    (result, carry)
+  }
 }
 
 impl Int for i64 {}
 impl Sealed for i64 {
   impl_common!{i64, u64, NonZeroI64}
+
+  fn overflowing_add_shift(self, rhs: Self) -> (Self, bool) {
+    let (mut result, carry) = self.overflowing_add(rhs);
+    result >>= u32::from(carry);
+    result ^= Self::from(carry) << (Self::BITS - 1);
+    (result, carry)
+  }
 }
 
 impl Int for i32 {}
 impl Sealed for i32 {
   impl_common!{i32, u32, NonZeroI32}
+
+  fn overflowing_add_shift(self, rhs: Self) -> (Self, bool) {
+    let (mut result, carry) = self.overflowing_add(rhs);
+    result >>= u32::from(carry);
+    result ^= Self::from(carry) << (Self::BITS - 1);
+    (result, carry)
+  }
 }
 
 impl Int for i16 {}
 impl Sealed for i16 {
   impl_common!{i16, u16, NonZeroI16}
+
+  fn overflowing_add_shift(self, rhs: Self) -> (Self, bool) {
+    let (mut result, carry) = self.overflowing_add(rhs);
+    result >>= u32::from(carry);
+    result ^= Self::from(carry) << (Self::BITS - 1);
+    (result, carry)
+  }
 }
 
 impl Int for i8 {}
 impl Sealed for i8 {
   impl_common!{i8, u8, NonZeroI8}
+
+  fn overflowing_add_shift(self, rhs: Self) -> (Self, bool) {
+    let (mut result, carry) = self.overflowing_add(rhs);
+    result >>= u32::from(carry);
+    result ^= Self::from(carry) << (Self::BITS - 1);
+    (result, carry)
+  }
 }
 
 /// Hack to cast const values (as `i128`) back to `Int` in const as well.
@@ -316,5 +361,25 @@ mod tests {
     assert_eq!((0b11100110u8 as i8 as i32).not_if_positive(-1), 0b11100110u8 as i8 as i32);
     assert_eq!((0b11100110u8 as i8 as i64).not_if_positive(1),  0b00011001u8 as i8 as i64);
     assert_eq!((0b11100110u8 as i8 as i64).not_if_positive(-1), 0b11100110u8 as i8 as i64);
+  }
+
+  #[test]
+  fn overflowing_add_shift() {
+    assert_eq!(
+      (0b01_000000i8).overflowing_add_shift(0b00_100000i8),
+      (0b01_100000i8, false)
+    );
+    assert_eq!(
+      (0b01_000000i8).overflowing_add_shift(0b01_000000i8),
+      (0b01_000000i8, true)
+    );
+    assert_eq!(
+      (0b10_000000u8 as i8).overflowing_add_shift(0b01_011000u8 as i8),
+      (0b11_011000u8 as i8, false)
+    );
+    assert_eq!(
+      (0b10_000000u8 as i8).overflowing_add_shift(0b10_011000u8 as i8),
+      (0b10_001100u8 as i8, true)
+    );
   }
 }
