@@ -96,7 +96,7 @@ where
     // partially or even totally missing; this is okay, since in this case we have to fill in 0s
     // from the right, which is exactly what the shift does.
     let x = (x << regime_len) << 1;
-    let exponent = x.lshr(Int::BITS - Self::ES);
+    let exponent = if const { Self::ES != 0 } {x.lshr(Int::BITS - Self::ES)} else {Int::ZERO};
 
     // Shift out the exponent bits. After this we have the fraction bits starting from the left.
     //

@@ -110,7 +110,7 @@ impl<
     // complement absolute value of its bits).
     //
     // A detail is that this is where the carry comes in TODO ELABORATE
-    let exponent = y.not_if_negative(x).lshr(Int::BITS - Self::ES);  // Logical, not arithmetic shift
+    let exponent = if const { Self::ES != 0 } {y.not_if_negative(x).lshr(Int::BITS - Self::ES)} else {Int::ZERO};  // Logical, not arithmetic shift
 
     // The rest of the bits of `y` are the fraction. Here we *don't* need to do anything about the
     // two's complement absolute value, since the `frac` we want to decode is signed (with the
@@ -271,7 +271,7 @@ impl<
     //
     // Just one thing to remember: that if the posit is negative, these exponent bits have to be
     // negated as well.
-    let exponent_bits = exp.not_if_negative(frac) << (Int::BITS - ES);
+    let exponent_bits = if const { ES != 0 } {exp.not_if_negative(frac) << (Int::BITS - ES)} else {Int::ZERO};
     let fraction_bits = (frac << 2).lshr(Self::ES);
     let exponent_and_fraction_bits = exponent_bits | fraction_bits;
     /*dbg!(Self::bin(exponent_and_fraction_bits));*/
