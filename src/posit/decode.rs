@@ -146,6 +146,8 @@ impl<
   /// Aux function, for debug prints
   fn bin(x: Int) -> Posit<N, ES, Int> { Posit(x) }
 
+  const JUNK_BITS: u32 = Posit::<N, ES, Int>::JUNK_BITS;
+
   /// Encode a posit, rounding if necessary. The core logic lives in [Self::encode_regular_round].
   pub(crate) fn try_encode_round(self, sticky: Int) -> Option<Posit<N, ES, Int>> {
     if self.is_normalised() {
@@ -258,7 +260,7 @@ impl<
     // The msb of the result, i.e. the sign bit, is the msb of `frac`.
     let sign_and_regime_bits = frac.mask_msb(1) | regime_bits.lshr(1);
     /*dbg!(Self::bin(sign_and_regime_bits));*/
-    let sign_and_regime_bits = sign_and_regime_bits >> Posit::<N, ES, Int>::JUNK_BITS;
+    let sign_and_regime_bits = sign_and_regime_bits >> Self::JUNK_BITS;
 
     // Next we need to place the exponent bits in the right place, just after the regime bits. This
     // is in total 1 bit (sign) + regime_raw + 1 bits (run of 0s/1s) + 1 bit (regime terminating
@@ -275,7 +277,7 @@ impl<
     let fraction_bits = (frac << 2).lshr(Self::ES);
     let exponent_and_fraction_bits = exponent_bits | fraction_bits;
     /*dbg!(Self::bin(exponent_and_fraction_bits));*/
-    let exponent_and_fraction_bits = exponent_and_fraction_bits.lshr(Posit::<N, ES, Int>::JUNK_BITS);
+    let exponent_and_fraction_bits = exponent_and_fraction_bits.lshr(Self::JUNK_BITS);
 
     // Now comes the tricky part: the rounding. The rounding rules translate to a very simple rule
     // in terms of bit patterns: just "represent as an infinite-precision bit string, then
@@ -307,13 +309,10 @@ impl<
     //
     // that tells us whether to round down (0) or up (+1).
 
-    // If Self::ES > 2, then we lost some bits of fraction already
-    if const { Self::ES > 2 } {
-      sticky |= frac.mask_lsb(Self::ES - 2)
-    };
-    // If there are JUNK_BITS, likewise
-    if const { Posit::<N, ES, Int>::JUNK_BITS > 0 } {
-      sticky |= frac.mask_lsb(Posit::<N, ES, Int>::JUNK_BITS);
+    // If Self::ES > 2, then we lost some bits of fraction already (see `fraction_bits`). If there
+    // are JUNK_BITS, likewise (see `exponent_and_fraction_bits`).
+    if const { Self::JUNK_BITS + Self::ES > 2 } {
+      sticky |= frac.mask_lsb(Self::JUNK_BITS + Self::ES - 2);
     };
     // There is at least 3 bits we shift out (srr, 1 sign bit and 2 regime bits, is the shortest
     // thing possible before the exponent_and_fraction_bits). Accumulate 2 onto sticky and shift 2
