@@ -32,17 +32,29 @@ impl<
     let frac_hidden = self.frac.lshr(Int::BITS - 2);
     let frac_explicit = (self.frac << 2).lshr(3);
     let frac_round = self.frac & Int::ONE;
-    let exp_regime = self.exp.lshr(ES);
-    let exp_exponent = self.exp.mask_lsb(ES);
-    let exp_total = self.exp;
-    f.debug_struct("Decoded")
-      .field("frac", &format_args!("0b{frac_hidden:02b}_{frac_explicit:0w$b}_{frac_round:b}",
-        w=Int::BITS as usize - 3
-      ))
-      .field("exp", &format_args!("0b{exp_regime:0wr$b}_{exp_exponent:0we$b} ({exp_total:+})",
-        wr=(Int::BITS - ES) as usize, we=ES as usize,
-      ))
-      .finish()
+    if const { Self::ES != 0 } {
+      let exp_regime = self.exp.lshr(ES);
+      let exp_exponent = self.exp.mask_lsb(ES);
+      let exp_total = self.exp;
+      f.debug_struct("Decoded")
+        .field("frac", &format_args!("0b{frac_hidden:02b}_{frac_explicit:0w$b}_{frac_round:b}",
+          w=Int::BITS as usize - 3
+        ))
+        .field("exp", &format_args!("0b{exp_regime:0wr$b}_{exp_exponent:0we$b} ({exp_total:+})",
+          wr=(Int::BITS - ES) as usize, we=ES as usize,
+        ))
+        .finish()
+    } else {
+      let exp_total = self.exp;
+      f.debug_struct("Decoded")
+        .field("frac", &format_args!("0b{frac_hidden:02b}_{frac_explicit:0w$b}_{frac_round:b}",
+          w=Int::BITS as usize - 3
+        ))
+        .field("exp", &format_args!("0b{exp_total:0wr$b}_ ({exp_total:+})",
+          wr=(Int::BITS - ES) as usize,
+        ))
+        .finish()
+    }
   }
 }
 
@@ -91,6 +103,10 @@ mod tests {
     assert_eq!(
       format!("{:?}", Decoded::<6, 4, i16>{ frac: 0b01_0000000000000_1, exp: -20 }).as_str(),
       "Decoded { frac: 0b01_0000000000000_1, exp: 0b111111111110_1100 (-20) }",
+    );
+    assert_eq!(
+      format!("{:?}", Decoded::<6, 0, i16>{ frac: 0b01_0000000000000_1, exp: -20 }).as_str(),
+      "Decoded { frac: 0b01_0000000000000_1, exp: 0b1111111111101100_ (-20) }",
     );
   }
 }
