@@ -73,12 +73,14 @@ pub trait Sealed:
   /// Number of leading (most significant) 0 bits until the first 1 OR number of leading 1 bits
   /// until the first 0, *minus 1*.
   ///
+  /// If `self` is `Int::ZERO` or `Int::MIN`, calling this function is *undefined behaviour*.
+  ///
   /// ```ignore
   /// # use crate::underlying::Sealed;
   /// assert_eq!((0b00010101u8 as i8).leading_run_minus_one(), 2);
   /// assert_eq!((0b11111000u8 as i8).leading_run_minus_one(), 4);
   /// ```
-  fn leading_run_minus_one(self) -> u32;
+  unsafe fn leading_run_minus_one(self) -> u32;
 
   /// Short for `if control < 0 { self } else { !self }`.
   fn not_if_negative(self, control: Self) -> Self;
@@ -163,7 +165,7 @@ macro_rules! impl_common {
       unsafe{core::num::$nonzero::new_unchecked(self)}.leading_zeros()
     }
 
-    fn leading_run_minus_one(self) -> u32 {
+    unsafe fn leading_run_minus_one(self) -> u32 {
       let y = self ^ (self << 1);
       let z = unsafe { core::num::$nonzero::new_unchecked(y) };
       z.leading_zeros()
@@ -274,18 +276,22 @@ mod tests {
 
   #[test]
   fn leading_run_minus_one_zeroes() {
-    assert_eq!((0b00010101u8 as i8 as i8).leading_run_minus_one(), 2);
-    assert_eq!((0b00010101u8 as i8 as i16).leading_run_minus_one(), 8 + 2);
-    assert_eq!((0b00010101u8 as i8 as i32).leading_run_minus_one(), 24 + 2);
-    assert_eq!((0b00010101u8 as i8 as i64).leading_run_minus_one(), 56 + 2);
+    unsafe {
+      assert_eq!((0b00010101u8 as i8 as i8).leading_run_minus_one(), 2);
+      assert_eq!((0b00010101u8 as i8 as i16).leading_run_minus_one(), 8 + 2);
+      assert_eq!((0b00010101u8 as i8 as i32).leading_run_minus_one(), 24 + 2);
+      assert_eq!((0b00010101u8 as i8 as i64).leading_run_minus_one(), 56 + 2);
+    }
   }
 
   #[test]
   fn leading_run_minus_one_ones() {
-    assert_eq!((0b11111000u8 as i8 as i8).leading_run_minus_one(), 4);
-    assert_eq!((0b11111000u8 as i8 as i16).leading_run_minus_one(), 8 + 4);
-    assert_eq!((0b11111000u8 as i8 as i32).leading_run_minus_one(), 24 + 4);
-    assert_eq!((0b11111000u8 as i8 as i64).leading_run_minus_one(), 56 + 4);
+    unsafe {
+      assert_eq!((0b11111000u8 as i8 as i8).leading_run_minus_one(), 4);
+      assert_eq!((0b11111000u8 as i8 as i16).leading_run_minus_one(), 8 + 4);
+      assert_eq!((0b11111000u8 as i8 as i32).leading_run_minus_one(), 24 + 4);
+      assert_eq!((0b11111000u8 as i8 as i64).leading_run_minus_one(), 56 + 4);
+    }
   }
 
   #[test]
