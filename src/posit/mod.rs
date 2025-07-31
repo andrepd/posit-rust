@@ -31,6 +31,7 @@
 /// ```
 #[derive(Clone, Copy)]
 #[derive(Eq, PartialEq, Ord, PartialOrd, Hash)]  // Eq and Ord are the same as for two's complement int
+#[derive(Default)]
 pub struct Posit<
   const N: u32,
   const ES: u32,
