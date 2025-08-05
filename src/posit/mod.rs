@@ -71,6 +71,7 @@ mod consts;
 
 /// Encoding and decoding
 mod decode;
+mod encode;
 
 /// Small fns of one posit argument
 mod unary;
