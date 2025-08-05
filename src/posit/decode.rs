@@ -166,40 +166,18 @@ impl<
   ///
   /// This function is suitable for encoding a [`Decoded`] that might need rounding to produce a
   /// valid Posit (for example, if it was obtained from doing an arithmetic operation). If you
-  /// don't need to round, see [`Self::encode`].
+  /// don't need to round, see [`Self::encode_regular`].
   pub(crate) unsafe fn encode_regular_round(self, mut sticky: Int) -> Posit<N, ES, Int> {
     debug_assert!(
       self.is_normalised(),
       "Safety precondition violated: {:?} cannot have an underflowing frac", self.frac,
     );
 
-    // Posit rounding rules state that, for positive number, any number > MAX is rounded to MAX,
-    // and any number < MIN_POSITIVE is rounded to MIN_POSITIVE, and conversely for negative
-    // numbers, any number < MIN is rounded to MIN, and any number > MAX_NEGATIVE is rounded to MAX_NEGATIVE.
-    //
-    // Equivalently, this just means that we have to clamp the exponent to the representable range;
-    // since representing a number with max or min exp results in all fraction bits being shifted
-    // out, we can ignore correcting the fraction.
-    //
-    // However, remember negative numbers have their exponent range shifted down 1 unit, since e.g.
-    // the number MAX is represented as 1.0 × 2^MAX_EXP, but the number MIN is represented as 
-    // -2.0 × 2^(MAX_EXP-1); see the documentation for [`Decoded::frac`] for more on this.
-    /*dbg!(self);*/
-    let frac = self.frac;
-    let exp =
-      // TODO improve (mark unpredictable? find bitwise trick?)
-      if frac.is_positive() {
-        self.exp.clamp(Posit::<N, ES, Int>::MIN_EXP, Posit::<N, ES, Int>::MAX_EXP)
-      } else {
-        self.exp.clamp(Posit::<N, ES, Int>::MIN_EXP - Int::ONE, Posit::<N, ES, Int>::MAX_EXP - Int::ONE)
-      };
-    /*dbg!(Self{frac, exp});*/
+    // Start by extracting the regime part of the exponent (bits higher than the lowest ES).
+    let regime = self.exp >> ES;
 
-    // Extract the regime part of the exponent (bits higher than the lowest ES)
-    let regime = exp >> ES;
-
-    // Now for the regime bits, we want to create the following bits (let n be the value of
-    // `regime` and s be the `sign` of the overall posit):
+    // For the regime bits, we want to create the following bits (let n be the value of `regime`
+    // and s be the `sign` of the overall posit):
     //
     //   A run of -n  0s followed by a 1, if n is negative and s is positive
     //   A run of n+1 1s followed by a 0, if n is positive and s is positive
@@ -252,14 +230,37 @@ impl<
     //   !(regime^sign) >> regime_raw = 0b00001...  (4 0s followed by a 1 = regime !(-4), correct)
     //
     // We can now assemble the whole thing
-    let frac_xor_regime = frac ^ exp;
+    let frac_xor_regime = self.frac ^ self.exp;
     let regime_raw = regime.not_if_negative(regime).as_u32();
-    let regime_bits = (!frac_xor_regime).mask_msb(2) >> regime_raw;
-    /*dbg!(regime_raw);*/
 
-    // The msb of the result, i.e. the sign bit, is the msb of `frac`.
-    let sign_and_regime_bits = frac.mask_msb(1) | regime_bits.lshr(1);
-    /*dbg!(Self::bin(sign_and_regime_bits));*/
+    // A corner case, before we proceed: posit rounding rules state that, for a positive number,
+    // any number > MAX is rounded to MAX, and any number < MIN_POSITIVE is rounded to
+    // MIN_POSITIVE, and conversely for negative numbers, any number < MIN is rounded to MIN, and
+    // any number > MAX_NEGATIVE is rounded to MAX_NEGATIVE. I.e. we **never** round to 0 or to
+    // NaR.
+    //
+    // Equivalently, this means that we have to clamp the exponent to the representable range. But
+    // also equivalently, it suffices to clamp the regime *length* to the maximum regime length
+    // allowed. This is enough to clamp the exponent to be no greater than the maximum exponent
+    // and no smaller than the maximum exponent.
+    //
+    // The maximum regime length is `Self::BITS - 3`, thus is `regime_raw >= Self::BITS - 2`, the
+    // posit consists entirely of regime bits (plus the sign bit). In this case, we return early,
+    // and the rest of the code can assume `regime_raw < Self::BITS - 2`.
+    let regime_raw_max = Self::BITS - 2;
+    if regime_raw >= regime_raw_max {  // TODO mark unlikely?
+      // See the code outside this branch for an explanation.
+      let regime_bits = (!frac_xor_regime).mask_msb(2) >> regime_raw_max;
+      let sign_and_regime_bits = self.frac.mask_msb(1) | regime_bits.lshr(1);
+      let sign_and_regime_bits = sign_and_regime_bits >> Self::JUNK_BITS;
+      return unsafe { Posit::from_bits_unchecked(sign_and_regime_bits | Int::ONE) }
+    }
+
+    // Continue assembling the regime bits.
+    let regime_bits = (!frac_xor_regime).mask_msb(2) >> regime_raw;
+    // Combine the sign and regime bits into a register. The msb of the result, i.e. the sign bit,
+    // is the msb of `frac`.
+    let sign_and_regime_bits = self.frac.mask_msb(1) | regime_bits.lshr(1);
     let sign_and_regime_bits = sign_and_regime_bits >> Self::JUNK_BITS;
 
     // Next we need to place the exponent bits in the right place, just after the regime bits. This
@@ -273,15 +274,14 @@ impl<
     //
     // Just one thing to remember: that if the posit is negative, these exponent bits have to be
     // negated as well.
-    let exponent_bits = if const { ES != 0 } {exp.not_if_negative(frac) << (Int::BITS - ES)} else {Int::ZERO};
-    let fraction_bits = (frac << 2).lshr(Self::ES);
+    let exponent_bits = if const { ES != 0 } {self.exp.not_if_negative(self.frac) << (Int::BITS - ES)} else {Int::ZERO};
+    let fraction_bits = (self.frac << 2).lshr(Self::ES);
     let exponent_and_fraction_bits = exponent_bits | fraction_bits;
-    /*dbg!(Self::bin(exponent_and_fraction_bits));*/
     let exponent_and_fraction_bits = exponent_and_fraction_bits.lshr(Self::JUNK_BITS);
 
-    // Now comes the tricky part: the rounding. The rounding rules translate to a very simple rule
-    // in terms of bit patterns: just "represent as an infinite-precision bit string, then
-    // round to nearest, if tied round to even bit pattern".
+    // Now comes a tricky part: the rounding. The rounding rules translate to a very simple rule in
+    // terms of bit patterns: just "represent as an infinite-precision bit string, then round to
+    // nearest, if tied round to even bit pattern".
     //
     // Some examples: let's say we have a bit string that we want to round at the |
     //
@@ -312,7 +312,7 @@ impl<
     // If Self::ES > 2, then we lost some bits of fraction already (see `fraction_bits`). If there
     // are JUNK_BITS, likewise (see `exponent_and_fraction_bits`).
     if const { Self::JUNK_BITS + Self::ES > 2 } {
-      sticky |= frac.mask_lsb(Self::JUNK_BITS + Self::ES - 2);
+      sticky |= self.frac.mask_lsb(Self::JUNK_BITS + Self::ES - 2);
     };
     // There is at least 3 bits we shift out (srr, 1 sign bit and 2 regime bits, is the shortest
     // thing possible before the exponent_and_fraction_bits). Accumulate 2 onto sticky and shift 2
@@ -335,15 +335,8 @@ impl<
     if regime_raw >= Self::BITS - 3 { even = sign_and_regime_bits.get_lsb() }  // TODO find better way of doing this + clamping exp (= clamping regime_raw)
     // Finally, we have the result of whether we need to round or not
     let round_up: bool = round & (even | (sticky != Int::ZERO));
-    /*dbg!(round, even, sticky);*/
-
 
     // Assemble the final result, and return
-    /*dbg!(
-      Self::bin(sign_and_regime_bits),
-      Self::bin(exponent_and_fraction_bits),
-      round_up,
-    );*/
     let bits =
       sign_and_regime_bits
       + exponent_and_fraction_bits
