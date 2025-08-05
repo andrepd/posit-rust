@@ -96,7 +96,7 @@ impl<
     (Decoded{frac, exp}, (sticky | sticky_overflow))
   }
 
-  pub fn add(self, other: Self) -> Self {
+  pub(crate) fn add(self, other: Self) -> Self {
     let sum = self.0.wrapping_add(other.0);
     if self == Self::NAR || other == Self::NAR {
       Self::NAR

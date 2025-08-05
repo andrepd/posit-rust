@@ -18,6 +18,16 @@ impl<
   // Represented by the bit pattern `0b1000...0`.
   pub const NAR: Self = Self(const_i128_as_int(Self::NAR_I128));
 
+  /// One (`1`), the additive identity element.
+  //
+  // Represented by the bit pattern `0b0100...0`.
+  pub const ONE: Self = Self(const_i128_as_int(-(Self::NAR_I128 >> 1)));
+
+  /// Negative one (`-1`).
+  //
+  // Represented by the bit pattern `0b1100...0`.
+  pub const MINUS_ONE: Self = Self(const_i128_as_int(Self::NAR_I128 >> 1));
+
   /// Largest representable value, equal to `-MIN`.
   //
   // Represented by the bit pattern `0b0111...1`.
@@ -25,7 +35,7 @@ impl<
 
   /// Smallest representable value, equal to `-MAX`.
   ///
-  /// Not to be confused with the smallest absolute value, i.e. [`Self::MIN_POSITIVE`]!
+  /// Not to be confused with the smallest *absolute value*, i.e. [`Self::MIN_POSITIVE`].
   //
   // Represented by the bit pattern `0b100...01`.
   pub const MIN: Self = Self(const_i128_as_int(Self::NAR_I128 + 1));
@@ -53,16 +63,6 @@ impl<
     let max_exp = max_regime << ES;
     const_i128_as_int(max_exp)
   };
-
-  /// One (`1`), the additive identity element.
-  //
-  // Represented by the bit pattern `0b0100...0`.
-  pub const ONE: Self = Self(const_i128_as_int(-(Self::NAR_I128 >> 1)));
-
-  /// Negative 1 (`-1`), the additive identity element.
-  //
-  // Represented by the bit pattern `0b1100...0`.
-  pub const MINUS_ONE: Self = Self(const_i128_as_int(Self::NAR_I128 >> 1));
 }
 
 #[cfg(test)]
