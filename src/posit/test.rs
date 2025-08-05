@@ -17,12 +17,29 @@ impl<
     pos.chain(neg)
   }
 
-  /// A [proptest Strategy](proptest::strategy::Strategy) that yields posits except 0 and NaR.
+  /// An iterator through all the posits.
+  pub(crate) fn cases_exhaustive_all() -> impl Iterator<Item = Self> {
+    [Self::ZERO, Self::NAR].into_iter().chain(Self::cases_exhaustive())
+  }
+
+  /// A [proptest Strategy](proptest::strategy::Strategy) that yields any posit except 0 and NaR.
   pub(crate) fn cases_proptest() -> impl proptest::strategy::Strategy<Value = Self> {
     use proptest::prelude::*;
     (any::<bool>(), Self::RANGE_ABS).prop_map(|(sign, abs)| {
       let bits = if sign {abs} else {-abs};
       Self::from_bits(const_i128_as_int(bits))
+    })
+  }
+
+  /// A [proptest Strategy](proptest::strategy::Strategy) that yields any posit.
+  pub(crate) fn cases_proptest_all() -> impl proptest::strategy::Strategy<Value = Self> {
+    use proptest::prelude::*;
+    (Self::cases_proptest(), 0..Self::BITS).prop_map(|(posit, is_special)| {
+      if is_special == 0 {
+        if posit > Self::ZERO {Self::ZERO} else {Self::NAR}
+      } else {
+        posit
+      }
     })
   }
 }
@@ -82,6 +99,31 @@ mod tests {
     assert_eq!(
       Posit::<4, 1, i8>::cases_exhaustive().collect::<Vec<_>>().as_slice(),
       [
+        Posit::from_bits(0b0001),
+        Posit::from_bits(0b0010),
+        Posit::from_bits(0b0011),
+        Posit::from_bits(0b0100),
+        Posit::from_bits(0b0101),
+        Posit::from_bits(0b0110),
+        Posit::from_bits(0b0111),
+        Posit::from_bits(0b1111),
+        Posit::from_bits(0b1110),
+        Posit::from_bits(0b1101),
+        Posit::from_bits(0b1100),
+        Posit::from_bits(0b1011),
+        Posit::from_bits(0b1010),
+        Posit::from_bits(0b1001),
+      ]
+    )
+  }
+
+  #[test]
+  fn cases_exhaustive_all() {
+    assert_eq!(
+      Posit::<4, 1, i8>::cases_exhaustive_all().collect::<Vec<_>>().as_slice(),
+      [
+        Posit::from_bits(0b0000),
+        Posit::from_bits(0b1000),
         Posit::from_bits(0b0001),
         Posit::from_bits(0b0010),
         Posit::from_bits(0b0011),
