@@ -114,38 +114,25 @@ impl<
   }
 }
 
-impl<const N: u32, const ES: u32, Int: crate::Int>
-core::ops::Add<Self> for Posit<N, ES, Int> {
-  type Output = Self;
-  #[inline]
-  fn add(self, rhs: Self) -> Self::Output { self.add(rhs) }
-}
+use core::ops::{Add, AddAssign};
 
-impl<const N: u32, const ES: u32, Int: crate::Int>
-core::ops::Add<&Self> for Posit<N, ES, Int> {
-  type Output = Self;
-  #[inline]
-  fn add(self, rhs: &Self) -> Self::Output { self.add(*rhs) }
-}
-
-impl<const N: u32, const ES: u32, Int: crate::Int>
-core::ops::Add<Posit<N, ES, Int>> for &Posit<N, ES, Int> {
-  type Output = Posit<N, ES, Int>;
-  #[inline]
-  fn add(self, rhs: Posit<N, ES, Int>) -> Self::Output { (*self).add(rhs) }
-}
-
-impl<const N: u32, const ES: u32, Int: crate::Int>
-core::ops::Add<&Posit<N, ES, Int>> for &Posit<N, ES, Int> {
-  type Output = Posit<N, ES, Int>;
-  #[inline]
-  fn add(self, rhs: &Posit<N, ES, Int>) -> Self::Output { (*self).add(*rhs) }
-}
+super::mk_ops!{Add, AddAssign, add, add_assign}
 
 #[cfg(test)]
 mod tests {
   use super::*;
   use malachite::rational::Rational;
+
+  fn ops() {
+    let mut a = crate::p32::ONE;
+    let mut b = crate::p32::MINUS_ONE;
+    let _ = a + b;
+    let _ = &a + b;
+    let _ = a + &b;
+    let _ = &a + &b;
+    a += b;
+    b += &a;
+  }
 
   /// Aux function: check that `a + b` is rounded correctly.
   fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(
