@@ -1,5 +1,3 @@
-//! Simple functions of 1 argument
-
 use super::*;
 
 impl<

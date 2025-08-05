@@ -50,13 +50,13 @@ impl<
   Int: crate::Int,
 > Decoded<N, ES, Int> {
   /// Range of the absolute values of frac bit patterns, i.e. any number with leading `0b01`.
-  const RANGE_FRAC_ABS: Range<i128> = 
+  const RANGE_FRAC_ABS: Range<i128> =
     (i128::MIN as u128 >> (128 - Int::BITS) >> 1) as i128
     .. (i128::MIN as u128 >> (128 - Int::BITS)) as i128;
 
   /// Range of the valid exponents, i.e. `3 * MIN_EXP ..= 3 * MAX_EXP`, which is the max value we
   /// guarantee is representable in a [Decoded].
-  const RANGE_EXP: RangeInclusive<i128> = 
+  const RANGE_EXP: RangeInclusive<i128> =
     -3 * ((Self::BITS as i128 - 2) << Self::ES)
     ..= 3 * ((Self::BITS as i128 - 2) << Self::ES);
 

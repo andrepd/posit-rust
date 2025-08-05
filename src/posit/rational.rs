@@ -1,12 +1,3 @@
-//! This module contains functions to translate a [Posit] (as well as a [Decoded]) to an
-//! arbitrary-precision rational, for the purposes of _testing_. This enables us to verify our
-//! algorithms by checking that the exact rationals match. For example:
-//!
-//!   - Checking that rational(p1 + p2) = rational(p1) + rational(p2)
-//!   - Checking that rational(p1::ONE) = rational(1)
-//!   - Checking that rational(p1) = rational(decoded(p1))
-//!   - etc.
-
 use super::*;
 
 use malachite::{Integer, rational::Rational};
