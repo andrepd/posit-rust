@@ -8,20 +8,39 @@ impl<
   /// `x` and `y` cannot be symmetrical, or calling this function is *undefined behaviour*.
   #[inline]
   pub(crate) unsafe fn add_kernel(x: Decoded<N, ES, Int>, y: Decoded<N, ES, Int>) -> (Decoded<N, ES, Int>, Int) {
-    /*dbg!(x, y);*/
+    // Adding two numbers in the form `x.frac × 2^x.exp` and `y.exp × 2^y.exp` is easy, if only
+    // `x.exp` = `y.exp`: then the result would be just `(x.frac + y.exp) × 2^x.exp`. Therefore,
+    // to add two numbers we just have to (1) reduce to the same exponent, and (2) add the
+    // fractions. The remaining complications are to do with detecting over/underflows, and
+    // rounding correctly.
 
-    // First, normalise the
+    // First align the exponents. That is: to add `x.frac + 2^x.exp` and `y.frac + 2^y.exp` let
+    // `shift` be the difference between the exponents, add `shift` to the smallest exp, and
+    // divide the corresponding frac by `2^shift` to compensate. For example:
+    //
+    //     0b01_0110 × 2⁰
+    //   + 0b01_1000 × 2³
+    //
+    // becomes
+    //
+    //     0b00_0010110 × 2³
+    //   + 0b01_1000    × 2³
+    //
+    // because the first number has the smallest `exp`, so we add 3 to it and divide its `frac` by
+    // 2³.
     let shift = x.exp - y.exp;
     let (x, y) = if shift.is_positive() { (x, y) } else { (y, x) };
     let shift = shift.abs().as_u32();
-    if shift >= Int::BITS {
-      return (x, y.frac)
+    // One thing to keep in mind is that `shift` can exceed the width of `Int`. If this happens,
+    // then the *entire* contents of `y.frac` are shifted out, and thus the answer is just `x`.
+    if shift >= Int::BITS {  // TODO mark unlikely?
+      return (x, Int::ZERO)
     };
     let xfrac = x.frac;
     let yfrac = y.frac >> shift;
     let exp = x.exp;
 
-    // Adding two positive or two negative values: an overflow by 1 place *must* occur. For example
+    // Adding two positive or two negative values: an overflow by *1 place* may occur. For example
     //
     //     1.25 = 0b01_0100
     //   + 1.0  = 0b01_0000
@@ -32,12 +51,15 @@ impl<
     //
     //   = 1.125 × 2¹ = 0b01_0010, add +1 to `exp`
     //
-    // To do this we use `overflowing_add_shift`, which may have a specialised implementation
+    // To do this we use `overflowing_add_shift`, which may have a specialised implementation e.g.
     // using "rotate" instructions; see [crate::underlying].
     let (frac, overflow) = xfrac.overflowing_add_shift(yfrac);
     let exp = exp + overflow.into();
+    // If an overflow occurs, then remember to also accumulate the shifted out bit of xfrac and
+    // yfrac into sticky.
+    let sticky_overflow = (xfrac | yfrac) & overflow.into();
 
-    // Adding a positive and a negative value: an underflow by n places *may* occur. For example
+    // Adding a positive and a negative value: an underflow by *n places* may occur. For example
     //
     //     -1.25 = 0b10_1100
     //   +  1.0  = 0b01_0000
@@ -55,42 +77,39 @@ impl<
     let underflow = unsafe { frac.leading_run_minus_one() };
     let frac = frac << underflow as u32;
     let exp = exp - Int::of_u32(underflow);
-
-    // Now just fix things up so that the rounding is correct. First, in case of underflow by `n`
-    // we must recover `n` bits we have shifted out from `yfrac` at the start, and add them to the
-    // result. For example, say `y.frac = 0b11110101`, `shift = 4`, `underflow = 3`.
+    // If an underflow by `n` occurs, then we need to "recover" `n` of the bits we have shifted out
+    // in `yfrac`, and add them onto the result, because we have set `yfrac = y.frac >> shift`,
+    // but actually should have set `= y.frac >> (shift - underflow)`.
+    //
+    // For example, say `y.frac = 0b11110101`, `shift = 4`, `underflow = 3`. Then
     //
     //    y.frac                        = 0b11110101|
-    //    y.frac >> shift               = 0b00001111|0101
-    //    y.frac >> (shift - underflow) = 0b01111010|1
+    //    y.frac >> shift               = 0b00001111|0101    ← discarded 4 bits
+    //    y.frac >> (shift - underflow) = 0b01111010|1       ← but should only discard 1
     //
-    // Second, the sticky bits, which are just the bits of `y.frac` that *were* shifted out
-    // and *were not* recovered due to underflow.
-    /*dbg!(shift, overflow, underflow, /*true_shift*/);*/
-    let true_shift = shift.checked_sub(underflow).unwrap_or(0);
+    // Here only 1 bit should be shifted out to sticky.
+    let true_shift = shift.checked_sub(underflow).unwrap_or(0);  // TODO ver
     let recovered = y.frac.mask_lsb(shift) >> true_shift;
     let sticky = y.frac.mask_lsb(true_shift);
     let frac = frac | recovered;
 
-    (Decoded{frac, exp}, sticky)
+    (Decoded{frac, exp}, (sticky | sticky_overflow))
   }
 
   pub fn add(self, other: Self) -> Self {
-    if self.0 | other.0 == Int::ZERO {
-      Self(self.0 | other.0)
-    } else if self == Self::NAR || other == Self::NAR {
+    let sum = self.0.wrapping_add(other.0);
+    if self == Self::NAR || other == Self::NAR {
       Self::NAR
-    } else if self.0.wrapping_add(other.0) == Int::ZERO {
-      Self(self.0.wrapping_add(other.0))
+    } else if sum == Int::ZERO || sum == self.0 || sum == other.0 {
+      Self(sum)
     } else {
-      // SAFETY: neither `self` nor `other` are 0 or NaR; `self` and `other` aren't symmetrical
-      unsafe {
-        let (result, sticky) = Self::add_kernel(
-          self.decode_regular(),
-          other.decode_regular(),
-        );
-        result.encode_regular_round(sticky)
-      }
+      // SAFETY: neither `self` nor `other` are 0 or NaR.
+      let a = unsafe { self.decode_regular() };
+      let b = unsafe { other.decode_regular() };
+      // SAFETY: `self` and `other` aren't symmetrical
+      let (result, sticky) = unsafe { Self::add_kernel(a, b) };
+      // SAFETY: `result` does not have an underflowing `frac`.
+      unsafe { result.encode_regular_round(sticky) }
     }
   }
 }
@@ -98,24 +117,28 @@ impl<
 impl<const N: u32, const ES: u32, Int: crate::Int>
 core::ops::Add<Self> for Posit<N, ES, Int> {
   type Output = Self;
+  #[inline]
   fn add(self, rhs: Self) -> Self::Output { self.add(rhs) }
 }
 
 impl<const N: u32, const ES: u32, Int: crate::Int>
 core::ops::Add<&Self> for Posit<N, ES, Int> {
   type Output = Self;
+  #[inline]
   fn add(self, rhs: &Self) -> Self::Output { self.add(*rhs) }
 }
 
 impl<const N: u32, const ES: u32, Int: crate::Int>
 core::ops::Add<Posit<N, ES, Int>> for &Posit<N, ES, Int> {
   type Output = Posit<N, ES, Int>;
+  #[inline]
   fn add(self, rhs: Posit<N, ES, Int>) -> Self::Output { (*self).add(rhs) }
 }
 
 impl<const N: u32, const ES: u32, Int: crate::Int>
 core::ops::Add<&Posit<N, ES, Int>> for &Posit<N, ES, Int> {
   type Output = Posit<N, ES, Int>;
+  #[inline]
   fn add(self, rhs: &Posit<N, ES, Int>) -> Self::Output { (*self).add(*rhs) }
 }
 
@@ -143,36 +166,36 @@ mod tests {
   }
 
   #[test]
-  fn posit_6_0_exhaustive() {
-    for a in Posit::<6, 0, i16>::cases_exhaustive() {
-      for b in Posit::<6, 0, i16>::cases_exhaustive() {
+  fn posit_10_0_exhaustive() {
+    for a in Posit::<10, 0, i16>::cases_exhaustive_all() {
+      for b in Posit::<10, 0, i16>::cases_exhaustive_all() {
         assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
       }
     }
   }
 
   #[test]
-  fn posit_6_1_exhaustive() {
-    for a in Posit::<6, 1, i16>::cases_exhaustive() {
-      for b in Posit::<6, 1, i16>::cases_exhaustive() {
+  fn posit_10_1_exhaustive() {
+    for a in Posit::<10, 1, i16>::cases_exhaustive_all() {
+      for b in Posit::<10, 1, i16>::cases_exhaustive_all() {
         assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
       }
     }
   }
 
   #[test]
-  fn posit_6_2_exhaustive() {
-    for a in Posit::<6, 2, i16>::cases_exhaustive() {
-      for b in Posit::<6, 2, i16>::cases_exhaustive() {
+  fn posit_10_2_exhaustive() {
+    for a in Posit::<10, 2, i16>::cases_exhaustive_all() {
+      for b in Posit::<10, 2, i16>::cases_exhaustive_all() {
         assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
       }
     }
   }
 
   #[test]
-  fn posit_6_3_exhaustive() {
-    for a in Posit::<6, 3, i16>::cases_exhaustive() {
-      for b in Posit::<6, 3, i16>::cases_exhaustive() {
+  fn posit_10_3_exhaustive() {
+    for a in Posit::<10, 3, i16>::cases_exhaustive_all() {
+      for b in Posit::<10, 3, i16>::cases_exhaustive_all() {
         assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
       }
     }
@@ -180,10 +203,49 @@ mod tests {
 
   #[test]
   fn p8_exhaustive() {
-    for a in crate::p8::cases_exhaustive() {
-      for b in crate::p8::cases_exhaustive() {
+    for a in crate::p8::cases_exhaustive_all() {
+      for b in crate::p8::cases_exhaustive_all() {
         assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
       }
+    }
+  }
+
+  #[test]
+  fn posit_8_0_exhaustive() {
+    for a in Posit::<8, 0, i8>::cases_exhaustive_all() {
+      for b in Posit::<8, 0, i8>::cases_exhaustive_all() {
+        assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+      }
+    }
+  }
+
+  use proptest::prelude::*;
+  const PROPTEST_CASES: u32 = if cfg!(debug_assertions) {0x1_0000} else {0x80_0000};
+  proptest!{
+    #![proptest_config(ProptestConfig::with_cases(PROPTEST_CASES))]
+
+    #[test]
+    fn p16_proptest(
+      a in crate::p16::cases_proptest(),
+      b in crate::p16::cases_proptest(),
+    ) {
+      assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+    }
+
+    #[test]
+    fn p32_proptest(
+      a in crate::p32::cases_proptest(),
+      b in crate::p32::cases_proptest(),
+    ) {
+      assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+    }
+
+    #[test]
+    fn p64_proptest(
+      a in crate::p64::cases_proptest(),
+      b in crate::p64::cases_proptest(),
+    ) {
+      assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
     }
   }
 }
