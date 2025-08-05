@@ -202,18 +202,18 @@ mod tests {
   }
 
   #[test]
-  fn p8_exhaustive() {
-    for a in crate::p8::cases_exhaustive_all() {
-      for b in crate::p8::cases_exhaustive_all() {
+  fn posit_8_0_exhaustive() {
+    for a in Posit::<8, 0, i8>::cases_exhaustive_all() {
+      for b in Posit::<8, 0, i8>::cases_exhaustive_all() {
         assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
       }
     }
   }
 
   #[test]
-  fn posit_8_0_exhaustive() {
-    for a in Posit::<8, 0, i8>::cases_exhaustive_all() {
-      for b in Posit::<8, 0, i8>::cases_exhaustive_all() {
+  fn p8_exhaustive() {
+    for a in crate::p8::cases_exhaustive_all() {
+      for b in crate::p8::cases_exhaustive_all() {
         assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
       }
     }

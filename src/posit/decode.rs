@@ -162,15 +162,50 @@ mod tests {
   // or 300k-1000k checks per second.
 
   #[test]
+  fn posit_10_0_exhaustive() {
+    for p in Posit::<10, 0, i16>::cases_exhaustive() {
+      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
+    }
+  }
+
+  #[test]
+  fn posit_10_1_exhaustive() {
+    for p in Posit::<10, 1, i16>::cases_exhaustive() {
+      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
+    }
+  }
+
+  #[test]
+  fn posit_10_2_exhaustive() {
+    for p in Posit::<10, 2, i16>::cases_exhaustive() {
+      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
+    }
+  }
+
+  #[test]
+  fn posit_10_3_exhaustive() {
+    for p in Posit::<10, 3, i16>::cases_exhaustive() {
+      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
+    }
+  }
+
+  #[test]
+  fn posit_8_0_exhaustive() {
+    for p in Posit::<8, 0, i8>::cases_exhaustive() {
+      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
+    }
+  }
+
+  #[test]
   fn p8_exhaustive() {
-    for p in Posit::<8, 2, i8>::cases_exhaustive() {
+    for p in crate::p8::cases_exhaustive() {
       assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
     }
   }
 
   #[test]
   fn p16_exhaustive() {
-    for p in Posit::<16, 2, i16>::cases_exhaustive() {
+    for p in crate::p16::cases_exhaustive() {
       assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
     }
   }
@@ -180,19 +215,12 @@ mod tests {
     #![proptest_config(ProptestConfig::with_cases(PROPTEST_CASES))]
 
     #[test]
-    fn p32_proptest(p in Posit::<32, 2, i32>::cases_proptest()) {
+    fn p32_proptest(p in crate::p32::cases_proptest()) {
       assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
     }
 
     #[test]
-    fn p64_proptest(p in Posit::<64, 2, i64>::cases_proptest()) {
-      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
-    }
-  }
-
-  #[test]
-  fn posit_10_1_exhaustive() {
-    for p in Posit::<10, 1, i32>::cases_exhaustive() {
+    fn p64_proptest(p in crate::p64::cases_proptest()) {
       assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
     }
   }
