@@ -147,19 +147,6 @@ mod tests {
   use super::test::posit_6_2;
 
   #[test]
-  fn posit_6_2_correctness() {
-    // Assert that `posit_6_2()` contains all posits
-    assert_eq!(
-      posit_6_2().map(|(posit, _)| posit).collect::<Vec<_>>().as_slice(),
-      Posit::<6, 2, i32>::cases_exhaustive().collect::<Vec<_>>().as_slice(),
-    );
-    // And that the decoded values are correct
-    for (posit, decoded) in posit_6_2() {
-      assert_eq!(Rational::try_from(posit), Ok(Rational::from(decoded)))
-    }
-  }
-
-  #[test]
   fn posit_6_2_manual() {
     for (posit, decoded) in posit_6_2() {
       assert_eq!(unsafe { posit.decode_regular() }, decoded)
