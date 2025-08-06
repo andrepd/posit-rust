@@ -66,7 +66,7 @@ fn add_p32(c: &mut Criterion) {
   for (&x, &y) in NUMS_32.iter().zip(NUMS_32.iter().skip(1)) {
     g.throughput(Throughput::Elements(1));
     g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:032b}/0b{:032b}", x.to_bits(), y.to_bits())), &(x, y), |b, &(x, y)| {
-      b.iter(|| unsafe { p32::add(black_box(x), black_box(y)) } );
+      b.iter(|| black_box(x) + black_box(y) );
     });
   }
   g.finish();
@@ -120,7 +120,7 @@ fn add_p64(c: &mut Criterion) {
   for (&x, &y) in NUMS_64.iter().zip(NUMS_64.iter().skip(1)) {
     g.throughput(Throughput::Elements(1));
     g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:064b}/0b{:064b}", x.to_bits(), y.to_bits())), &(x, y), |b, &(x, y)| {
-      b.iter(|| unsafe { p64::add(black_box(x), black_box(y)) } );
+      b.iter(|| black_box(x) + black_box(y) );
     });
   }
   g.finish();

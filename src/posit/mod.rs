@@ -54,7 +54,7 @@ pub struct Posit<
 /// be done *very* efficiently.
 #[derive(Clone, Copy)]
 #[derive(Eq, PartialEq, Hash)]
-pub(crate) struct Decoded<
+pub struct Decoded<
   const N: u32,
   const ES: u32,
   Int: crate::Int,

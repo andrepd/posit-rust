@@ -30,3 +30,6 @@ features = ["bench"]
 
 [features]
 bench = []
+
+cerlane-softposit = []
+berkeley-softfloat = []
