@@ -11,6 +11,8 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
 use soft_posit::{p32, p64};
 
+//
+
 #[cfg(feature = "cerlane-softposit")]
 mod cerlane_softposit;
 
@@ -39,6 +41,24 @@ fn arr<const N: usize, T: Default + Copy>(mut f: impl FnMut() -> T) -> Box<[T; N
   arr
 }
 
+/// Benchmark a 2-arg function
+fn bench_2ary<T: Copy, const N: usize, U: From<T>>(
+  g: &mut criterion::BenchmarkGroup<'_, criterion::measurement::WallTime>,
+  name: &str,
+  data: &[T; N],
+  mut f: impl FnMut(U, U) -> U,
+) {
+  const { assert!(N & 1 == 0, "Cannot benchmark 2-ary function with odd number of elements") };
+  g.throughput(Throughput::Elements(N as u64 / 2));
+  g.bench_function(name, |b| b.iter(|| {
+    for &[x, y] in data.as_chunks().0 {
+      f(black_box(U::from(x)), black_box(U::from(y)));
+    }
+  }));
+}
+
+//
+
 /// Benchmark this number of operations
 const LEN: usize = 1 << 20;
 
@@ -48,31 +68,14 @@ fn add_32(c: &mut Criterion) {
   let data_float = arr::<{LEN * 2}, _>(rand_f32);
   let data_posit = arr::<{LEN * 2}, _>(rand_p32);
   let mut g = c.benchmark_group("add_32");
-  g.throughput(Throughput::Elements(LEN as u64));
 
   #[cfg(feature = "berkeley-softfloat")]
-  {
-    g.bench_function("softfloat", |b| b.iter(|| {
-      for &[x, y] in data_float.as_chunks().0 {
-        unsafe { berkeley_softfloat::f32_add(black_box(x.into()), black_box(y.into())) };
-      }
-    }));
-  }
+  let _ = bench_2ary(&mut g, "softfloat", &data_float, |x, y| unsafe { berkeley_softfloat::f32_add(x, y) });
 
   #[cfg(feature = "cerlane-softposit")]
-  {
-    g.bench_function("softposit", |b| b.iter(|| {
-      for &[x, y] in data_posit.as_chunks().0 {
-        unsafe { cerlane_softposit::p32_add(black_box(x.into()), black_box(y.into())) };
-      }
-    }));
-  }
+  let _ = bench_2ary(&mut g, "softposit", &data_posit, |x, y| unsafe { cerlane_softposit::p32_add(x, y) });
 
-  g.bench_function("posit", |b| b.iter(|| {
-    for &[x, y] in data_posit.as_chunks().0 {
-      let _ = black_box(x) + black_box(y);
-    }
-  }));
+  let _ = bench_2ary(&mut g, "posit", &data_posit, |x: p32, y: p32| x + y);
 
   g.finish();
 }
@@ -83,31 +86,14 @@ fn add_64(c: &mut Criterion) {
   let data_float = arr::<{LEN * 2}, _>(rand_f64);
   let data_posit = arr::<{LEN * 2}, _>(rand_p64);
   let mut g = c.benchmark_group("add_64");
-  g.throughput(Throughput::Elements(LEN as u64));
 
   #[cfg(feature = "berkeley-softfloat")]
-  {
-    g.bench_function("softfloat", |b| b.iter(|| {
-      for &[x, y] in data_float.as_chunks().0 {
-        unsafe { berkeley_softfloat::f64_add(black_box(x.into()), black_box(y.into())) };
-      }
-    }));
-  }
+  let _ = bench_2ary(&mut g, "softfloat", &data_float, |x, y| unsafe { berkeley_softfloat::f64_add(x, y) });
 
-  #[cfg(feature = "cerlane-softposit")]
-  {
-    /*g.bench_function("softposit", |b| b.iter(|| {
-      for &[x, y] in data_posit.as_chunks().0 {
-        unsafe { p64_add(black_box(x.into()), black_box(y.into())) };
-      }
-    }));*/
-  }
+  /*#[cfg(feature = "cerlane-softposit")]
+  let _ = bench_2ary(&mut g, "softposit", &data_posit, |x, y| unsafe { cerlane_softposit::p64_add(x, y) };*/
 
-  g.bench_function("posit", |b| b.iter(|| {
-    for &[x, y] in data_posit.as_chunks().0 {
-      let _ = black_box(x) + black_box(y);
-    }
-  }));
+  let _ = bench_2ary(&mut g, "posit", &data_posit, |x: p64, y: p64| x + y);
 
   g.finish();
 }
