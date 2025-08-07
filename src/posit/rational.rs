@@ -48,7 +48,6 @@ where
   /// posit, since this is what we will check our optimised implementations against!
   fn into_rational_regular(self) -> Rational {
     // Shift out the junk bits, which are the leftmost bits in case N < Int::BITS.
-    /*dbg!(self);*/
     let x = self.0 << Self::JUNK_BITS;
 
     // If the number if NaR or 0, panic.
@@ -67,7 +66,8 @@ where
     let regime_sign = !x.is_positive() as u8;
     let regime_len =
       if regime_sign == 0 {
-        // Run of 0s followed by 1
+        // Run of 0s followed by 1; note that the terminating 1 is always present, because `x` is
+        // not NaR (0b1000…) or 0 (0b0000…).
         x.leading_zeros()
       } else {
         // Run of 1s folloed by 0 or by the end of the posit; note that if the latter case, we have
@@ -105,7 +105,6 @@ where
 
     // Assemble the final number
     let useed = IntExt::power_of_2(Int::ONE << Self::ES);
-    /*dbg!(&useed, &regime_sign, &regime_len);*/
 
     use malachite::base::num::arithmetic::traits::{Pow, PowerOf2};
     let sign = (-Int::ONE).pow(Int::from(sign));
@@ -113,7 +112,6 @@ where
     let exponent = IntExt::power_of_2(exponent);
     let fraction = Rational::from(Int::ONE) + (Rational::from(fraction) / Rational::power_of_2(Int::BITS as i64));
 
-    /*dbg!(&sign, &regime, &exponent, &fraction);*/
     sign * regime * exponent * fraction
   }
 }
@@ -173,18 +171,10 @@ where
   Rational: TryFrom<Posit<N, ES, Int>>,
   <Rational as TryFrom<Posit<N, ES, Int>>>::Error: core::fmt::Debug,
 {
+  // Only the exact number 0 is rounded to posit 0.
   if posit == Posit::<N, ES, Int>::ZERO { return exact == Rational::from(0) }
+  // No number is rounded to posit NaR.
   if posit == Posit::<N, ES, Int>::NAR { return false }
-
-  // If `1 + regime_len + 1 + Self::ES > Self::BITS`, i.e. on the edges of the posit's dynamic
-  // range, some exponent bits are chopped and hence we are in a region of geometric rounding.
-  // So cutoff_exp = 2 ^ ((Self::BITS - Self::ES - 2) << ES).
-  use malachite::base::num::arithmetic::traits::{Abs, PowerOf2, Reciprocal};
-  let is_arithmetic_rounding = {
-    let geometric_cutoff = Rational::power_of_2(((N - 2 - ES) as i64) << ES);  // TODO factor into a constant
-    let arithmetic_range = (&geometric_cutoff).reciprocal() ..= geometric_cutoff;
-    arithmetic_range.contains(&(&exact).abs())
-  };
 
   // Overflow case: if exact is > MAX, < MIN, > 0 and < MIN_POSITIVE, or < 0 and > MAX_NEGATIVE
   if exact > Rational::from(0) {
@@ -205,30 +195,51 @@ where
     unreachable!()
   }
 
-  // Normal case: round to nearest (arithmetic nearest, or geometric nearest only if exponent bits
-  // are cut)
-  let prev = Rational::try_from(posit.prior()).unwrap_or(Rational::from(0));
+  // Remaining cases: round to nearest (arithmetic nearest, or geometric nearest *only if* exponent
+  // bits are cut). `distance` uses arithmetic or geometric distance accordingly.
+  use malachite::base::num::arithmetic::traits::{Abs, PowerOf2, Reciprocal};
+  let distance = {
+    // If `1 + regime_len + 1 + Self::ES > Self::BITS`, i.e. on the edges of the posit's dynamic
+    // range, some exponent bits are chopped and hence we are in a region of geometric rounding.
+    //
+    // So if `regime_len ≤ Self::BITS - 2 - Self::ES`, we are in the arithmetic rounding region,
+    // otherwise we're on the geometric rounding region. This `regime_len` corresponds to an
+    // exponent of `(Self::BITS - 2 - Self::ES) << Self::ES`..
+    let geometric_cutoff = Rational::power_of_2(((N - 2 - ES) as i64) << ES);
+    let arithmetic_range = (&geometric_cutoff).reciprocal() ..= geometric_cutoff;
+    let is_arithmetic_rounding = arithmetic_range.contains(&(&exact).abs());
+
+    move |x: &Rational, y: &Rational| {
+      if is_arithmetic_rounding {
+        x-y
+      } else {
+        if x.abs() >= y.abs() {x/y} else {y/x}
+      }
+    }
+  };
+
+  // `posit` represents exactly the number `curr`, while the immediately previous and next posits
+  // represent exactly the numbers `prev` and `next`, respectively.
+  let prev = Rational::try_from(posit.prior());
   let curr = Rational::try_from(posit).unwrap();
-  let next = Rational::try_from(posit.next()).unwrap_or(Rational::from(0));
-  /*dbg!(&exact, &prev, &curr, &next, is_arithmetic_rounding);*/
-  let distance = |x: &Rational, y: &Rational| if is_arithmetic_rounding {x-y} else if x.abs() >= y.abs() {x/y} else {y/x};
+  let next = Rational::try_from(posit.next());
+  let posit_is_even = posit.to_bits() & Int::ONE == Int::ZERO;
+
   if exact == curr {
     // `exact` is exactly represented by `posit`
     true
-  } else if /*let Ok(prev) = prev &&*/ prev < exact && exact < curr {
-    // `exact` lies in interval `]posit.prior(), posit[`, needs to be closer to `posit` than to
+  } else if let Ok(prev) = prev && prev < exact && exact < curr {
+    // `exact` lies in interval `]posit.prior(), posit[`: needs to be closer to `posit` than to
     // `posit.prior()`, or same distance if `posit` is even.
     let distance_curr = distance(&curr, &exact);
     let distance_prev = distance(&exact, &prev);
-    distance_curr < distance_prev
-      || distance_curr == distance_prev && (posit.to_bits() & Int::ONE == Int::ZERO)
-  } else if /*let Ok(next) = next &&*/ curr < exact && exact < next {
-    // `exact` lies in interval `]posit, posit.next()[`, needs to be closer to `posit` than to
+    distance_curr < distance_prev || distance_curr == distance_prev && posit_is_even
+  } else if let Ok(next) = next && curr < exact && exact < next {
+    // `exact` lies in interval `]posit, posit.next()[`: needs to be closer to `posit` than to
     // `posit.next()`, or same distance if `posit` is even.
     let distance_curr = distance(&exact, &curr);
     let distance_next = distance(&next, &exact);
-    distance_curr < distance_next
-      || distance_curr == distance_next && (posit.to_bits() & Int::ONE == Int::ZERO)
+    distance_curr < distance_next || distance_curr == distance_next && posit_is_even
   } else {
     // Not in interval
     false
