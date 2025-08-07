@@ -90,6 +90,7 @@ pub trait Sealed:
 
   fn wrapping_add(self, other: Self) -> Self;
   fn wrapping_sub(self, other: Self) -> Self;
+  fn wrapping_neg(self) -> Self;
 
   fn overflowing_add(self, other: Self) -> (Self, bool);
 
@@ -197,6 +198,9 @@ macro_rules! impl_common {
 
     #[inline]
     fn wrapping_sub(self, other: Self) -> Self { self.wrapping_sub(other) }
+
+    #[inline]
+    fn wrapping_neg(self) -> Self { self.wrapping_neg() }
 
     #[inline]
     fn overflowing_add(self, other: Self) -> (Self, bool) { self.overflowing_add(other) }
