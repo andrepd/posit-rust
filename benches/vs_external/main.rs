@@ -7,6 +7,7 @@
 //! Sources for external libraries:
 //!   - https://www.jhauser.us/arithmetic/SoftFloat.html
 //!   - https://gitlab.com/cerlane/SoftPosit
+//!   - https://github.com/stillwater-sc/universal/
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
 use soft_posit::{p32, p64};
@@ -18,6 +19,9 @@ mod cerlane_softposit;
 
 #[cfg(feature = "berkeley-softfloat")]
 mod berkeley_softfloat;
+
+#[cfg(feature = "stillwater-softposit")]
+mod stillwater_softposit;
 
 fn rand_f32() -> f32 {
   rand::random_range(-1e30 ..= 1e30)
@@ -70,10 +74,13 @@ fn add_32(c: &mut Criterion) {
   let mut g = c.benchmark_group("add_32");
 
   #[cfg(feature = "berkeley-softfloat")]
-  let _ = bench_2ary(&mut g, "softfloat", &data_float, |x, y| unsafe { berkeley_softfloat::f32_add(x, y) });
+  let _ = bench_2ary(&mut g, "berkeley-softfloat", &data_float, |x, y| unsafe { berkeley_softfloat::f32_add(x, y) });
 
   #[cfg(feature = "cerlane-softposit")]
-  let _ = bench_2ary(&mut g, "softposit", &data_posit, |x, y| unsafe { cerlane_softposit::p32_add(x, y) });
+  let _ = bench_2ary(&mut g, "cerlane-softposit", &data_posit, |x, y| unsafe { cerlane_softposit::p32_add(x, y) });
+
+  #[cfg(feature = "stillwater-softposit")]
+  let _ = bench_2ary(&mut g, "stillwater-softposit", &data_posit, |x, y| unsafe { stillwater_softposit::posit32_addp32(x, y) });
 
   let _ = bench_2ary(&mut g, "posit", &data_posit, |x: p32, y: p32| x + y);
 
@@ -88,10 +95,13 @@ fn add_64(c: &mut Criterion) {
   let mut g = c.benchmark_group("add_64");
 
   #[cfg(feature = "berkeley-softfloat")]
-  let _ = bench_2ary(&mut g, "softfloat", &data_float, |x, y| unsafe { berkeley_softfloat::f64_add(x, y) });
+  let _ = bench_2ary(&mut g, "berkeley-softfloat", &data_float, |x, y| unsafe { berkeley_softfloat::f64_add(x, y) });
 
   /*#[cfg(feature = "cerlane-softposit")]
-  let _ = bench_2ary(&mut g, "softposit", &data_posit, |x, y| unsafe { cerlane_softposit::p64_add(x, y) };*/
+  let _ = bench_2ary(&mut g, "cerlane-softposit", &data_posit, |x, y| unsafe { cerlane_softposit::p64_add(x, y) };*/
+
+  #[cfg(feature = "stillwater-softposit")]
+  let _ = bench_2ary(&mut g, "stillwater-softposit", &data_posit, |x, y| unsafe { stillwater_softposit::posit64_addp64(x, y) });
 
   let _ = bench_2ary(&mut g, "posit", &data_posit, |x: p64, y: p64| x + y);
 

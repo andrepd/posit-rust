@@ -33,3 +33,4 @@ bench = []
 
 cerlane-softposit = []
 berkeley-softfloat = []
+stillwater-softposit = []
