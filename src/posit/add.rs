@@ -103,136 +103,265 @@ impl<
     } else if sum == Int::ZERO || sum == self.0 || sum == other.0 {
       Self(sum)
     } else {
-      // SAFETY: neither `self` nor `other` are 0 or NaR.
+      // SAFETY: neither `self` nor `other` are 0 or NaR
       let a = unsafe { self.decode_regular() };
       let b = unsafe { other.decode_regular() };
       // SAFETY: `self` and `other` aren't symmetrical
       let (result, sticky) = unsafe { Self::add_kernel(a, b) };
-      // SAFETY: `result` does not have an underflowing `frac`.
+      // SAFETY: `result` does not have an underflowing `frac`
       unsafe { result.encode_regular_round(sticky) }
     }
   }
+
+  pub(crate) fn sub(self, other: Self) -> Self {
+    self.add(-other)
+  }
 }
 
-use core::ops::{Add, AddAssign};
+use core::ops::{Add, AddAssign, Sub, SubAssign};
 
 super::mk_ops!{Add, AddAssign, add, add_assign}
+super::mk_ops!{Sub, SubAssign, sub, sub_assign}
 
 #[cfg(test)]
 mod tests {
   use super::*;
-  use malachite::rational::Rational;
 
-  fn ops() {
-    let mut a = crate::p32::ONE;
-    let mut b = crate::p32::MINUS_ONE;
-    let _ = a + b;
-    let _ = &a + b;
-    let _ = a + &b;
-    let _ = &a + &b;
-    a += b;
-    b += &a;
-  }
+  mod add {
+    use super::*;
+    use malachite::rational::Rational;
 
-  /// Aux function: check that `a + b` is rounded correctly.
-  fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(
-    a: Posit<N, ES, Int>,
-    b: Posit<N, ES, Int>,
-  ) -> bool
-  where
-    Rational: TryFrom<Posit<N, ES, Int>>,
-    <Rational as TryFrom<Posit<N, ES, Int>>>::Error: core::fmt::Debug
-  {
-    let sum_posit = a + b;
-    if let (Ok(a), Ok(b)) = (Rational::try_from(a), Rational::try_from(b)) {
-      let sum_exact = a + b;
-      super::rational::is_correct_rounded(sum_exact, sum_posit)
-    } else {
-      sum_posit == Posit::<N, ES, Int>::NAR
+    #[allow(dead_code)]
+    fn ops() {
+      let mut a = crate::p32::ONE;
+      let mut b = crate::p32::MINUS_ONE;
+      let _ = a + b;
+      let _ = &a + b;
+      let _ = a + &b;
+      let _ = &a + &b;
+      a += b;
+      b += &a;
     }
-  }
 
-  #[test]
-  fn posit_10_0_exhaustive() {
-    for a in Posit::<10, 0, i16>::cases_exhaustive_all() {
-      for b in Posit::<10, 0, i16>::cases_exhaustive_all() {
-        assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+    /// Aux function: check that `a + b` is rounded correctly.
+    fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(
+      a: Posit<N, ES, Int>,
+      b: Posit<N, ES, Int>,
+    ) -> bool
+    where
+      Rational: TryFrom<Posit<N, ES, Int>>,
+      <Rational as TryFrom<Posit<N, ES, Int>>>::Error: core::fmt::Debug
+    {
+      let sum_posit = a + b;
+      if let (Ok(a), Ok(b)) = (Rational::try_from(a), Rational::try_from(b)) {
+        let sum_exact = a + b;
+        super::rational::is_correct_rounded(sum_exact, sum_posit)
+      } else {
+        sum_posit == Posit::<N, ES, Int>::NAR
       }
-    }
-  }
-
-  #[test]
-  fn posit_10_1_exhaustive() {
-    for a in Posit::<10, 1, i16>::cases_exhaustive_all() {
-      for b in Posit::<10, 1, i16>::cases_exhaustive_all() {
-        assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
-      }
-    }
-  }
-
-  #[test]
-  fn posit_10_2_exhaustive() {
-    for a in Posit::<10, 2, i16>::cases_exhaustive_all() {
-      for b in Posit::<10, 2, i16>::cases_exhaustive_all() {
-        assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
-      }
-    }
-  }
-
-  #[test]
-  fn posit_10_3_exhaustive() {
-    for a in Posit::<10, 3, i16>::cases_exhaustive_all() {
-      for b in Posit::<10, 3, i16>::cases_exhaustive_all() {
-        assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
-      }
-    }
-  }
-
-  #[test]
-  fn posit_8_0_exhaustive() {
-    for a in Posit::<8, 0, i8>::cases_exhaustive_all() {
-      for b in Posit::<8, 0, i8>::cases_exhaustive_all() {
-        assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
-      }
-    }
-  }
-
-  #[test]
-  fn p8_exhaustive() {
-    for a in crate::p8::cases_exhaustive_all() {
-      for b in crate::p8::cases_exhaustive_all() {
-        assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
-      }
-    }
-  }
-
-  use proptest::prelude::*;
-  const PROPTEST_CASES: u32 = if cfg!(debug_assertions) {0x1_0000} else {0x80_0000};
-  proptest!{
-    #![proptest_config(ProptestConfig::with_cases(PROPTEST_CASES))]
-
-    #[test]
-    fn p16_proptest(
-      a in crate::p16::cases_proptest(),
-      b in crate::p16::cases_proptest(),
-    ) {
-      assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
     }
 
     #[test]
-    fn p32_proptest(
-      a in crate::p32::cases_proptest(),
-      b in crate::p32::cases_proptest(),
-    ) {
-      assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+    fn posit_10_0_exhaustive() {
+      for a in Posit::<10, 0, i16>::cases_exhaustive_all() {
+        for b in Posit::<10, 0, i16>::cases_exhaustive_all() {
+          assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+        }
+      }
     }
 
     #[test]
-    fn p64_proptest(
-      a in crate::p64::cases_proptest(),
-      b in crate::p64::cases_proptest(),
-    ) {
-      assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+    fn posit_10_1_exhaustive() {
+      for a in Posit::<10, 1, i16>::cases_exhaustive_all() {
+        for b in Posit::<10, 1, i16>::cases_exhaustive_all() {
+          assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+        }
+      }
+    }
+
+    #[test]
+    fn posit_10_2_exhaustive() {
+      for a in Posit::<10, 2, i16>::cases_exhaustive_all() {
+        for b in Posit::<10, 2, i16>::cases_exhaustive_all() {
+          assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+        }
+      }
+    }
+
+    #[test]
+    fn posit_10_3_exhaustive() {
+      for a in Posit::<10, 3, i16>::cases_exhaustive_all() {
+        for b in Posit::<10, 3, i16>::cases_exhaustive_all() {
+          assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+        }
+      }
+    }
+
+    #[test]
+    fn posit_8_0_exhaustive() {
+      for a in Posit::<8, 0, i8>::cases_exhaustive_all() {
+        for b in Posit::<8, 0, i8>::cases_exhaustive_all() {
+          assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+        }
+      }
+    }
+
+    #[test]
+    fn p8_exhaustive() {
+      for a in crate::p8::cases_exhaustive_all() {
+        for b in crate::p8::cases_exhaustive_all() {
+          assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+        }
+      }
+    }
+
+    use proptest::prelude::*;
+    const PROPTEST_CASES: u32 = if cfg!(debug_assertions) {0x1_0000} else {0x80_0000};
+    proptest!{
+      #![proptest_config(ProptestConfig::with_cases(PROPTEST_CASES))]
+
+      #[test]
+      fn p16_proptest(
+        a in crate::p16::cases_proptest(),
+        b in crate::p16::cases_proptest(),
+      ) {
+        assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+      }
+
+      #[test]
+      fn p32_proptest(
+        a in crate::p32::cases_proptest(),
+        b in crate::p32::cases_proptest(),
+      ) {
+        assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+      }
+
+      #[test]
+      fn p64_proptest(
+        a in crate::p64::cases_proptest(),
+        b in crate::p64::cases_proptest(),
+      ) {
+        assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+      }
+    }
+  }
+
+  mod sub {
+    use super::*;
+    use malachite::rational::Rational;
+
+    #[allow(dead_code)]
+    fn ops() {
+      let mut a = crate::p32::ONE;
+      let mut b = crate::p32::MINUS_ONE;
+      let _ = a - b;
+      let _ = &a - b;
+      let _ = a - &b;
+      let _ = &a - &b;
+      a -= b;
+      b -= &a;
+    }
+
+    /// Aux function: check that `a - b` is rounded correctly.
+    fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(
+      a: Posit<N, ES, Int>,
+      b: Posit<N, ES, Int>,
+    ) -> bool
+    where
+      Rational: TryFrom<Posit<N, ES, Int>>,
+      <Rational as TryFrom<Posit<N, ES, Int>>>::Error: core::fmt::Debug
+    {
+      let sub_posit = a - b;
+      if let (Ok(a), Ok(b)) = (Rational::try_from(a), Rational::try_from(b)) {
+        let sub_exact = a - b;
+        super::rational::is_correct_rounded(sub_exact, sub_posit)
+      } else {
+        sub_posit == Posit::<N, ES, Int>::NAR
+      }
+    }
+
+    #[test]
+    fn posit_10_0_exhaustive() {
+      for a in Posit::<10, 0, i16>::cases_exhaustive_all() {
+        for b in Posit::<10, 0, i16>::cases_exhaustive_all() {
+          assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+        }
+      }
+    }
+
+    #[test]
+    fn posit_10_1_exhaustive() {
+      for a in Posit::<10, 1, i16>::cases_exhaustive_all() {
+        for b in Posit::<10, 1, i16>::cases_exhaustive_all() {
+          assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+        }
+      }
+    }
+
+    #[test]
+    fn posit_10_2_exhaustive() {
+      for a in Posit::<10, 2, i16>::cases_exhaustive_all() {
+        for b in Posit::<10, 2, i16>::cases_exhaustive_all() {
+          assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+        }
+      }
+    }
+
+    #[test]
+    fn posit_10_3_exhaustive() {
+      for a in Posit::<10, 3, i16>::cases_exhaustive_all() {
+        for b in Posit::<10, 3, i16>::cases_exhaustive_all() {
+          assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+        }
+      }
+    }
+
+    #[test]
+    fn posit_8_0_exhaustive() {
+      for a in Posit::<8, 0, i8>::cases_exhaustive_all() {
+        for b in Posit::<8, 0, i8>::cases_exhaustive_all() {
+          assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+        }
+      }
+    }
+
+    #[test]
+    fn p8_exhaustive() {
+      for a in crate::p8::cases_exhaustive_all() {
+        for b in crate::p8::cases_exhaustive_all() {
+          assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+        }
+      }
+    }
+
+    use proptest::prelude::*;
+    const PROPTEST_CASES: u32 = if cfg!(debug_assertions) {0x1_0000} else {0x80_0000};
+    proptest!{
+      #![proptest_config(ProptestConfig::with_cases(PROPTEST_CASES))]
+
+      #[test]
+      fn p16_proptest(
+        a in crate::p16::cases_proptest(),
+        b in crate::p16::cases_proptest(),
+      ) {
+        assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+      }
+
+      #[test]
+      fn p32_proptest(
+        a in crate::p32::cases_proptest(),
+        b in crate::p32::cases_proptest(),
+      ) {
+        assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+      }
+
+      #[test]
+      fn p64_proptest(
+        a in crate::p64::cases_proptest(),
+        b in crate::p64::cases_proptest(),
+      ) {
+        assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+      }
     }
   }
 }
