@@ -1,15 +1,13 @@
 [package]
-name = "soft-posit"
+name = "fast-posit"
 version = "0.1.0"
 edition = "2024"
 description = "Software implementation of the Posit floating point format"
-documentation = "https://docs.rs/soft-posit"
+documentation = "https://docs.rs/fast-posit"
 repository = "https://github.com/andrepd/posit-rust"
 keywords = ["float", "arithmetic", "posit", "unum"]
 categories = ["algorithms", "mathematics", "no-std", "no-std::no-alloc"]
 license = "LGPL-3.0"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dev-dependencies]
 proptest = "1.6.0"

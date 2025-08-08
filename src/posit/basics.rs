@@ -234,35 +234,35 @@ mod tests {
 
 mod tests_compile_fail {
   /// ```compile_fail
-  /// use soft_posit::Posit;
+  /// use fast_posit::Posit;
   /// pub fn foo() -> u32 { Posit::<2, 0, i8>::BITS }
   /// ```
   #[allow(dead_code)]
   fn bits_fail_8_few() {}
 
   /// ```compile_fail
-  /// use soft_posit::Posit;
+  /// use fast_posit::Posit;
   /// pub fn foo() -> u32 { Posit::<2, 1, i16>::BITS }
   /// ```
   #[allow(dead_code)]
   fn bits_fail_16_few() {}
 
   /// ```compile_fail
-  /// use soft_posit::Posit;
+  /// use fast_posit::Posit;
   /// pub fn foo() -> u32 { Posit::<2, 2, i32>::BITS }
   /// ```
   #[allow(dead_code)]
   fn bits_fail_32_few() {}
 
   /// ```compile_fail
-  /// use soft_posit::Posit;
+  /// use fast_posit::Posit;
   /// pub fn foo() -> u32 { Posit::<2, 3, i64>::BITS }
   /// ```
   #[allow(dead_code)]
   fn bits_fail_64_few() {}
 
   /// ```compile_fail
-  /// use soft_posit::Posit;
+  /// use fast_posit::Posit;
   /// pub fn foo() -> u32 { Posit::<2, 4, i128>::BITS }
   /// ```
   #[allow(dead_code)]
@@ -271,35 +271,35 @@ mod tests_compile_fail {
   //
 
   /// ```compile_fail
-  /// use soft_posit::Posit;
+  /// use fast_posit::Posit;
   /// pub fn foo() -> u32 { Posit::<9, 0, i8>::BITS }
   /// ```
   #[allow(dead_code)]
   fn bits_fail_8_many() {}
 
   /// ```compile_fail
-  /// use soft_posit::Posit;
+  /// use fast_posit::Posit;
   /// pub fn foo() -> u32 { Posit::<17, 1, i16>::BITS }
   /// ```
   #[allow(dead_code)]
   fn bits_fail_16_many() {}
 
   /// ```compile_fail
-  /// use soft_posit::Posit;
+  /// use fast_posit::Posit;
   /// pub fn foo() -> u32 { Posit::<33, 2, i32>::BITS }
   /// ```
   #[allow(dead_code)]
   fn bits_fail_32_many() {}
 
   /// ```compile_fail
-  /// use soft_posit::Posit;
+  /// use fast_posit::Posit;
   /// pub fn foo() -> u32 { Posit::<65, 3, i64>::BITS }
   /// ```
   #[allow(dead_code)]
   fn bits_fail_64_many() {}
 
   /// ```compile_fail
-  /// use soft_posit::Posit;
+  /// use fast_posit::Posit;
   /// pub fn foo() -> u32 { Posit::<129, 4, i128>::BITS }
   /// ```
   #[allow(dead_code)]
@@ -308,35 +308,35 @@ mod tests_compile_fail {
   //
 
   /// ```compile_fail
-  /// use soft_posit::Posit;
+  /// use fast_posit::Posit;
   /// pub fn foo() -> u32 { Posit::<8, 4, i8>::ES }
   /// ```
   #[allow(dead_code)]
   fn es_fail_8_many() {}
 
   /// ```compile_fail
-  /// use soft_posit::Posit;
+  /// use fast_posit::Posit;
   /// pub fn foo() -> u32 { Posit::<16, 11, i16>::ES }
   /// ```
   #[allow(dead_code)]
   fn es_fail_16_many() {}
 
   /// ```compile_fail
-  /// use soft_posit::Posit;
+  /// use fast_posit::Posit;
   /// pub fn foo() -> u32 { Posit::<32, 26, i32>::ES }
   /// ```
   #[allow(dead_code)]
   fn es_fail_32_many() {}
 
   /// ```compile_fail
-  /// use soft_posit::Posit;
+  /// use fast_posit::Posit;
   /// pub fn foo() -> u32 { Posit::<64, 57, i64>::ES }
   /// ```
   #[allow(dead_code)]
   fn es_fail_64_many() {}
 
   /// ```compile_fail
-  /// use soft_posit::Posit;
+  /// use fast_posit::Posit;
   /// pub fn foo() -> u32 { Posit::<128, 120, i128>::ES }
   /// ```
   #[allow(dead_code)]
@@ -345,28 +345,28 @@ mod tests_compile_fail {
   //
 
   /// ```compile_fail
-  /// use soft_posit::Posit;
+  /// use fast_posit::Posit;
   /// pub fn foo() -> u32 { Posit::<8, 9, i16>::ES }
   /// ```
   #[allow(dead_code)]
   fn es_fail_8_larger() {}
 
   /// ```compile_fail
-  /// use soft_posit::Posit;
+  /// use fast_posit::Posit;
   /// pub fn foo() -> u32 { Posit::<16, 17, i32>::ES }
   /// ```
   #[allow(dead_code)]
   fn es_fail_16_larger() {}
 
   /// ```compile_fail
-  /// use soft_posit::Posit;
+  /// use fast_posit::Posit;
   /// pub fn foo() -> u32 { Posit::<32, 33, i64>::ES }
   /// ```
   #[allow(dead_code)]
   fn es_fail_32_larger() {}
 
   /// ```compile_fail
-  /// use soft_posit::Posit;
+  /// use fast_posit::Posit;
   /// pub fn foo() -> u32 { Posit::<64, 65, i128>::ES }
   /// ```
   #[allow(dead_code)]

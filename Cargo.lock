@@ -210,6 +210,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "fast-posit"
+version = "0.1.0"
+dependencies = [
+ "criterion",
+ "libc",
+ "malachite",
+ "proptest",
+ "rand",
+]
+
+[[package]]
 name = "fastrand"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -671,17 +682,6 @@ dependencies = [
  "memchr",
  "ryu",
  "serde",
-]
-
-[[package]]
-name = "soft-posit"
-version = "0.1.0"
-dependencies = [
- "criterion",
- "libc",
- "malachite",
- "proptest",
- "rand",
 ]
 
 [[package]]

@@ -23,7 +23,7 @@
 /// Examples:
 ///
 /// ```
-/// # use soft_posit::Posit;
+/// # use fast_posit::Posit;
 /// type Foo = Posit::<32, 2, i32>;  // A 32-bit posit with 2-bit exponent field, represented in a
 ///                                  // 32-bit machine type
 /// type Bar = Posit::<6, 1, i8>;  // A 6-bit posit with 1-bit exponent field, represented in an

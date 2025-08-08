@@ -2,7 +2,7 @@
 
 #![allow(non_camel_case_types)]
 
-use soft_posit::{p32, p64};
+use fast_posit::{p32, p64};
 
 #[repr(C)]
 #[derive(Clone, Copy)]

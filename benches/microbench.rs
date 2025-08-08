@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 
-use soft_posit::{p32, p64};
+use fast_posit::{p32, p64};
 
 // Establish a baseline by comparing with a single fpu add
 

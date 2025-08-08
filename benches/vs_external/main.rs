@@ -10,7 +10,7 @@
 //!   - https://github.com/stillwater-sc/universal/
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
-use soft_posit::{p32, p64};
+use fast_posit::{p32, p64};
 
 //
 
