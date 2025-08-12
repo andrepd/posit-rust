@@ -267,16 +267,53 @@ impl Sealed for i8 {
   }
 }
 
-/// Hack to cast const values (as `i128`) back to `Int` in const as well.
-pub const fn const_i128_as_int<T: Int>(x: i128) -> T {
-  // What a roundabout way to do this... Needed because no `const` traits.
-  let le_bytes = x.to_le_bytes();
-  if cfg!(target_endian = "little") {
-    // SAFETY: In a little endian architecture, this is equivalent to `x as T`
-    unsafe { core::mem::transmute_copy(&le_bytes) }
-  } else {
-    unimplemented!()
+/// One line of the [`const_as`] function.
+macro_rules! const_as_line {
+  ($x:ident, $t:ty, $u:ty) => {
+    if const { T::BITS == <$t>::BITS && U::BITS == <$u>::BITS } {
+      // SAFETY: Because T, U, $t, $u, are guaranteed to be `iX`, then `$t` is `T` and `$u` is `U`;
+      // therefore both transmute_copy are no-ops.
+      let t = unsafe { ::core::mem::transmute_copy::<T, $t>(&$x) };
+      let u = t as $u;
+      return unsafe { ::core::mem::transmute_copy::<$u, U>(&u) }
+    }
   }
+}
+
+/// A type-generic and `const` version of the keyword `as`, for casting between [`Int`]s.
+///
+/// ```ignore
+/// # use fast_posit::underlying::const_as;
+/// assert_eq!(const_as::<i16, i32>(1234i16), 1234i16 as i32);
+/// assert_eq!(const_as::<i128, i64>(-16i128), -126i128 as i64);
+/// ```
+pub const fn const_as<T: Int, U: Int>(x: T) -> U {
+  const_as_line!(x, i8, i8);
+  const_as_line!(x, i8, i16);
+  const_as_line!(x, i8, i32);
+  const_as_line!(x, i8, i64);
+  const_as_line!(x, i8, i128);
+  const_as_line!(x, i16, i8);
+  const_as_line!(x, i16, i16);
+  const_as_line!(x, i16, i32);
+  const_as_line!(x, i16, i64);
+  const_as_line!(x, i16, i128);
+  const_as_line!(x, i32, i8);
+  const_as_line!(x, i32, i16);
+  const_as_line!(x, i32, i32);
+  const_as_line!(x, i32, i64);
+  const_as_line!(x, i32, i128);
+  const_as_line!(x, i64, i8);
+  const_as_line!(x, i64, i16);
+  const_as_line!(x, i64, i32);
+  const_as_line!(x, i64, i64);
+  const_as_line!(x, i64, i128);
+  const_as_line!(x, i128, i8);
+  const_as_line!(x, i128, i16);
+  const_as_line!(x, i128, i32);
+  const_as_line!(x, i128, i64);
+  const_as_line!(x, i128, i128);
+  unreachable!() // cannot be const { unreachable!() }
 }
 
 #[cfg(test)]
@@ -284,27 +321,45 @@ mod tests {
   use super::*;
 
   #[test]
-  fn const_i128_as_int_1() {
-    const VALUE: i32 = const_i128_as_int(1i128);
+  fn const_as_1() {
+    const VALUE: i32 = const_as(1i128);
     assert_eq!(VALUE, 1i32);
   }
 
   #[test]
-  fn const_i128_as_int_2() {
-    const VALUE: i32 = const_i128_as_int(-1i128);
+  fn const_as_2() {
+    const VALUE: i32 = const_as(-1i128);
     assert_eq!(VALUE, -1i32);
   }
 
   #[test]
-  fn const_i128_as_int_3() {
-    const VALUE: i32 = const_i128_as_int(0i128);
+  fn const_as_3() {
+    const VALUE: i32 = const_as(0i128);
     assert_eq!(VALUE, 0i32);
   }
 
   #[test]
-  fn const_i128_as_int_4() {
-    const VALUE: i32 = const_i128_as_int(0xdeadbeefi128);
+  fn const_as_4() {
+    const VALUE: i32 = const_as(0xdeadbeefi128);
     assert_eq!(VALUE, 0xdeadbeefu32 as i32);
+  }
+
+  #[test]
+  fn const_as_5() {
+    const VALUE: i32 = const_as(0x71u8 as i8);
+    assert_eq!(VALUE, 0x00000071u32 as i32);
+  }
+
+  #[test]
+  fn const_as_6() {
+    const VALUE: i32 = const_as(0xf1u8 as i8);
+    assert_eq!(VALUE, 0xfffffff1u32 as i32);
+  }
+
+  #[test]
+  fn const_as_7() {
+    const VALUE: i16 = const_as(0x1337i16);
+    assert_eq!(VALUE, 0x1337i16);
   }
 
   #[test]

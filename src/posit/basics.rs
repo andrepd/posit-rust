@@ -1,5 +1,5 @@
 use super::*;
-use crate::underlying::const_i128_as_int;
+use crate::underlying::const_as;
 
 impl<
   const N: u32,
@@ -119,7 +119,7 @@ impl<
   ///   | `0b10_110000` | -1.25          |
   ///
   /// and so on.
-  pub(crate) const FRAC_DENOM: Int = const_i128_as_int(1 << (Int::BITS - 2));
+  pub(crate) const FRAC_DENOM: Int = const_as(1i128 << Self::FRAC_WIDTH);
 
   /// The size of this Posit type in bits.
   ///

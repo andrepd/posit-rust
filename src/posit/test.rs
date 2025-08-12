@@ -1,5 +1,5 @@
 use super::*;
-use crate::underlying::const_i128_as_int;
+use crate::underlying::const_as;
 use core::ops::{RangeInclusive, Range};
 
 impl<
@@ -12,8 +12,8 @@ impl<
 
   /// An iterator through all the posits except 0 and NaR.
   pub(crate) fn cases_exhaustive() -> impl Iterator<Item = Self> {
-    let pos = Self::RANGE_ABS.map(|abs| Self::from_bits(const_i128_as_int(abs)));
-    let neg = Self::RANGE_ABS.map(|abs| Self::from_bits(const_i128_as_int(-abs)));
+    let pos = Self::RANGE_ABS.map(|abs| Self::from_bits(const_as(abs)));
+    let neg = Self::RANGE_ABS.map(|abs| Self::from_bits(const_as(-abs)));
     pos.chain(neg)
   }
 
@@ -27,7 +27,7 @@ impl<
     use proptest::prelude::*;
     (any::<bool>(), Self::RANGE_ABS).prop_map(|(sign, abs)| {
       let bits = if sign {abs} else {-abs};
-      Self::from_bits(const_i128_as_int(bits))
+      Self::from_bits(const_as(bits))
     })
   }
 
@@ -65,12 +65,12 @@ impl<
   pub(crate) fn cases_exhaustive() -> impl Iterator<Item = Self> {
     Self::RANGE_EXP.flat_map(|exp| {
       let pos = Self::RANGE_FRAC_ABS.map(move |abs| Self {
-        frac: const_i128_as_int(abs),
-        exp: const_i128_as_int(exp),
+        frac: const_as(abs),
+        exp: const_as(exp),
       });
       let neg = Self::RANGE_FRAC_ABS.rev().map(move |abs| Self {
-        frac: const_i128_as_int(!abs),
-        exp: const_i128_as_int(exp),
+        frac: const_as(!abs),
+        exp: const_as(exp),
       });
       pos.chain(neg)
     })
@@ -85,7 +85,7 @@ impl<
     // [Decoded].
     (any::<bool>(), Self::RANGE_FRAC_ABS, Self::RANGE_EXP).prop_map(|(sign, abs, exp)| {
       let frac = if sign {abs} else {!abs};
-      Self { frac: const_i128_as_int(frac), exp: const_i128_as_int(exp)}
+      Self { frac: const_as(frac), exp: const_as(exp)}
     })
   }
 }
