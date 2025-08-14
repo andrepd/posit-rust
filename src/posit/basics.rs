@@ -132,10 +132,12 @@ impl<
   /// The number of exponent bits.
   pub const ES: u32 = Posit::<N, ES, Int>::ES;
 
-  /// Checks whether `self` is normalised, i.e. whether `self.frac` starts with `0b01` or `0b10`.
+  /// Checks whether `self` is normalised, i.e. whether `self.frac` starts with `0b01` or `0b10`,
+  /// and `self.exp >> ES` starts with `0b00` or `0b11` (which is guaranteed if `ES > 0`).
   pub(crate) fn is_normalised(self) -> bool {
-    let x = self.frac >> Self::FRAC_WIDTH;
-    x == Int::ONE || x == !Int::ONE
+    let frac = self.frac >> Self::FRAC_WIDTH;
+    let exp = self.exp >> Self::FRAC_WIDTH;
+    (frac == Int::ONE || frac == !Int::ONE) && (ES > 0 || exp == Int::ZERO || exp == !Int::ZERO)
   }
 }
 

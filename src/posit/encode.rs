@@ -32,7 +32,7 @@ impl<
   pub(crate) unsafe fn encode_regular_round(self, mut sticky: Int) -> Posit<N, ES, Int> {
     debug_assert!(
       self.is_normalised(),
-      "Safety precondition violated: {:?} cannot have an underflowing frac", self.frac,
+      "Safety precondition violated: {:?} cannot have an underflowing frac or overflowing exp", self,
     );
 
     // Start by extracting the regime part of the exponent (bits higher than the lowest ES).
@@ -225,7 +225,7 @@ impl<
   pub(crate) unsafe fn encode_regular(self) -> Posit<N, ES, Int> {
     debug_assert!(
       self.is_normalised(),
-      "Safety precondition violated: {:?} cannot have an underflowing frac", self.frac,
+      "Safety precondition violated: {:?} cannot have an underflowing frac or overflowing exp", self,
     );
     // TODO: bench vs specialised impl
     unsafe { self.encode_regular_round(Int::ZERO) }
