@@ -29,7 +29,7 @@ impl<
   Int: crate::Int,
 > Debug for Decoded<N, ES, Int> {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    let frac_hidden = self.frac.lshr(Int::BITS - 2);
+    let frac_hidden = self.frac.lshr(Self::FRAC_WIDTH);
     let frac_explicit = (self.frac << 2).lshr(3);
     let frac_round = self.frac & Int::ONE;
     if const { Self::ES != 0 } {

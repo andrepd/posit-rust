@@ -105,6 +105,9 @@ impl<
   const ES: u32,
   Int: crate::Int,
 > Decoded<N, ES, Int> {
+  /// The [Decoded::frac] field has the decimal point [Decoded::FRAC_WIDTH] bits from the right.
+  pub(crate) const FRAC_WIDTH: u32 = Int::BITS - 2;
+
   /// The [Decoded::frac] field represents the fraction / mantissa of a posit as a fixed-point
   /// number, with absolute value between 1 and 2.
   ///
@@ -131,7 +134,7 @@ impl<
 
   /// Checks whether `self` is normalised, i.e. whether `self.frac` starts with `0b01` or `0b10`.
   pub(crate) fn is_normalised(self) -> bool {
-    let x = self.frac >> (Int::BITS - 2);
+    let x = self.frac >> Self::FRAC_WIDTH;
     x == Int::ONE || x == !Int::ONE
   }
 }
