@@ -326,6 +326,27 @@ mod tests {
         assert_roundtrip(p)
       }
     }
+
+    #[test]
+    fn posit_3_0_exhaustive() {
+      for p in Posit::<3, 0, i8>::cases_exhaustive() {
+        assert_roundtrip(p)
+      }
+    }
+
+    #[test]
+    fn posit_4_0_exhaustive() {
+      for p in Posit::<4, 0, i8>::cases_exhaustive() {
+        assert_roundtrip(p)
+      }
+    }
+
+    #[test]
+    fn posit_4_1_exhaustive() {
+      for p in Posit::<4, 1, i8>::cases_exhaustive() {
+        assert_roundtrip(p)
+      }
+    }
   }
 
   mod rounding {
@@ -470,6 +491,27 @@ mod tests {
 
       #[test]
       fn p64_proptest(decoded in Decoded::<64, 2, i64>::cases_proptest()) {
+        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
+      }
+    }
+
+    #[test]
+    fn posit_3_0_exhaustive() {
+      for decoded in Decoded::<3, 0, i8>::cases_exhaustive() {
+        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
+      }
+    }
+
+    #[test]
+    fn posit_4_0_exhaustive() {
+      for decoded in Decoded::<4, 0, i8>::cases_exhaustive() {
+        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
+      }
+    }
+
+    #[test]
+    fn posit_4_1_exhaustive() {
+      for decoded in Decoded::<4, 1, i8>::cases_exhaustive() {
         assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
       }
     }

@@ -244,6 +244,31 @@ mod tests {
         assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
       }
     }
+
+    #[test]
+    fn posit_3_0_exhaustive() {
+      for a in Posit::<3, 0, i8>::cases_exhaustive_all() {
+        for b in Posit::<3, 0, i8>::cases_exhaustive_all() {
+          assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+        }
+      }
+    }
+    #[test]
+    fn posit_4_0_exhaustive() {
+      for a in Posit::<4, 0, i8>::cases_exhaustive_all() {
+        for b in Posit::<4, 0, i8>::cases_exhaustive_all() {
+          assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+        }
+      }
+    }
+    #[test]
+    fn posit_4_1_exhaustive() {
+      for a in Posit::<4, 1, i8>::cases_exhaustive_all() {
+        for b in Posit::<4, 1, i8>::cases_exhaustive_all() {
+          assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+        }
+      }
+    }
   }
 
   mod sub {
@@ -361,6 +386,31 @@ mod tests {
         b in crate::p64::cases_proptest(),
       ) {
         assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+      }
+    }
+
+    #[test]
+    fn posit_3_0_exhaustive() {
+      for a in Posit::<3, 0, i8>::cases_exhaustive_all() {
+        for b in Posit::<3, 0, i8>::cases_exhaustive_all() {
+          assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+        }
+      }
+    }
+    #[test]
+    fn posit_4_0_exhaustive() {
+      for a in Posit::<4, 0, i8>::cases_exhaustive_all() {
+        for b in Posit::<4, 0, i8>::cases_exhaustive_all() {
+          assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+        }
+      }
+    }
+    #[test]
+    fn posit_4_1_exhaustive() {
+      for a in Posit::<4, 1, i8>::cases_exhaustive_all() {
+        for b in Posit::<4, 1, i8>::cases_exhaustive_all() {
+          assert!(is_correct_rounded(a, b), "{:?}: {:?}", a, b)
+        }
       }
     }
   }

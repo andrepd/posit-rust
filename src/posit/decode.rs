@@ -231,4 +231,25 @@ mod tests {
       assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
     }
   }
+
+  #[test]
+  fn posit_3_0_exhaustive() {
+    for p in Posit::<3, 0, i8>::cases_exhaustive() {
+      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
+    }
+  }
+
+  #[test]
+  fn posit_4_0_exhaustive() {
+    for p in Posit::<4, 0, i8>::cases_exhaustive() {
+      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
+    }
+  }
+
+  #[test]
+  fn posit_4_1_exhaustive() {
+    for p in Posit::<4, 1, i8>::cases_exhaustive() {
+      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
+    }
+  }
 }
