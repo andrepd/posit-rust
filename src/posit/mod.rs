@@ -82,6 +82,13 @@ mod unary;
 /// Addition and subtraction.
 mod add;
 
+/// Conversions to and from integers, to and from floats, and between different posit types.
+///
+/// Two types of conversions are implemented: the ones in the posit standard, that describe how
+/// rounding is to be done, and "Rusty" conversions using `from` for unfallible conversions and
+/// `try_from` for fallible ones.
+pub mod convert;
+
 /// Traits for [`core::fmt::Display`] and [`core::fmt::Debug`].
 mod fmt;
 
