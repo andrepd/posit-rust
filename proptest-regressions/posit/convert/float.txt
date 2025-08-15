@@ -1,0 +1,17 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 8600c78a9ebbca59216c7c174e6ca3fe12ddacfe2228a38190b5c7d433616141 # shrinks to float = 1.7058675533107032e-109
+cc fbf5e199f5f0c9b6a6e0018060837273627456e3b0bbcf8ed64939a1a3f3f97c # shrinks to float = 1.023467246027433e-34
+cc 921492dae02925fc84b21c41bba7910afeb9c7d9900de4fd84445be99626c824 # shrinks to float = -0.1816445566228907
+cc 61480876de849387035a0a6d872486bdf64ef5efbf278c1c1eda2cb583dc8613 # shrinks to float = -1.0726276631862562e155
+cc cc707528144f55072c8b7c987667590a30e8d964c66a24f3d9b6eb52b582587c # shrinks to float = -9.527078721596099e139
+cc 2cc40443bd8cdd083c7aa96cda606143a611836dd0ef6e7921e3dea2e18dc54d # shrinks to float = -26.789746772043078
+cc f2e2e6a18c2fbfd2cf6450914f5ee2b5cbffa9353095edd2ddf476aac8246fab # shrinks to float = -0.008545316417498564
+cc 5e75e908442d638093aa144b16b21df6eb9880898839fdcd0651f4e713e01422 # shrinks to float = -44.47196888324867
+cc 60fc3531848d20320babd1076626290b9308df114d481851e95be79d04d5f725 # shrinks to float = 1.41243655961465e-310
+cc c4d0d17bff8a71146fc15acd826429a48b50fa826dacddf8f9ca0fd3f291a057 # shrinks to float = 144.1793136393993
+cc e7132c927b44011bf7d235622327d22773371667ad7772ce229deaa58eaa0c47 # shrinks to float = 0.6688961199637836

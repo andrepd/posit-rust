@@ -57,3 +57,5 @@ impl<T, U> RoundInto<U> for T where U: From<T> {
     U::from(self)
   }
 }
+
+mod float;

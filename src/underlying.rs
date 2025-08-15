@@ -14,8 +14,8 @@ pub trait Sealed:
   Copy + Clone +
   Eq + Ord +
   core::fmt::Debug + core::fmt::Display + core::fmt::Binary +
-  core::ops::Add<Self, Output=Self> +
-  core::ops::Sub<Self, Output=Self> +
+  core::ops::Add<Self, Output=Self> + core::ops::AddAssign<Self> +
+  core::ops::Sub<Self, Output=Self> + core::ops::AddAssign<Self> +
   // core::ops::Mul<Self, Output=Self> +
   // core::ops::Div<Self, Output=Self> +
   core::ops::Shl<u32, Output=Self> +
