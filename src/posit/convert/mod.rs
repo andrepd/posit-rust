@@ -59,3 +59,4 @@ impl<T, U> RoundInto<U> for T where U: RoundFrom<T> {
 }
 
 mod float;
+mod int;
