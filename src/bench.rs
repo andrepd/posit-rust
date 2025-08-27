@@ -94,40 +94,40 @@ pub fn add_kernel_64(x: Decoded<64, 2, i64>, y: Decoded<64, 2, i64>) -> (Decoded
 
 #[unsafe(no_mangle)]
 pub fn add_8(x: Posit<8, 2, i8>, y: Posit<8, 2, i8>) -> Posit<8, 2, i8> {
-  unsafe { x.add(y) }
+  x.add(y)
 }
 
 #[unsafe(no_mangle)]
 pub fn add_16(x: Posit<16, 2, i16>, y: Posit<16, 2, i16>) -> Posit<16, 2, i16> {
-  unsafe { x.add(y) }
+  x.add(y)
 }
 
 #[unsafe(no_mangle)]
 pub fn add_32(x: Posit<32, 2, i32>, y: Posit<32, 2, i32>) -> Posit<32, 2, i32> {
-  unsafe { x.add(y) }
+  x.add(y)
 }
 
 #[unsafe(no_mangle)]
 pub fn add_64(x: Posit<64, 2, i64>, y: Posit<64, 2, i64>) -> Posit<64, 2, i64> {
-  unsafe { x.add(y) }
+  x.add(y)
 }
 
 #[unsafe(no_mangle)]
 pub fn sub_8(x: Posit<8, 2, i8>, y: Posit<8, 2, i8>) -> Posit<8, 2, i8> {
-  unsafe { x.sub(y) }
+  x.sub(y)
 }
 
 #[unsafe(no_mangle)]
 pub fn sub_16(x: Posit<16, 2, i16>, y: Posit<16, 2, i16>) -> Posit<16, 2, i16> {
-  unsafe { x.sub(y) }
+  x.sub(y)
 }
 
 #[unsafe(no_mangle)]
 pub fn sub_32(x: Posit<32, 2, i32>, y: Posit<32, 2, i32>) -> Posit<32, 2, i32> {
-  unsafe { x.sub(y) }
+  x.sub(y)
 }
 
 #[unsafe(no_mangle)]
 pub fn sub_64(x: Posit<64, 2, i64>, y: Posit<64, 2, i64>) -> Posit<64, 2, i64> {
-  unsafe { x.sub(y) }
+  x.sub(y)
 }
