@@ -90,7 +90,7 @@ fn decode_finite_f64<
   // Beware to clamp it to the range representable in a `Decoded::exp` of type `Int`, otherwise
   // there may be overflow in more extreme conversions (like f64 → p8).
   let exponent = exponent.wrapping_add(EXP_BIAS);
-  let exp = 
+  let exp =
     if const { Int::BITS < 64 } && exponent > const_as::<Int, i64>(Int::MAX >> 1) {
       Int::MAX >> 1
     } else if const { Int::BITS < 64 } && exponent < const_as::<Int, i64>(Int::MIN >> 1) {
@@ -120,6 +120,12 @@ impl<
   const ES: u32,
   Int: crate::Int,
 > RoundFrom<f32> for Posit<N, ES, Int> {
+  /// Convert an `f32` into a `Posit`, [rounding according to the standard]:
+  ///
+  /// - If the value is any infinity or any NaN, it converts to [`NaR`](Posit::NAR).
+  /// - Otherwise, the float value is rounded (if necessary).
+  ///
+  /// [rounding according to the standard]: https://posithub.org/docs/posit_standard-2.pdf#subsection.6.5
   fn round_from(value: f32) -> Self {
     use core::num::FpCategory;
     match value.classify() {
@@ -138,6 +144,12 @@ impl<
   const ES: u32,
   Int: crate::Int,
 > RoundFrom<f64> for Posit<N, ES, Int> {
+  /// Convert an `f64` into a `Posit`, [rounding according to the standard]:
+  ///
+  /// - If the value is any infinity or any NaN, it converts to [`NaR`](Posit::NAR).
+  /// - Otherwise, the float value is rounded (if necessary).
+  ///
+  /// [rounding according to the standard]: https://posithub.org/docs/posit_standard-2.pdf#subsection.6.5
   fn round_from(value: f64) -> Self {
     use core::num::FpCategory;
     match value.classify() {

@@ -19,7 +19,7 @@ unsafe fn round_from_signed<
   let shift_right = if const { Int::BITS >= FromInt::BITS } {0} else {FromInt::BITS - Int::BITS};
 
   // If converting into a wider type (`FromInt` → `Int`), we need to shift left, *after* we convert
-  // to the wider type. 
+  // to the wider type.
   let shift_left = if const { Int::BITS <= FromInt::BITS } {0} else {Int::BITS - FromInt::BITS};
 
   // To turn the `int` into a `frac` that starts with `0b01` or `0b10`, find the number of leading
@@ -63,6 +63,12 @@ macro_rules! make_impl {
       const ES: u32,
       Int: crate::Int,
     > RoundFrom<$t> for Posit<N, ES, Int> {
+      #[doc = concat!("Convert an `", stringify!($t), "` into a `Posit`, [rounding according to the standard]:")]
+      #[doc = ""]
+      #[doc = concat!("  - If the value is [`", stringify!($t), "::MIN`] (i.e. the value where the most significant bit is 1 and the rest are 0), it converts to [`NaR`](Posit::NAR).")]
+      #[doc = "  - Otherwise, the integer value is rounded (if necessary)."]
+      #[doc = ""]
+      #[doc = "[rounding according to the standard]: https://posithub.org/docs/posit_standard-2.pdf#subsection.6.4"]
       fn round_from(value: $t) -> Self {
         if value == <$t>::MIN {
           return Self::NAR
