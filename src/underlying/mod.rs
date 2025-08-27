@@ -11,6 +11,7 @@ pub trait Int: Sealed {}
 
 /// Actual operations implemented here.
 pub trait Sealed:
+  core::fmt::Debug +
   Copy + Clone +
   Eq + Ord +
   core::fmt::Debug + core::fmt::Display + core::fmt::Binary +
@@ -28,6 +29,7 @@ pub trait Sealed:
   From<bool> + Into<i128>
 {
   type Unsigned;
+  type Double: Double<Single = Self>;
 
   const ZERO: Self;
   const ONE: Self;
@@ -98,8 +100,35 @@ pub trait Sealed:
   /// return `(self.midpoint(other), true)` (i.e. `(self + other) / 2` as if it were evaluated in
   /// a sufficiently large type).
   fn overflowing_add_shift(self, other: Self) -> (Self, bool);
+
+  /// Multiply without overflow or loss of precision, by returning a type that's twice as wide as
+  /// `Self`.
+  fn doubling_mul(self, other: Self) -> Self::Double;
+}
+
+/// This trait models the type that is an `Int` with twice the precision (e.g. `i32::Double` =
+/// `i64`). The two ways to convert between the two are by:
+///
+///   - By multipling two `Int`s with no loss of precision, fitting into a `Double`
+///     (`doubling_mul`)
+///   - By breaking a `Double` into its hi and lo `Int`s (`components`)
+pub trait Double:
+  core::fmt::Debug +
+  Copy + Clone +
+  Eq + Ord +
+  core::ops::Shl<u32, Output=Self> +
+  core::ops::Shr<u32, Output=Self> +
+{
+  type Single: Int;
+
+  /// Break a `Double` down into its high and low `Int`s, respectively.
+  fn components_hi_lo(self) -> (Self::Single, Self::Single);
+
+  /// See [Sealed::leading_run_minus_one].
+  unsafe fn leading_run_minus_one(self) -> u32;
 }
 
 mod int;
+mod double;
 mod const_as;
 pub use const_as::const_as;

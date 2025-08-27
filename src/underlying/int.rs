@@ -1,9 +1,10 @@
-use super::*;
+use super::{Int, Sealed};
 
 /// Implementation of almost all functions, a couple nasty ones need handwritten impls!
 macro_rules! impl_common {
-  ($int:ty, $uint:ty, $nonzero:ident) => {
+  ($int:ty, $uint:ty, $double:ty, $nonzero:ident) => {
     type Unsigned = $uint;
+    type Double = $double;
 
     const ZERO: Self = 0;
     const ONE: Self = 1;
@@ -107,9 +108,22 @@ macro_rules! impl_common {
   }
 }
 
+macro_rules! impl_common_doubling {
+  ($double:ty) => {
+    #[inline]
+    fn doubling_mul(self, other: Self) -> Self::Double {
+      self as $double * other as $double
+    }
+  }
+}
+
 impl Int for i128 {}
 impl Sealed for i128 {
-  impl_common!{i128, u128, NonZeroI128}
+  impl_common!{i128, u128, super::double::Pair<i128>, NonZeroI128}
+
+  fn doubling_mul(self, other: Self) -> Self::Double {
+    todo!()
+  }
 
   fn overflowing_add_shift(self, rhs: Self) -> (Self, bool) {
     let (mut result, carry) = self.overflowing_add(rhs);
@@ -121,7 +135,8 @@ impl Sealed for i128 {
 
 impl Int for i64 {}
 impl Sealed for i64 {
-  impl_common!{i64, u64, NonZeroI64}
+  impl_common!{i64, u64, i128, NonZeroI64}
+  impl_common_doubling!{i128}
 
   fn overflowing_add_shift(self, rhs: Self) -> (Self, bool) {
     let (mut result, carry) = self.overflowing_add(rhs);
@@ -133,7 +148,8 @@ impl Sealed for i64 {
 
 impl Int for i32 {}
 impl Sealed for i32 {
-  impl_common!{i32, u32, NonZeroI32}
+  impl_common!{i32, u32, i64, NonZeroI32}
+  impl_common_doubling!{i64}
 
   fn overflowing_add_shift(self, rhs: Self) -> (Self, bool) {
     let (mut result, carry) = self.overflowing_add(rhs);
@@ -145,7 +161,8 @@ impl Sealed for i32 {
 
 impl Int for i16 {}
 impl Sealed for i16 {
-  impl_common!{i16, u16, NonZeroI16}
+  impl_common!{i16, u16, i32, NonZeroI16}
+  impl_common_doubling!{i32}
 
   fn overflowing_add_shift(self, rhs: Self) -> (Self, bool) {
     let (mut result, carry) = self.overflowing_add(rhs);
@@ -157,7 +174,8 @@ impl Sealed for i16 {
 
 impl Int for i8 {}
 impl Sealed for i8 {
-  impl_common!{i8, u8, NonZeroI8}
+  impl_common!{i8, u8, i16, NonZeroI8}
+  impl_common_doubling!{i16}
 
   fn overflowing_add_shift(self, rhs: Self) -> (Self, bool) {
     let (mut result, carry) = self.overflowing_add(rhs);
