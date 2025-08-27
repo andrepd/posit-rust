@@ -52,9 +52,9 @@ impl<T> RoundFrom<T> for T {
   }
 }
 
-impl<T, U> RoundInto<U> for T where U: From<T> {
+impl<T, U> RoundInto<U> for T where U: RoundFrom<T> {
   fn round_into(self) -> U {
-    U::from(self)
+    U::round_from(self)
   }
 }
 
