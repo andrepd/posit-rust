@@ -4,15 +4,14 @@ use crate::underlying::const_as;
 
 /// The kernel for converting a signed int to a posit.
 ///
-/// If `value` is `FromInt::MIN`, calling this function is *undefined behaviour*.
-unsafe fn round_from_signed<
+/// If `value` is `FromInt::ZERO` or `FromInt::MIN`, calling this function is *undefined behaviour*.
+#[inline]
+unsafe fn round_from_signed_kernel<
   FromInt: crate::Int,
   const N: u32,
   const ES: u32,
   Int: crate::Int,
->(int: FromInt) -> Posit<N, ES, Int> {
-  if int == FromInt::ZERO { return Posit::ZERO }
-
+>(int: FromInt) -> (Decoded<N, ES, Int>, Int) {
   // If converting into a narrower type (`FromInt` → `Int`), we need to shift right, *before* we
   // convert to the narrower type. Some bits will be lost in this conversion; we will accumulate
   // them into `sticky`.
@@ -43,16 +42,33 @@ unsafe fn round_from_signed<
   let exp = const_as::<i32, Int>(Decoded::<N, ES, FromInt>::FRAC_WIDTH.wrapping_sub(underflow) as i32);
   let sticky = Int::from(int.mask_lsb(shift_right.saturating_sub(underflow)) != FromInt::ZERO);
 
+  (Decoded{frac, exp}, sticky)
+}
+
+#[inline]
+fn round_from_signed<
+  FromInt: crate::Int,
+  const N: u32,
+  const ES: u32,
+  Int: crate::Int,
+>(int: FromInt) -> Posit<N, ES, Int> {
+  // Handle 0 and MIN. Remember that according to the standard, MIN (i.e. bit pattern 0b1000…), is
+  // converted to NaR, and NaR is converted MIN.
+  if int == FromInt::ZERO { return Posit::ZERO }
+  if int == FromInt::MIN { return Posit::NAR }
+
   // This piece of code is only necessary in really extreme cases, like converting i128::MAX into
   // an 8-bit posit. But in those cases, we do need to guard against overflow on `exp`.
   if const { FromInt::BITS as i128 > 1 << Decoded::<N, ES, Int>::FRAC_WIDTH } {
     let limit = FromInt::ONE << (1 << Decoded::<N, ES, Int>::FRAC_WIDTH);
-    if int >= limit { return Posit::MAX }
+    if int >=  limit { return Posit::MAX }
     if int <= -limit { return Posit::MIN }
   }
 
-  // SAFETY: `frac` is not underflowing and `exp` cannot be greater than `FromInt::BITS`.
-  unsafe { Decoded{frac, exp}.encode_regular_round(sticky) }
+  // SAFETY: `value` is not 0 or MIN
+  let (result, sticky) = unsafe { round_from_signed_kernel(int) };
+  // SAFETY: `frac` is not underflowing and `exp` cannot be greater than `FromInt::BITS`
+  unsafe { result.encode_regular_round(sticky) }
 }
 
 macro_rules! make_impl {
@@ -69,14 +85,9 @@ macro_rules! make_impl {
       #[doc = ""]
       #[doc = "[rounding according to the standard]: https://posithub.org/docs/posit_standard-2.pdf#subsection.6.4"]
       fn round_from(value: $t) -> Self {
-        if value == <$t>::MIN {
-          return Self::NAR
-        } else {
-          // SAFETY: `value` is not NAR
-          unsafe { round_from_signed(value) }
-        }
+        round_from_signed(value)
       }
-    }    
+    }
   }
 }
 
@@ -119,63 +130,63 @@ mod tests {
 
         #[test]
         fn posit_10_0_exhaustive() {
-          for int in $t::MIN .. $t::MAX {
+          for int in $t::MIN ..= $t::MAX {
             assert!(is_correct_rounded::<$t, 10, 0, i16>(int), "{:?}", int)
           }
         }
 
         #[test]
         fn posit_10_1_exhaustive() {
-          for int in $t::MIN .. $t::MAX {
+          for int in $t::MIN ..= $t::MAX {
             assert!(is_correct_rounded::<$t, 10, 1, i16>(int), "{:?}", int)
           }
         }
 
         #[test]
         fn posit_10_2_exhaustive() {
-          for int in $t::MIN .. $t::MAX {
+          for int in $t::MIN ..= $t::MAX {
             assert!(is_correct_rounded::<$t, 10, 2, i16>(int), "{:?}", int)
           }
         }
 
         #[test]
         fn posit_10_3_exhaustive() {
-          for int in $t::MIN .. $t::MAX {
+          for int in $t::MIN ..= $t::MAX {
             assert!(is_correct_rounded::<$t, 10, 3, i16>(int), "{:?}", int)
           }
         }
 
         #[test]
         fn posit_8_0_exhaustive() {
-          for int in $t::MIN .. $t::MAX {
+          for int in $t::MIN ..= $t::MAX {
             assert!(is_correct_rounded::<$t, 8, 0, i8>(int), "{:?}", int)
           }
         }
 
         #[test]
         fn p8_exhaustive() {
-          for int in $t::MIN .. $t::MAX {
+          for int in $t::MIN ..= $t::MAX {
             assert!(is_correct_rounded::<$t, 8, 2, i8>(int), "{:?}", int)
           }
         }
 
         #[test]
         fn p16_exhaustive() {
-          for int in $t::MIN .. $t::MAX {
+          for int in $t::MIN ..= $t::MAX {
             assert!(is_correct_rounded::<$t, 16, 2, i16>(int), "{:?}", int)
           }
         }
 
         #[test]
         fn p32_exhaustive() {
-          for int in $t::MIN .. $t::MAX {
+          for int in $t::MIN ..= $t::MAX {
             assert!(is_correct_rounded::<$t, 32, 2, i32>(int), "{:?}", int)
           }
         }
 
         #[test]
         fn p64_exhaustive() {
-          for int in $t::MIN .. $t::MAX {
+          for int in $t::MIN ..= $t::MAX {
             assert!(is_correct_rounded::<$t, 64, 2, i64>(int), "{:?}", int)
           }
         }
