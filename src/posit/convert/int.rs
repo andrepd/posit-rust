@@ -51,7 +51,6 @@ unsafe fn round_from_signed<
     if int <= -limit { return Posit::MIN }
   }
 
-  if frac == Int::ZERO { return Posit::ZERO }
   // SAFETY: `frac` is not underflowing and `exp` cannot be greater than `FromInt::BITS`.
   unsafe { Decoded{frac, exp}.encode_regular_round(sticky) }
 }
