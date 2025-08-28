@@ -61,6 +61,19 @@ fn add_kernel_p32(c: &mut Criterion) {
   g.finish();
 }
 
+fn mul_kernel_p32(c: &mut Criterion) {
+  let mut g = c.benchmark_group("mul_kernel_p32");
+  for (x, y) in NUMS_32.iter().zip(NUMS_32.iter().skip(1)) {
+    let x_dec = unsafe { x.bench_decode_regular() };
+    let y_dec = unsafe { y.bench_decode_regular() };
+    g.throughput(Throughput::Elements(1));
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:032b}/0b{:032b}", x.to_bits(), y.to_bits())), &(x_dec, y_dec), |b, &(x, y)| {
+      b.iter(|| unsafe { p32::bench_mul_kernel(black_box(x), black_box(y)) } );
+    });
+  }
+  g.finish();
+}
+
 fn add_p32(c: &mut Criterion) {
   let mut g = c.benchmark_group("add_p32");
   for (&x, &y) in NUMS_32.iter().zip(NUMS_32.iter().skip(1)) {
@@ -78,6 +91,17 @@ fn sub_p32(c: &mut Criterion) {
     g.throughput(Throughput::Elements(1));
     g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:032b}/0b{:032b}", x.to_bits(), y.to_bits())), &(x, y), |b, &(x, y)| {
       b.iter(|| black_box(x) - black_box(y) );
+    });
+  }
+  g.finish();
+}
+
+fn mul_p32(c: &mut Criterion) {
+  let mut g = c.benchmark_group("mul_p32");
+  for (&x, &y) in NUMS_32.iter().zip(NUMS_32.iter().skip(1)) {
+    g.throughput(Throughput::Elements(1));
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:032b}/0b{:032b}", x.to_bits(), y.to_bits())), &(x, y), |b, &(x, y)| {
+      b.iter(|| black_box(x) * black_box(y) );
     });
   }
   g.finish();
@@ -126,6 +150,19 @@ fn add_kernel_p64(c: &mut Criterion) {
   g.finish();
 }
 
+fn mul_kernel_p64(c: &mut Criterion) {
+  let mut g = c.benchmark_group("mul_kernel_p64");
+  for (x, y) in NUMS_64.iter().zip(NUMS_64.iter().skip(1)) {
+    let x_dec = unsafe { x.bench_decode_regular() };
+    let y_dec = unsafe { y.bench_decode_regular() };
+    g.throughput(Throughput::Elements(1));
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:064b}/0b{:064b}", x.to_bits(), y.to_bits())), &(x_dec, y_dec), |b, &(x, y)| {
+      b.iter(|| unsafe { p64::bench_mul_kernel(black_box(x), black_box(y)) } );
+    });
+  }
+  g.finish();
+}
+
 fn add_p64(c: &mut Criterion) {
   let mut g = c.benchmark_group("add_p64");
   for (&x, &y) in NUMS_64.iter().zip(NUMS_64.iter().skip(1)) {
@@ -143,6 +180,17 @@ fn sub_p64(c: &mut Criterion) {
     g.throughput(Throughput::Elements(1));
     g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:064b}/0b{:064b}", x.to_bits(), y.to_bits())), &(x, y), |b, &(x, y)| {
       b.iter(|| black_box(x) - black_box(y) );
+    });
+  }
+  g.finish();
+}
+
+fn mul_p64(c: &mut Criterion) {
+  let mut g = c.benchmark_group("mul_p64");
+  for (&x, &y) in NUMS_64.iter().zip(NUMS_64.iter().skip(1)) {
+    g.throughput(Throughput::Elements(1));
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:064b}/0b{:064b}", x.to_bits(), y.to_bits())), &(x, y), |b, &(x, y)| {
+      b.iter(|| black_box(x) * black_box(y) );
     });
   }
   g.finish();
@@ -172,4 +220,11 @@ criterion_group!(add,
   sub_p64,
 );
 
-criterion_main!(baseline_fpu, decode, encode, add);
+criterion_group!(mul,
+  mul_kernel_p32,
+  mul_kernel_p64,
+  mul_p32,
+  mul_p64,
+);
+
+criterion_main!(baseline_fpu, decode, encode, add, mul);

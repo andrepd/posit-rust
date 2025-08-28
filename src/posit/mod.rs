@@ -79,8 +79,12 @@ mod encode;
 /// Small fns of one posit argument: neg, prior, next, is_positive, etc.
 mod unary;
 
-/// Addition and subtraction.
+/// Addition and subtraction (both use the same addition algorithm, and `a - b` is simply
+/// `a + (-b)`.
 mod add;
+
+/// Multiplication.
+mod mul;
 
 /// Conversions to and from integers, to and from floats, and between different posit types.
 ///
