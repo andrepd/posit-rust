@@ -109,11 +109,22 @@ macro_rules! impl_common {
 }
 
 macro_rules! impl_common_doubling {
-  ($double:ty) => {
+  ($int:ty, $double:ty) => {
     #[inline]
     fn doubling_mul(self, other: Self) -> Self::Double {
       self as $double * other as $double
     }
+
+    fn shift_div_rem(self, other: Self, precision: u32) -> (Self, Self) {
+      let a = self as $double << precision;
+      let b = other as $double;
+      let mut div = a / b;
+      let rem = a % b;
+      // PDP/C/Rust division rounds towards 0, not towards -∞. For positive numbers this is the
+      // same. For negative numbers, we need to subtract 1 if the division is inexact.
+      div -= ((div < 0) & (rem != 0)) as $double;
+      (div as $int, rem as $int)
+    }    
   }
 }
 
@@ -122,6 +133,10 @@ impl Sealed for i128 {
   impl_common!{i128, u128, super::double::Pair<i128>, NonZeroI128}
 
   fn doubling_mul(self, other: Self) -> Self::Double {
+    todo!()
+  }
+
+  fn shift_div_rem(self, other: Self, precision: u32) -> (Self, Self) {
     todo!()
   }
 
@@ -136,7 +151,7 @@ impl Sealed for i128 {
 impl Int for i64 {}
 impl Sealed for i64 {
   impl_common!{i64, u64, i128, NonZeroI64}
-  impl_common_doubling!{i128}
+  impl_common_doubling!{i64, i128}
 
   fn overflowing_add_shift(self, rhs: Self) -> (Self, bool) {
     let (mut result, carry) = self.overflowing_add(rhs);
@@ -149,7 +164,7 @@ impl Sealed for i64 {
 impl Int for i32 {}
 impl Sealed for i32 {
   impl_common!{i32, u32, i64, NonZeroI32}
-  impl_common_doubling!{i64}
+  impl_common_doubling!{i32, i64}
 
   fn overflowing_add_shift(self, rhs: Self) -> (Self, bool) {
     let (mut result, carry) = self.overflowing_add(rhs);
@@ -162,7 +177,7 @@ impl Sealed for i32 {
 impl Int for i16 {}
 impl Sealed for i16 {
   impl_common!{i16, u16, i32, NonZeroI16}
-  impl_common_doubling!{i32}
+  impl_common_doubling!{i16, i32}
 
   fn overflowing_add_shift(self, rhs: Self) -> (Self, bool) {
     let (mut result, carry) = self.overflowing_add(rhs);
@@ -175,7 +190,7 @@ impl Sealed for i16 {
 impl Int for i8 {}
 impl Sealed for i8 {
   impl_common!{i8, u8, i16, NonZeroI8}
-  impl_common_doubling!{i16}
+  impl_common_doubling!{i8, i16}
 
   fn overflowing_add_shift(self, rhs: Self) -> (Self, bool) {
     let (mut result, carry) = self.overflowing_add(rhs);

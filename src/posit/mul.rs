@@ -16,9 +16,14 @@ impl<
     // In other words: the resulting `exp` is just the sum of the `exp`s, and the `frac` is the
     // product of the `frac`s divided by `FRAC_DENOM`. Since we know `FRAC_DENOM` = `2^FRAC_WIDTH`
     // = `2^(Int::BITS - 2)`, we can re-arrange the expression one more time:
-    // 
+    //
     //   = (x.frac * y.frac / 2^FRAC_WIDTH) / FRAC_DENOM * 2^(x.exp + y.exp)
     //   = ((x.frac * y.frac) >> Int::BITS) / FRAC_DENOM * 2^(x.exp + y.exp + 2)
+    //
+    // Meaning the result has
+    //
+    //   frac = (x.frac * y.frac) >> Int::BITS
+    //    exp = x.exp + y.exp + 2
     //
     // Only a couple other points to keep in mind:
     //
@@ -31,6 +36,11 @@ impl<
     //     that happens, we may need to shift 1 or 2 places left. For example: 1. × 1. = 1., but
     //     1.5 × 1.5 = 2.25; the former is good, the latter needs an extra shift by 1 to become
     //     1.125. Of course, if we shift the `frac` left by n places we must subtract n from `exp`.
+    //
+    // Keeping these points in mind, the final result is
+    //
+    //   frac = (x.frac * y.frac) << underflow >> Int::BITS
+    //    exp = x.exp + y.exp + 2 - underflow
 
     use crate::underlying::Double;
     let mul = x.frac.doubling_mul(y.frac);

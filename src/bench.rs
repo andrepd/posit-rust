@@ -18,6 +18,10 @@ impl<
   pub unsafe fn bench_mul_kernel(a: Decoded<N, ES, Int>, b: Decoded<N, ES, Int>) -> (Decoded<N, ES, Int>, Int) {
     unsafe { Self::mul_kernel(a, b) }
   }
+
+  pub unsafe fn bench_div_kernel(a: Decoded<N, ES, Int>, b: Decoded<N, ES, Int>) -> (Decoded<N, ES, Int>, Int) {
+    unsafe { Self::div_kernel(a, b) }
+  }
 }
 
 impl<
@@ -174,4 +178,44 @@ pub fn mul_32(x: Posit<32, 2, i32>, y: Posit<32, 2, i32>) -> Posit<32, 2, i32> {
 #[unsafe(no_mangle)]
 pub fn mul_64(x: Posit<64, 2, i64>, y: Posit<64, 2, i64>) -> Posit<64, 2, i64> {
   x.mul(y)
+}
+
+#[unsafe(no_mangle)]
+pub fn div_kernel_8(x: Decoded<8, 2, i8>, y: Decoded<8, 2, i8>) -> (Decoded<8, 2, i8>, i8) {
+  unsafe { Posit::<8, 2, i8>::div_kernel(x, y) }
+}
+
+#[unsafe(no_mangle)]
+pub fn div_kernel_16(x: Decoded<16, 2, i16>, y: Decoded<16, 2, i16>) -> (Decoded<16, 2, i16>, i16) {
+  unsafe { Posit::<16, 2, i16>::div_kernel(x, y) }
+}
+
+#[unsafe(no_mangle)]
+pub fn div_kernel_32(x: Decoded<32, 2, i32>, y: Decoded<32, 2, i32>) -> (Decoded<32, 2, i32>, i32) {
+  unsafe { Posit::<32, 2, i32>::div_kernel(x, y) }
+}
+
+#[unsafe(no_mangle)]
+pub fn div_kernel_64(x: Decoded<64, 2, i64>, y: Decoded<64, 2, i64>) -> (Decoded<64, 2, i64>, i64) {
+  unsafe { Posit::<64, 2, i64>::div_kernel(x, y) }
+}
+
+#[unsafe(no_mangle)]
+pub fn div_8(x: Posit<8, 2, i8>, y: Posit<8, 2, i8>) -> Posit<8, 2, i8> {
+  x.div(y)
+}
+
+#[unsafe(no_mangle)]
+pub fn div_16(x: Posit<16, 2, i16>, y: Posit<16, 2, i16>) -> Posit<16, 2, i16> {
+  x.div(y)
+}
+
+#[unsafe(no_mangle)]
+pub fn div_32(x: Posit<32, 2, i32>, y: Posit<32, 2, i32>) -> Posit<32, 2, i32> {
+  x.div(y)
+}
+
+#[unsafe(no_mangle)]
+pub fn div_64(x: Posit<64, 2, i64>, y: Posit<64, 2, i64>) -> Posit<64, 2, i64> {
+  x.div(y)
 }

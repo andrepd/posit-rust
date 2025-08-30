@@ -86,6 +86,9 @@ mod add;
 /// Multiplication.
 mod mul;
 
+/// Division.
+mod div;
+
 /// Conversions to and from integers, to and from floats, and between different posit types.
 ///
 /// Two types of conversions are implemented: the ones in the posit standard, that describe how

@@ -104,6 +104,13 @@ pub trait Sealed:
   /// Multiply without overflow or loss of precision, by returning a type that's twice as wide as
   /// `Self`.
   fn doubling_mul(self, other: Self) -> Self::Double;
+
+  /// Compute the result of `self << precision / other` and ``self << precision % other` without
+  /// overflow or loss of precision, by using a type that's twice as wide as `Self` for the
+  /// intermediate computation.
+  ///
+  /// Returns a tuple (`quotient`, `remainder`).
+  fn shift_div_rem(self, other: Self, precision: u32) -> (Self, Self);
 }
 
 /// This trait models the type that is an `Int` with twice the precision (e.g. `i32::Double` =
