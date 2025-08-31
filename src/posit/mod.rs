@@ -16,6 +16,11 @@
 //!   - **Leftmost bits/msb**: most-significant bits.
 //!   - **Rightmost bits/lsb**: least-significant bits.
 //!   - **Bit 0, bit 1, .. bit N-1**: numbered least significant to most significant.
+//!   - [a; b[ for a range that is closed (inclusive) on `a` and open (exclusive) on `b`.
+//!
+//! Suggested reading order: [Posit] and [Decoded] types, [basics] and [constants](consts),
+//! [decode] implementation (Posit→Decoded), [encode] implementation (Decoded→Posit),
+//! [elementary arithmetic](ops).
 
 /// A Posit floating point number with `N` bits and `ES` exponent bits, using `Int` as its
 /// underlying type.
@@ -38,20 +43,37 @@ pub struct Posit<
   Int: crate::Int,
 > (Int);
 
-/// In order to perform most nontrivial operations, a `Posit<N, ES, Int>` needs to be decoded into
-/// a fraction (i.e. mantissa) and an exponent, represented as a `Decoded<N, ES, Int>`. This
-/// struct is such that it represents a posit
+/// In order to perform most nontrivial operations, a `Posit<N, ES, Int>` needs to be *decoded*
+/// into the form `f × 2^e` (with rational fraction `f` and integer exponent `e`), a form that is
+/// amenable for further manipulation.
+///
+/// This is represented as a `Decoded<N, ES, Int>`, a struct that contains two integer fields,
+/// `frac` and `exp`, such that it represents the value
 ///
 /// ```md
 /// `frac` / `FRAC_DENOM` × 2 ^ `exp`
 /// ```
 ///
-/// where both `frac` and `exp` are signed `Int`s, and `FRAC_DENOM` is a fixed power of two. See
-/// the docstrings for [both](Decoded::frac) [fields](Decoded::exp) for more detail about their
-/// values.
+/// where `FRAC_DENOM` is a fixed power of two, `2 ^ (B-2)`, where `B` = `Int::BITS`.
+///
+/// That is to say: this encodes the `f × 2^e` referred above using two integers: the integer `exp`
+/// is the integer `e`, and the integer `frac` is the rational `f` *with an implicit denominator*
+/// of `1 << (B-2)`.
+///
+/// Another way to think of it is that `frac` is a fixed-point rational number, where the dot is
+/// two places from the left. For instance (for an 8-bit `frac`):
+///
+///   - 0b01_000000 = +1.00
+///   - 0b01_100000 = +1.50
+///   - 0b10_000000 = -2.00
+///   - 0b11_100000 = -0.50
+///
+/// and so on. See the docstrings for [both](Decoded::frac) [fields](Decoded::exp) for more detail
+/// about their values.
 ///
 /// Extracting these fields from a posit, and converting back to a posit with correct rounding, can
-/// be done *very* efficiently.
+/// be done **very** efficiently, and indeed those two algorithms lie at the heart of many
+/// operations.
 #[derive(Clone, Copy)]
 #[derive(Eq, PartialEq, Hash)]
 pub struct Decoded<
@@ -59,7 +81,64 @@ pub struct Decoded<
   const ES: u32,
   Int: crate::Int,
 > {
+  /// The `frac`tion is the `frac / FRAC_DENOM` part of the posit value. Since the constant
+  /// `FRAC_DENOM` = `1 << (Int::BITS - 2)` is fixed, one can simply look at the values of `frac`
+  /// as fixed-point numbers where the dot is two places from the left.
+  ///
+  /// Examples (8-bit posit):
+  ///
+  ///   - `0b01_000000`  = +1.0
+  ///   - `0b01_100000`  = +1.5
+  ///   - `0b01_110000`  = +1.75
+  ///   - `0b01_010000`  = +1.25
+  ///   - `0b01_111111`  = +1.984375
+  ///
+  /// and negative numbers
+  ///
+  ///   - `0b10_000000`  = -2.0
+  ///   - `0b10_100000`  = -1.5
+  ///   - `0b10_110000`  = -1.25
+  ///   - `0b10_010000`  = -1.75
+  ///   - `0b10_000001`  = -1.015625
+  ///   - `0b10_111111`  = -1.984375
+  ///
+  /// # Valid ranges
+  ///
+  /// Now, the result of [Posit::decode_regular] always has a `frac` lying within the following
+  /// ranges:
+  ///
+  ///   - [+1.0, +2.0[ for positive numbers
+  ///   - [-2.0, -1.0[ for negative numbers
+  ///
+  /// Note that these are not symmetric! In particular, a positive `frac` may be +1.0
+  /// (`0b01_000…`) but not +2.0, and a negative `frac` may be -2.0 (`0b10_000…`) but not -1.0.
+  /// This is an artefact of how the posit format works, and it enables very efficient
+  /// implementations at key points in many algorithms.
+  ///
+  /// In terms of bit patterns, this corresponds to requiring that the `frac` starts with either
+  /// `0b01` (positive) or `0b10` (negative), and never with `0b00` or `0b11`.
+  ///
+  /// Likewise, for the input to [Decoded::encode_regular] we **also** require that `frac` **must**
+  /// always be in such a valid range. Whenever this is not the case, we say that the `frac`
+  /// is "*underflowing*".
+  ///
+  /// Often, when we feed a [Decoded] to [Decoded::encode_regular], such as when implementing
+  /// arithmetic operations, we will need to adjust the `frac` so that it is in the correct range
+  /// (and possibly compensate by adjusting the `exp`onent in the opposite direction).
   pub frac: Int,
+  /// The `exp`onent is the `2 ^ exp` part. of the posit value.
+  ///
+  /// # Valid ranges
+  ///
+  /// For reasons that become apparent when implementing [Self::encode_regular], we will also
+  /// require that `exp` lies in a certain range, namely between `Int::MIN / 2` and `Int::MAX /
+  /// 2`, inclusive.
+  ///
+  /// In terms of bit patterns, this corresponds to requiring that `exp` starts with `0b00`
+  /// (positive) or `0b11` (negative), and never with `0b01` or `0b10`.
+  ///
+  /// This is not a concern unless `ES` takes absurdly big values, in which case compile-time
+  /// checks will trigger an error.
   pub exp: Int,
 }
 
@@ -84,9 +163,12 @@ mod ops;
 
 /// Conversions to and from integers, to and from floats, and between different posit types.
 ///
-/// Two types of conversions are implemented: the ones in the posit standard, that describe how
-/// rounding is to be done, and "Rusty" conversions using `from` for unfallible conversions and
-/// `try_from` for fallible ones.
+/// Two sorts of conversions are implemented: 
+///   - The conversions prescribed in the posit standard (using `round_from`).
+///   - The "Rusty" conversions (using `from` for unfallible conversions and `try_from` for
+///     fallible ones).
+///
+/// The [convert::RoundFrom] and [convert::RoundInto] traits are defined here.
 pub mod convert;
 
 /// Traits for [`core::fmt::Display`] and [`core::fmt::Debug`].

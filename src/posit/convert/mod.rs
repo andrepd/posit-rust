@@ -13,6 +13,8 @@ use super::*;
 ///   - If the value is smaller in absolute value than the smallest positive posit, round to it.
 ///   - Otherwise, round to the nearest bit pattern, or in case of a tie, to the even bit pattern.
 ///
+/// For the exact rules, consult the documentation for specific implementations of [`RoundFrom`].
+///
 /// For more information, refer to the documentation of [`From`]. The same guidelines apply: prefer
 /// implementing [`RoundFrom`] over [`RoundInto`] because implementing [`RoundFrom`] automatically
 /// provides one with an implementation of[`RoundInto`], and prefer using [`RoundInto`] over
