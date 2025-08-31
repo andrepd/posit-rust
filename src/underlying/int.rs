@@ -59,8 +59,7 @@ macro_rules! impl_common {
 
     #[inline]
     fn get_lsb(self) -> bool {
-      // SAFETY: `self as u8 & 1` can only be 0 or 1
-      unsafe { core::mem::transmute::<u8, bool>(self as u8 & 1) }
+      self & 1 == 1
     }
 
     fn leading_zeros(self) -> u32 {
