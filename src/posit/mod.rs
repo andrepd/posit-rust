@@ -25,7 +25,7 @@
 /// A Posit floating point number with `N` bits and `ES` exponent bits, using `Int` as its
 /// underlying type.
 ///
-/// Examples:
+/// # Examples:
 ///
 /// ```
 /// # use fast_posit::Posit;
@@ -34,6 +34,9 @@
 /// type Bar = Posit::<6, 1, i8>;  // A 6-bit posit with 1-bit exponent field, represented in an
 ///                                // 8-bit machine type.
 /// ```
+///
+/// Type aliases are provided at the crate root for the posit types defined in
+/// [the standard](https://posithub.org/docs/posit_standard-2.pdf#subsection.3.1).
 #[derive(Clone, Copy)]
 #[derive(Eq, PartialEq, Ord, PartialOrd, Hash)]  // Eq and Ord are the same as for two's complement int
 #[derive(Default)]

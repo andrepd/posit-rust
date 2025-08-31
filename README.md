@@ -51,10 +51,29 @@ This crate has the following objectives, in order of importance:
   interested in learning more about posits, or about software implementation of floating point
   formats in general, you may benefit from reading through this code!
 
+This crate aims to implement the entire posit standard and beyond, including features such as
+arbitrary posit and quire sizes beyond those prescribed by the standard. Versions prior to 1.0.0,
+however, may be incomplete.
+
 ## Usage
 
 ```rust
-// TODO
+// Use standard posit types, or define your own.
+use fast_posit::{p8, p16, p32, p64};  // Standard: n bits, 2 exponent bits
+type MyPosit = Posit<24, 3, i32>;  // Non-standard: 24 bits, 3 exponent bits
+
+// Create posits from ints, IEEE floats, strings, constants, or a raw bit representation.
+let a = p32::round_from(2.71_f64);
+let b = p32::round_from(42_i32);
+let c = p32::from_bits(0x7f001337);
+let d = p32::MIN_POSITIVE;
+
+// Perform basic arithmetic and comparisons with the usual operators.
+assert!(p16::round_from(2.14_f32) + p16::ONE == 3.14_f32.round_into());
+assert!(p16::MIN_POSITIVE < 1e-15_f32.round_into());
+
+// Convert posits back to ints, IEEE floats, strings, or a raw bit representation.
+assert_eq!(p8::ONE.to_bits(), 0b01000000)
 ```
 
 ## Performance
