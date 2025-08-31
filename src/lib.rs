@@ -38,8 +38,6 @@
 //! // Perform basic arithmetic and comparisons with the usual operators.
 //! assert!(p16::round_from(2.14_f32) + p16::ONE == 3.14_f32.round_into());
 //! assert!(p16::MIN_POSITIVE < 1e-15_f32.round_into());
-//! // # use core::f32
-//! // assert!(p16::from  p16::round_from(f32::consts::PI));
 //!
 //! // Convert posits back to ints, IEEE floats, strings, or a raw bit representation.
 //! assert_eq!(p8::ONE.to_bits(), 0b01000000)
@@ -52,8 +50,8 @@
 //! Intel x86 core at 2.80GHz. This is, as far as we're aware, faster (or at least as fast) as any
 //! freely available software implementation of posit arithmetic.
 //!
-//! Needless to say, both absolute performance and relative performance vs the FPU varies depending
-//! on your system.
+//! Needless to say, both absolute performance and relative performance vs the FPU will vary
+//! depending on your system.
 //!
 //! This crate includes benchmarks; run them with `cargo bench -F bench`.
 
