@@ -131,6 +131,15 @@ pub struct Decoded<
   pub frac: Int,
   /// The `exp`onent is the `2 ^ exp` part. of the posit value.
   ///
+  /// The `exp` field is made up from both the "regime" and "exponent" fields of a posit: the
+  /// lowest `ES` bits are the exponent field exactly, while the highest come from the regime's
+  /// length and sign. The structure is apparent when looking at the binary `exp`.
+  ///
+  /// Examples (8-bit posit, 2-bit exponent):
+  ///
+  ///   - `0b00001_01` (exp = +5, regime = +1, exponent = +1)
+  ///   - `0b11110_11` (exp = -5, regime = -2, exponent = +3)
+  ///
   /// # Valid ranges
   ///
   /// For reasons that become apparent when implementing [Self::encode_regular], we will also
@@ -166,7 +175,7 @@ mod ops;
 
 /// Conversions to and from integers, to and from floats, and between different posit types.
 ///
-/// Two sorts of conversions are implemented: 
+/// Two sorts of conversions are implemented:
 ///   - The conversions prescribed in the posit standard (using `round_from`).
 ///   - The "Rusty" conversions (using `from` for unfallible conversions and `try_from` for
 ///     fallible ones).

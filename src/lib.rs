@@ -1,4 +1,5 @@
 #![cfg_attr(not(test), no_std)]
+
 //! This crate provides a correct, clean, flexible, and 🚀 *fast* software implementation of
 //! [Posit arithmetic](https://posithub.org/docs/posit_standard-2.pdf).
 //!
