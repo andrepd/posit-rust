@@ -173,6 +173,9 @@ mod unary;
 /// The four basic arithmetic operations: +, -, ×, ÷.
 mod ops;
 
+/// Quire (the fixed-point accumulator for error-free sums and dot products)
+pub mod quire;
+
 /// Conversions to and from integers, to and from floats, and between different posit types.
 ///
 /// Two sorts of conversions are implemented:

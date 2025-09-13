@@ -60,6 +60,7 @@ mod posit;
 mod underlying;
 
 pub use posit::Posit;
+pub use posit::quire::Quire;
 pub use underlying::Int;
 
 /// Standard-defined 8-bit posit (with 2-bit exponent).
