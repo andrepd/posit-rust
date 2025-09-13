@@ -111,6 +111,17 @@ pub trait Sealed:
   ///
   /// Returns a tuple (`quotient`, `remainder`).
   fn shift_div_rem(self, other: Self, precision: u32) -> (Self, Self);
+
+  /// Compute the result of a multiword left-shift. The return value is `(hi, lo, index)`, such
+  /// that, in terms of infinite precision arithmetic:
+  ///
+  /// ```ignore
+  /// self << n = (hi << Self::BITS + lo) << (8 * index)
+  /// ```
+  ///
+  /// That is, `hi, lo` are the high and low words of the shifted result, and `index` is the offset
+  /// in _bytes_, useful if we're representing the multiword number in an array.
+  fn multiword_shl(self, n: u32) -> (Self, Self, usize);
 }
 
 /// This trait models the type that is an `Int` with twice the precision (e.g. `i32::Double` =

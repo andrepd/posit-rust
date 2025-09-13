@@ -104,6 +104,15 @@ macro_rules! impl_common {
 
     #[inline]
     fn overflowing_add(self, other: Self) -> (Self, bool) { self.overflowing_add(other) }
+
+    fn multiword_shl(self, n: u32) -> (Self, Self, usize) {
+      // Codegen seems pretty great when looking in godbolt!
+      let bytes = n / Self::BITS * Self::BITS / 8;
+      let bits = n % Self::BITS;
+      let lo = self << bits;
+      let hi = self >> (Self::BITS - bits);
+      (hi, lo, bytes as usize)
+    }
   }
 }
 
@@ -280,6 +289,63 @@ mod tests {
     assert_eq!(
       (0b10_000000u8 as i8).overflowing_add_shift(0b10_011000u8 as i8),
       (0b10_001100u8 as i8, true)
+    );
+  }
+
+  #[test]
+  #[allow(overflowing_literals)]
+  fn multiword_shl_small() {
+    assert_eq!(
+      (0x1234abcd_i32).multiword_shl(4),
+      (0x00000001, 0x234abcd0, 0),
+    );
+    assert_eq!(
+      (0xa234abcd_i32).multiword_shl(4),
+      (0xfffffffa, 0x234abcd0, 0),
+    );
+  }
+
+  #[test]
+  #[allow(overflowing_literals)]
+  fn multiword_shl_exact() {
+    assert_eq!(
+      (0x1234abcd_i32).multiword_shl(32 + 4),
+      (0x00000001, 0x234abcd0, 4),
+    );
+    assert_eq!(
+      (0xa234abcd_i32).multiword_shl(32 + 4),
+      (0xfffffffa, 0x234abcd0, 4),
+    );
+
+    assert_eq!(
+      (0x1234abcd_i32).multiword_shl(64 + 4),
+      (0x00000001, 0x234abcd0, 8),
+    );
+    assert_eq!(
+      (0xa234abcd_i32).multiword_shl(64 + 4),
+      (0xfffffffa, 0x234abcd0, 8),
+    );
+  }
+
+  #[test]
+  #[allow(overflowing_literals)]
+  fn multiword_shl_inexact() {
+    assert_eq!(
+      (0x1234abcd_i32).multiword_shl(16 + 4),
+      (0x0001234a, 0xbcd00000, 0),
+    );
+    assert_eq!(
+      (0xa234abcd_i32).multiword_shl(16 + 4),
+      (0xfffa234a, 0xbcd00000, 0),
+    );
+
+    assert_eq!(
+      (0x1234abcd_i32).multiword_shl(48 + 4),
+      (0x0001234a, 0xbcd00000, 4),
+    );
+    assert_eq!(
+      (0xa234abcd_i32).multiword_shl(48 + 4),
+      (0xfffa234a, 0xbcd00000, 4),
     );
   }
 }
