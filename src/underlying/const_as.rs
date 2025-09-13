@@ -50,6 +50,7 @@ pub const fn const_as<T: Int, U: Int>(x: T) -> U {
 }
 
 #[cfg(test)]
+#[allow(overflowing_literals)]
 mod tests {
   use super::*;
 
@@ -73,25 +74,25 @@ mod tests {
 
   #[test]
   fn test_4() {
-    const VALUE: i32 = const_as(0xdeadbeefi128);
-    assert_eq!(VALUE, 0xdeadbeefu32 as i32);
+    const VALUE: i32 = const_as(0xdeadbeef_i128);
+    assert_eq!(VALUE, 0xdeadbeef_i32);
   }
 
   #[test]
   fn test_5() {
-    const VALUE: i32 = const_as(0x71u8 as i8);
-    assert_eq!(VALUE, 0x00000071u32 as i32);
+    const VALUE: i32 = const_as(0x71_i8);
+    assert_eq!(VALUE, 0x00000071_i32);
   }
 
   #[test]
   fn test_6() {
-    const VALUE: i32 = const_as(0xf1u8 as i8);
-    assert_eq!(VALUE, 0xfffffff1u32 as i32);
+    const VALUE: i32 = const_as(0xf1_i8);
+    assert_eq!(VALUE, 0xfffffff1_i32);
   }
 
   #[test]
   fn test_7() {
-    const VALUE: i16 = const_as(0x1337i16);
-    assert_eq!(VALUE, 0x1337i16);
+    const VALUE: i16 = const_as(0x1337_i16);
+    assert_eq!(VALUE, 0x1337_i16);
   }
 }

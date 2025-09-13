@@ -209,67 +209,68 @@ impl Sealed for i8 {
 }
 
 #[cfg(test)]
+#[allow(overflowing_literals)]
 mod tests {
   use super::*;
 
   #[test]
   fn mask_lsb() {
     assert_eq!(0b01111110_i8.mask_lsb(3), 0b00000110_i8);
-    assert_eq!((0xabcd_u16 as i16).mask_lsb(4), 0x000d_u16 as i16);
-    assert_eq!((0xabcdabcd_u32 as i32).mask_lsb(4), 0x0000000d_u32 as i32);
-    assert_eq!((0xdeadbeefdeadbeef_u64 as i64).mask_lsb(6), 0x2f_i64);
+    assert_eq!(0xabcd_i16.mask_lsb(4), 0x000d_i16);
+    assert_eq!(0xabcdabcd_i32.mask_lsb(4), 0x0000000d_i32);
+    assert_eq!(0xdeadbeefdeadbeef_i64.mask_lsb(6), 0x2f_i64);
   }
 
   #[test]
   fn mask_msb() {
     assert_eq!(0b01111110_i8.mask_msb(3), 0b01100000_i8);
-    assert_eq!((0xabcd_u16 as i16).mask_msb(4), 0xa000_u16 as i16);
-    assert_eq!((0xabcdabcd_u32 as i32).mask_msb(4), 0xa0000000_u32 as i32);
-    assert_eq!((0xdeadbeefdeadbeef_u64 as i64).mask_msb(12), 0xdea_i64 << 52);
+    assert_eq!(0xabcd_i16.mask_msb(4), 0xa000_i16);
+    assert_eq!(0xabcdabcd_i32.mask_msb(4), 0xa0000000_i32);
+    assert_eq!(0xdeadbeefdeadbeef_i64.mask_msb(12), 0xdea_i64 << 52);
   }
 
   #[test]
   fn leading_run_minus_one_zeroes() {
     unsafe {
-      assert_eq!((0b00010101u8 as i8 as i8).leading_run_minus_one(), 2);
-      assert_eq!((0b00010101u8 as i8 as i16).leading_run_minus_one(), 8 + 2);
-      assert_eq!((0b00010101u8 as i8 as i32).leading_run_minus_one(), 24 + 2);
-      assert_eq!((0b00010101u8 as i8 as i64).leading_run_minus_one(), 56 + 2);
+      assert_eq!((0b00010101i8 as i8).leading_run_minus_one(), 2);
+      assert_eq!((0b00010101i8 as i16).leading_run_minus_one(), 8 + 2);
+      assert_eq!((0b00010101i8 as i32).leading_run_minus_one(), 24 + 2);
+      assert_eq!((0b00010101i8 as i64).leading_run_minus_one(), 56 + 2);
     }
   }
 
   #[test]
   fn leading_run_minus_one_ones() {
     unsafe {
-      assert_eq!((0b11111000u8 as i8 as i8).leading_run_minus_one(), 4);
-      assert_eq!((0b11111000u8 as i8 as i16).leading_run_minus_one(), 8 + 4);
-      assert_eq!((0b11111000u8 as i8 as i32).leading_run_minus_one(), 24 + 4);
-      assert_eq!((0b11111000u8 as i8 as i64).leading_run_minus_one(), 56 + 4);
+      assert_eq!((0b11111000i8 as i8).leading_run_minus_one(), 4);
+      assert_eq!((0b11111000i8 as i16).leading_run_minus_one(), 8 + 4);
+      assert_eq!((0b11111000i8 as i32).leading_run_minus_one(), 24 + 4);
+      assert_eq!((0b11111000i8 as i64).leading_run_minus_one(), 56 + 4);
     }
   }
 
   #[test]
   fn not_if_negative() {
-    assert_eq!((0b01110110u8 as i8 as i8).not_if_negative(1),  0b01110110u8 as i8 as i8);
-    assert_eq!((0b01110110u8 as i8 as i8).not_if_negative(-1), 0b10001001u8 as i8 as i8);
-    assert_eq!((0b01110110u8 as i8 as i16).not_if_negative(1),  0b01110110u8 as i8 as i16);
-    assert_eq!((0b01110110u8 as i8 as i16).not_if_negative(-1), 0b10001001u8 as i8 as i16);
-    assert_eq!((0b01110110u8 as i8 as i32).not_if_negative(1),  0b01110110u8 as i8 as i32);
-    assert_eq!((0b01110110u8 as i8 as i32).not_if_negative(-1), 0b10001001u8 as i8 as i32);
-    assert_eq!((0b01110110u8 as i8 as i64).not_if_negative(1),  0b01110110u8 as i8 as i64);
-    assert_eq!((0b01110110u8 as i8 as i64).not_if_negative(-1), 0b10001001u8 as i8 as i64);
+    assert_eq!((0b01110110i8 as i8).not_if_negative(1),  0b01110110i8 as i8);
+    assert_eq!((0b01110110i8 as i8).not_if_negative(-1), 0b10001001i8 as i8);
+    assert_eq!((0b01110110i8 as i16).not_if_negative(1),  0b01110110i8 as i16);
+    assert_eq!((0b01110110i8 as i16).not_if_negative(-1), 0b10001001i8 as i16);
+    assert_eq!((0b01110110i8 as i32).not_if_negative(1),  0b01110110i8 as i32);
+    assert_eq!((0b01110110i8 as i32).not_if_negative(-1), 0b10001001i8 as i32);
+    assert_eq!((0b01110110i8 as i64).not_if_negative(1),  0b01110110i8 as i64);
+    assert_eq!((0b01110110i8 as i64).not_if_negative(-1), 0b10001001i8 as i64);
   }
 
   #[test]
   fn not_if_positive() {
-    assert_eq!((0b11100110u8 as i8 as i8).not_if_positive(1),  0b00011001u8 as i8 as i8);
-    assert_eq!((0b11100110u8 as i8 as i8).not_if_positive(-1), 0b11100110u8 as i8 as i8);
-    assert_eq!((0b11100110u8 as i8 as i16).not_if_positive(1),  0b00011001u8 as i8 as i16);
-    assert_eq!((0b11100110u8 as i8 as i16).not_if_positive(-1), 0b11100110u8 as i8 as i16);
-    assert_eq!((0b11100110u8 as i8 as i32).not_if_positive(1),  0b00011001u8 as i8 as i32);
-    assert_eq!((0b11100110u8 as i8 as i32).not_if_positive(-1), 0b11100110u8 as i8 as i32);
-    assert_eq!((0b11100110u8 as i8 as i64).not_if_positive(1),  0b00011001u8 as i8 as i64);
-    assert_eq!((0b11100110u8 as i8 as i64).not_if_positive(-1), 0b11100110u8 as i8 as i64);
+    assert_eq!((0b11100110i8 as i8).not_if_positive(1),  0b00011001i8 as i8);
+    assert_eq!((0b11100110i8 as i8).not_if_positive(-1), 0b11100110i8 as i8);
+    assert_eq!((0b11100110i8 as i16).not_if_positive(1),  0b00011001i8 as i16);
+    assert_eq!((0b11100110i8 as i16).not_if_positive(-1), 0b11100110i8 as i16);
+    assert_eq!((0b11100110i8 as i32).not_if_positive(1),  0b00011001i8 as i32);
+    assert_eq!((0b11100110i8 as i32).not_if_positive(-1), 0b11100110i8 as i32);
+    assert_eq!((0b11100110i8 as i64).not_if_positive(1),  0b00011001i8 as i64);
+    assert_eq!((0b11100110i8 as i64).not_if_positive(-1), 0b11100110i8 as i64);
   }
 
   #[test]
@@ -283,17 +284,16 @@ mod tests {
       (0b01_000000i8, true)
     );
     assert_eq!(
-      (0b10_000000u8 as i8).overflowing_add_shift(0b01_011000u8 as i8),
-      (0b11_011000u8 as i8, false)
+      (0b10_000000i8).overflowing_add_shift(0b01_011000i8),
+      (0b11_011000i8, false)
     );
     assert_eq!(
-      (0b10_000000u8 as i8).overflowing_add_shift(0b10_011000u8 as i8),
-      (0b10_001100u8 as i8, true)
+      (0b10_000000i8).overflowing_add_shift(0b10_011000i8),
+      (0b10_001100i8, true)
     );
   }
 
   #[test]
-  #[allow(overflowing_literals)]
   fn multiword_shl_small() {
     assert_eq!(
       (0x1234abcd_i32).multiword_shl(4),
@@ -306,7 +306,6 @@ mod tests {
   }
 
   #[test]
-  #[allow(overflowing_literals)]
   fn multiword_shl_exact() {
     assert_eq!(
       (0x1234abcd_i32).multiword_shl(32 + 4),
@@ -328,7 +327,6 @@ mod tests {
   }
 
   #[test]
-  #[allow(overflowing_literals)]
   fn multiword_shl_inexact() {
     assert_eq!(
       (0x1234abcd_i32).multiword_shl(16 + 4),
