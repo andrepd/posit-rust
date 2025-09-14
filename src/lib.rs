@@ -62,6 +62,7 @@ mod underlying;
 pub use posit::Posit;
 pub use posit::quire::Quire;
 pub use underlying::Int;
+pub use posit::convert::{RoundFrom, RoundInto};
 
 /// Standard-defined 8-bit posit (with 2-bit exponent).
 #[allow(non_camel_case_types)]
@@ -79,7 +80,21 @@ pub type p32 = Posit<32, 2, i32>;
 #[allow(non_camel_case_types)]
 pub type p64 = Posit<64, 2, i64>;
 
-pub use posit::convert::{RoundFrom, RoundInto};
+/// Standard-defined 128-bit quire for a [p8].
+#[allow(non_camel_case_types)]
+pub type q8 = Quire<8, 2, 16>;
+
+/// Standard-defined 256-bit quire for a [p16].
+#[allow(non_camel_case_types)]
+pub type q16 = Quire<16, 2, 32>;
+
+/// Standard-defined 512-bit quire for a [p32].
+#[allow(non_camel_case_types)]
+pub type q32 = Quire<32, 2, 64>;
+
+/// Standard-defined 1024-bit quire for a [p64].
+#[allow(non_camel_case_types)]
+pub type q64 = Quire<64, 2, 128>;
 
 /// Re-export some internals for benchmarking purposes, only on `feature = "bench"`.
 #[cfg(feature = "bench")]

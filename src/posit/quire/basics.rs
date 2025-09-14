@@ -111,53 +111,52 @@ mod tests {
   /// Source: <https://posithub.org/docs/posit_standard-2.pdf#subsection.3.4>
   #[test]
   fn width() {
-    assert_eq!(Quire::<8,  2, {2 * 8 }>::WIDTH, 8 * 8  - 16);
-    assert_eq!(Quire::<16, 2, {2 * 16}>::WIDTH, 8 * 16 - 16);
-    assert_eq!(Quire::<32, 2, {2 * 32}>::WIDTH, 8 * 32 - 16);
-    assert_eq!(Quire::<64, 2, {2 * 64}>::WIDTH, 8 * 64 - 16);
+    assert_eq!(crate::q8::WIDTH, 8 * 8  - 16);
+    assert_eq!(crate::q16::WIDTH, 8 * 16 - 16);
+    assert_eq!(crate::q32::WIDTH, 8 * 32 - 16);
+    assert_eq!(crate::q64::WIDTH, 8 * 64 - 16);
   }
 
   /// Source: <https://posithub.org/docs/posit_standard-2.pdf#subsection.3.2>
   #[test]
   fn min_size() {
-    assert_eq!(8 * Quire::<8,  2, {2 * 8 }>::MIN_SIZE, 96  + 8);
-    assert_eq!(8 * Quire::<16, 2, {2 * 16}>::MIN_SIZE, 224 + 8);
-    assert_eq!(8 * Quire::<32, 2, {2 * 32}>::MIN_SIZE, 480 + 8);
-    assert_eq!(8 * Quire::<64, 2, {2 * 64}>::MIN_SIZE, 992 + 8);
+    assert_eq!(8 * crate::q8::MIN_SIZE, 96  + 8);
+    assert_eq!(8 * crate::q16::MIN_SIZE, 224 + 8);
+    assert_eq!(8 * crate::q32::MIN_SIZE, 480 + 8);
+    assert_eq!(8 * crate::q64::MIN_SIZE, 992 + 8);
   }
 
   /// Source: <https://posithub.org/docs/posit_standard-2.pdf#subsection.3.2>
   #[test]
   fn sum_limit() {
-    assert_eq!(Quire::<8,  2, {2 * 8 }>::SUM_LIMIT, 55);
-    assert_eq!(Quire::<16, 2, {2 * 16}>::SUM_LIMIT, 87);
-    assert_eq!(Quire::<32, 2, {2 * 32}>::SUM_LIMIT, 151);
-    assert_eq!(Quire::<64, 2, {2 * 64}>::SUM_LIMIT, 279);
+    assert_eq!(crate::q8::SUM_LIMIT, 55);
+    assert_eq!(crate::q16::SUM_LIMIT, 87);
+    assert_eq!(crate::q32::SUM_LIMIT, 151);
+    assert_eq!(crate::q64::SUM_LIMIT, 279);
   }
 
   /// Source: <https://posithub.org/docs/posit_standard-2.pdf#subsection.3.2>
   #[test]
   fn prod_limit() {
-    assert_eq!(Quire::<8,  2, {2 * 8 }>::PROD_LIMIT, 31);
-    assert_eq!(Quire::<16, 2, {2 * 16}>::PROD_LIMIT, 31);
-    assert_eq!(Quire::<32, 2, {2 * 32}>::PROD_LIMIT, 31);
-    assert_eq!(Quire::<64, 2, {2 * 64}>::PROD_LIMIT, 31);
+    assert_eq!(crate::q8::PROD_LIMIT, 31);
+    assert_eq!(crate::q16::PROD_LIMIT, 31);
+    assert_eq!(crate::q32::PROD_LIMIT, 31);
+    assert_eq!(crate::q64::PROD_LIMIT, 31);
   }
 
   #[test]
   fn is_nar() {
-    type q8 = Quire<8, 2, {2 * 8}>;
     let bits = [0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    assert!(q8::from_bits(bits).is_nar());
+    assert!(crate::q8::from_bits(bits).is_nar());
     let bits = [0x81, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    assert!(!q8::from_bits(bits).is_nar());
+    assert!(!crate::q8::from_bits(bits).is_nar());
     let bits = [0x80, 0, 0x42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    assert!(!q8::from_bits(bits).is_nar());
+    assert!(!crate::q8::from_bits(bits).is_nar());
     let bits = [0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x42, 0, 0, 0];
-    assert!(!q8::from_bits(bits).is_nar());
+    assert!(!crate::q8::from_bits(bits).is_nar());
     let bits = [0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
-    assert!(!q8::from_bits(bits).is_nar());
+    assert!(!crate::q8::from_bits(bits).is_nar());
     let bits = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
-    assert!(!q8::from_bits(bits).is_nar());
+    assert!(!crate::q8::from_bits(bits).is_nar());
   }
 }

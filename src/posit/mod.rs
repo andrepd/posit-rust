@@ -22,7 +22,7 @@
 //! [decode] implementation (Posit→Decoded), [encode] implementation (Decoded→Posit),
 //! [elementary arithmetic](ops).
 
-/// A Posit floating point number with `N` bits and `ES` exponent bits, using `Int` as its
+/// A *posit* floating point number with `N` bits and `ES` exponent bits, using `Int` as its
 /// underlying type.
 ///
 /// # Examples:
