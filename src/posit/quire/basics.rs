@@ -60,8 +60,8 @@ impl<
   };
 
   /// The position of the fixed point, that is: "1.0" is represented in the quire as `1 << WIDTH`.
-  const WIDTH: u32 = {
-    assert!(SIZE >= Self::MIN_SIZE, "The quire type has fewer than the minimum number of bytes");
+  pub(crate) const WIDTH: u32 = {
+    assert!(SIZE >= Self::MIN_SIZE, "This quire type has fewer than the minimum number of bytes");
     2 * Self::MAX_EXP
   };
 

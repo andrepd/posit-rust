@@ -1,5 +1,7 @@
 use super::*;
 
+use crate::Quire;
+
 use malachite::{Integer, rational::Rational};
 use malachite::base::num::arithmetic::traits::{PowerOf2, Pow, Abs, Reciprocal};
 
@@ -150,6 +152,34 @@ where
     let frac = Rational::from_signeds(value.frac, Decoded::<N, ES, Int>::FRAC_DENOM);
     let exp = IntExt::power_of_2(value.exp);
     frac * exp
+  }
+}
+
+impl<
+  const N: u32,
+  const ES: u32,
+  const BYTES: usize,
+> TryFrom<Quire<N, ES, BYTES>> for Rational {
+  type Error = IsNaR;
+
+  fn try_from(value: Quire<N, ES, BYTES>) -> Result<Self, Self::Error> {
+    if value.is_nar() {
+      Err(IsNaR)
+    } else {
+      // The quire is just big fix-point number with denominator 2 ^ WIDTH.
+      let mut bytes = value.0.iter();
+
+      let first = bytes.next().unwrap();  // First (most significant) byte is signed i8
+      let mut numerator = Integer::from(*first as i8);
+
+      for rest in bytes {  // The other bytes are unsigned u8
+        numerator *= Integer::from(1 << 8);
+        numerator += Integer::from(*rest as i16);
+      };
+
+      let denominator = Integer::power_of_2(Quire::<N, ES, BYTES>::WIDTH as u64);
+      Ok(Rational::from_integers(numerator, denominator))
+    }
   }
 }
 
@@ -329,5 +359,53 @@ mod tests {
     assert_eq!(Posit::<16, 2, i16>::ONE.try_into(), Ok(Rational::from(1)));
     assert_eq!(Posit::<16, 2, i16>::MINUS_ONE.try_into(), Ok(Rational::from(-1)));
     assert_eq!(Rational::try_from(Posit::<16, 2, i16>::NAR), Err(IsNaR));
+  }
+
+  #[test]
+  fn quire() {
+    let bits = [
+      0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    ];
+    assert_eq!(Rational::try_from(crate::q8::from_bits(bits)), Ok(Rational::from(1)));
+    let bits = [
+      0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 123,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    ];
+    assert_eq!(Rational::try_from(crate::q8::from_bits(bits)), Ok(Rational::from(123)));
+    let bits = [
+      0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 234, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    ];
+    assert_eq!(Rational::try_from(crate::q8::from_bits(bits)), Ok(Rational::from(234 << 8)));
+    let bits = [
+      0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 123, 0x00, 0x00, 0x00, 0x00,
+    ];
+    assert_eq!(Rational::try_from(crate::q8::from_bits(bits)), Ok(Rational::from_signeds(123, 1 << 16)));
+    let bits = [
+      0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    ];
+    assert_eq!(Rational::try_from(crate::q8::from_bits(bits)), Ok(Rational::from(-1)));
+    let bits = [
+      0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0xf0, 0x00, 0x00, 0x00, 0x00,
+    ];
+    assert_eq!(Rational::try_from(crate::q8::from_bits(bits)), Ok(Rational::from_signeds(-1, 1 << 12)));
+    let bits = [
+      0x00, 0x00, 0x00, 0x10,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    ];
+    assert_eq!(Rational::try_from(crate::q8::from_bits(bits)), Ok(Rational::power_of_2(8 * 6 + 4_i64)));
+
+    assert_eq!(Rational::try_from(crate::q32::NAR), Err(IsNaR))
   }
 }
