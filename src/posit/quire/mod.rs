@@ -20,11 +20,14 @@ use super::*;
 // The quire is represented as an array of bytes in big-endian order. This is because (we theorise
 // at the moment, with no data) since most operations need to start by checking if the most
 // significant byte is NaR (= 0b10000000), placing that byte first is the best layout for cache.
+//
+// It is also aligned to 64 bits, and we restrict `SIZE` to be a multiple of 64-bits (8 bytes).
+#[repr(align(8))]
 pub struct Quire<
   const N: u32,
   const ES: u32,
   const SIZE: usize,
-> ([u8; SIZE]);
+> (pub(crate) [u8; SIZE]);
 
 /// Basic constants and functions, such as the position of the fixed point, compile-time checks
 /// that `SIZE` is ≥ the minimum size, etc.

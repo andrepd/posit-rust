@@ -5,6 +5,21 @@ impl<
   const ES: u32,
   const SIZE: usize,
 > Quire<N, ES, SIZE> {
+  /// Construct a quire from its raw bit representation, in big endian order.
+  pub const fn from_bits(bytes: [u8; SIZE]) -> Self {
+    Self(bytes)
+  }
+
+  /// Access the storage as an array of `u64`s. 
+  #[inline]
+  pub(crate) const fn as_u64_array(&self) -> &[u64] {
+    let ptr = self.0.as_ptr() as *const u64;
+    let len = SIZE / 8;
+    // SAFETY: ptr and len form a valid slice; the size and alignment is correct, and any bit
+    // pattern is a valid u64 value.
+    unsafe { core::slice::from_raw_parts(ptr, len) }
+  }
+
   /// Auxiliary const: the maximum (positive) exponent of a `Posit<N, ES, Int>`. The size of the
   /// quire is directly related to this (see [`Self::MIN_SIZE`] and [`Self::WIDTH`] below).
   const MAX_EXP: u32 = {
@@ -59,6 +74,7 @@ impl<
 
   /// A quire that represents the posit value `NaR`.
   pub const NAR: Self = {
+    assert!(SIZE % 8 == 0, "Quire SIZE must be a multiple of 64 bits (8 bytes)");
     let mut nar = Self::ZERO;
     nar.0[0] = u8::MIN;
     nar
