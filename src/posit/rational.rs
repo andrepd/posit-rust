@@ -1,18 +1,17 @@
 use super::*;
 
 use malachite::{Integer, rational::Rational};
+use malachite::base::num::arithmetic::traits::{PowerOf2, Pow, Abs, Reciprocal};
 
 /// A shortcut trait with a couple helper functions.
 pub trait IntExt: crate::Int {
   fn pow(self, other: Self) -> Rational {
-    use malachite::base::num::arithmetic::traits::Pow;
     let exp: i128 = other.into();
     let exp: i64 = exp.try_into().expect("Exponent overflow in converting to rational");
     Rational::pow(Rational::from(self.into()), exp)
   }
 
   fn power_of_2(self) -> Rational {
-    use malachite::base::num::arithmetic::traits::PowerOf2;
     let exp: i128 = self.into();
     let exp: i64 = exp.try_into().expect("Exponent overflow in converting to rational");
     Rational::power_of_2(exp)
@@ -106,7 +105,6 @@ where
     // Assemble the final number
     let useed = IntExt::power_of_2(Int::ONE << Self::ES);
 
-    use malachite::base::num::arithmetic::traits::{Pow, PowerOf2};
     let sign = (-Int::ONE).pow(Int::from(sign));
     let regime = useed.pow(regime as i64);
     let exponent = IntExt::power_of_2(exponent);
@@ -197,7 +195,6 @@ where
 
   // Remaining cases: round to nearest (arithmetic nearest, or geometric nearest *only if* exponent
   // bits are cut). `distance` uses arithmetic or geometric distance accordingly.
-  use malachite::base::num::arithmetic::traits::{Abs, PowerOf2, Reciprocal};
   let distance = {
     // If `1 + regime_len + 1 + Self::ES > Self::BITS`, i.e. on the edges of the posit's dynamic
     // range, some exponent bits are chopped and hence we are in a region of geometric rounding.
