@@ -76,12 +76,13 @@ impl<
   pub const NAR: Self = {
     assert!(SIZE % 8 == 0, "Quire SIZE must be a multiple of 64 bits (8 bytes)");
     let mut nar = Self::ZERO;
-    nar.0[0] = u8::MIN;
+    nar.0[0] = i8::MIN as u8;
     nar
   };
 
   /// Checks whether `self` represents a NaR value.
   pub const fn is_nar(&self) -> bool {
+    let _ = Self::NAR;
     // This is more optimised than it looks. If the quire is not NaR, which is the "normal" and
     // thus more important case to optimise, then most likely it will either start with
     // `0b00…001…` (positive) of `0b11…110…` (negative), and thus return right away on the first
@@ -146,6 +147,14 @@ mod tests {
 
   #[test]
   fn is_nar() {
+    assert!(crate::q8::NAR.is_nar());
+    assert!(crate::q16::NAR.is_nar());
+    assert!(crate::q32::NAR.is_nar());
+    assert!(crate::q64::NAR.is_nar());
+  }
+
+  #[test]
+  fn is_nar_manual() {
     let bits = [0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     assert!(crate::q8::from_bits(bits).is_nar());
     let bits = [0x81, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
