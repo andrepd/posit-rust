@@ -79,6 +79,29 @@ impl<
     nar.0[0] = u8::MIN;
     nar
   };
+
+  /// Checks whether `self` represents a NaR value.
+  pub const fn is_nar(&self) -> bool {
+    // This is more optimised than it looks. If the quire is not NaR, which is the "normal" and
+    // thus more important case to optimise, then most likely it will either start with
+    // `0b00…001…` (positive) of `0b11…110…` (negative), and thus return right away on the first
+    // if statement. This is because the only way it starts with `0b1000…` and yet is not NaR is
+    // if it's very very close to overflowing on the negative side; this is *exceedingly*
+    // unlikely.
+    //
+    // Therefore, for almost all cases where the quire is not NaR, we only need a compare and
+    // branch. Only on when the quire is NaR, or in the rare cases where it's not NaR but still
+    // starts with `0b1000…`, will we need to scan through the whole thing.
+    let quire = self.as_u64_array();
+    if quire[0] != (i64::MIN as u64).to_be() { return false }  // TODO mark likely?
+    // Written in this awkward way because it's a `const fn`...
+    let mut i = 1;
+    while i < quire.len() {
+      if quire[i] != 0 { return false }
+      i += 1
+    }
+    true
+  }
 }
 
 #[cfg(test)]
@@ -119,5 +142,22 @@ mod tests {
     assert_eq!(Quire::<16, 2, {2 * 16}>::PROD_LIMIT, 31);
     assert_eq!(Quire::<32, 2, {2 * 32}>::PROD_LIMIT, 31);
     assert_eq!(Quire::<64, 2, {2 * 64}>::PROD_LIMIT, 31);
+  }
+
+  #[test]
+  fn is_nar() {
+    type q8 = Quire<8, 2, {2 * 8}>;
+    let bits = [0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert!(q8::from_bits(bits).is_nar());
+    let bits = [0x81, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert!(!q8::from_bits(bits).is_nar());
+    let bits = [0x80, 0, 0x42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert!(!q8::from_bits(bits).is_nar());
+    let bits = [0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x42, 0, 0, 0];
+    assert!(!q8::from_bits(bits).is_nar());
+    let bits = [0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
+    assert!(!q8::from_bits(bits).is_nar());
+    let bits = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
+    assert!(!q8::from_bits(bits).is_nar());
   }
 }
