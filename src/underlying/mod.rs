@@ -11,10 +11,9 @@ pub trait Int: Sealed {}
 
 /// Actual operations implemented here.
 pub trait Sealed:
-  core::fmt::Debug +
+  core::fmt::Debug + core::fmt::Display + core::fmt::Binary +
   Copy + Clone +
   Eq + Ord +
-  core::fmt::Debug + core::fmt::Display + core::fmt::Binary +
   core::ops::Add<Self, Output=Self> + core::ops::AddAssign<Self> +
   core::ops::Sub<Self, Output=Self> + core::ops::AddAssign<Self> +
   // core::ops::Mul<Self, Output=Self> +
@@ -28,7 +27,7 @@ pub trait Sealed:
   core::ops::Neg<Output=Self> +
   From<bool> + Into<i128>
 {
-  type Unsigned;
+  type Unsigned: Unsigned;
   type Double: Double<Single = Self>;
 
   const ZERO: Self;
@@ -124,6 +123,15 @@ pub trait Sealed:
   fn multiword_shl(self, n: u32) -> (Self, Self, usize);
 }
 
+/// This trait models the unsigned counterpart to an [`Int`].
+pub trait Unsigned:
+  core::fmt::Debug + core::fmt::Display + core::fmt::Binary +
+  Copy + Clone +
+  Eq + Ord +
+{
+  fn overflowing_add(self, other: Self) -> (Self, bool);
+}
+
 /// This trait models the type that is an `Int` with twice the precision (e.g. `i32::Double` =
 /// `i64`). The two ways to convert between the two are by:
 ///
@@ -147,6 +155,7 @@ pub trait Double:
 }
 
 mod int;
+mod unsigned;
 mod double;
 mod const_as;
 pub use const_as::const_as;
