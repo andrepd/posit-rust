@@ -42,6 +42,8 @@ pub trait Sealed:
   fn as_u32(self) -> u32;
   fn of_u32(x: u32) -> Self;
 
+  fn to_be(self) -> Self;
+
   fn is_positive(self) -> bool;
   fn abs(self) -> Self;
 
@@ -94,6 +96,7 @@ pub trait Sealed:
   fn wrapping_neg(self) -> Self;
 
   fn overflowing_add(self, other: Self) -> (Self, bool);
+  fn carrying_add(self, other: Self, carry: bool) -> (Self, bool);
 
   /// If `self + other` doesn't overflow, return `(self + other, false)`. If it does overflow,
   /// return `(self.midpoint(other), true)` (i.e. `(self + other) / 2` as if it were evaluated in
@@ -120,7 +123,7 @@ pub trait Sealed:
   ///
   /// That is, `hi, lo` are the high and low words of the shifted result, and `index` is the offset
   /// in _bytes_, useful if we're representing the multiword number in an array.
-  fn multiword_shl(self, n: u32) -> (Self, Self, usize);
+  fn multiword_shl(self, n: u32) -> (Self, Self::Unsigned, usize);
 }
 
 /// This trait models the unsigned counterpart to an [`Int`].
@@ -129,6 +132,8 @@ pub trait Unsigned:
   Copy + Clone +
   Eq + Ord +
 {
+  fn to_be(self) -> Self;
+
   fn overflowing_add(self, other: Self) -> (Self, bool);
 }
 

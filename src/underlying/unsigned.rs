@@ -3,6 +3,9 @@ use super::*;
 macro_rules! impl_common {
   ($int:ty, $uint:ty) => {
     #[inline]
+    fn to_be(self) -> Self { self.to_be() }
+
+    #[inline]
     fn overflowing_add(self, other: Self) -> (Self, bool) { self.overflowing_add(other) }
   }
 }

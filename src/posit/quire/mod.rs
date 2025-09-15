@@ -21,8 +21,8 @@ use super::*;
 // at the moment, with no data) since most operations need to start by checking if the most
 // significant byte is NaR (= 0b10000000), placing that byte first is the best layout for cache.
 //
-// It is also aligned to 64 bits, and we restrict `SIZE` to be a multiple of 64-bits (8 bytes).
-#[repr(align(8))]
+// It is also aligned to 128 bits, and we restrict `SIZE` to be a multiple of 64-bits (8 bytes).
+#[repr(align(16))]
 pub struct Quire<
   const N: u32,
   const ES: u32,
@@ -32,3 +32,10 @@ pub struct Quire<
 /// Basic constants and functions, such as the position of the fixed point, compile-time checks
 /// that `SIZE` is ≥ the minimum size, etc.
 mod basics;
+
+/// Here is the core algorithm of the quire: adding the product of two posits to the quire. The
+/// different user-facing functions wrap this algorithm and also live here.
+mod add;
+
+/// [Quire] -> [Posit] and [Posit] -> [Quire].
+mod convert;
