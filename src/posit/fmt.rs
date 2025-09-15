@@ -1,4 +1,5 @@
 use super::*;
+use crate::Quire;
 
 use core::fmt::Debug;
 
@@ -58,6 +59,20 @@ impl<
   }
 }
 
+impl<
+  const N: u32,
+  const ES: u32,
+  const SIZE: usize,
+> Debug for Quire<N, ES, SIZE> {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    let mut handle = f.debug_tuple("Quire");
+    for i in self.0 {
+      handle.field(&format_args!("0x{i:02x}"));
+    }
+    handle.finish()
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -107,6 +122,15 @@ mod tests {
     assert_eq!(
       format!("{:?}", Decoded::<6, 0, i16>{ frac: 0b01_0000000000000_1, exp: -20 }).as_str(),
       "Decoded { frac: 0b01_0000000000000_1, exp: 0b1111111111101100_ (-20) }",
+    );
+  }
+
+  #[test]
+  fn quire() {
+    let bits = [0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78];
+    assert_eq!(
+      format!("{:?}", crate::q8::from_bits(bits)).as_str(),
+      "Quire(0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78)",
     );
   }
 }
