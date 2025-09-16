@@ -21,6 +21,10 @@ use super::*;
 // at the moment, with no data) since most operations need to start by checking if the most
 // significant byte is NaR (= 0b10000000), placing that byte first is the best layout for cache.
 //
+// On the other hand, adding with carry is more natural to do in little-endian order, and also
+// avoids the work of shuffling bits from little-endian to big-endian in little-endian
+// architectures... Need to try and profile.
+//
 // It is also aligned to 128 bits, and we restrict `SIZE` to be a multiple of 64-bits (8 bytes).
 #[repr(align(16))]
 pub struct Quire<

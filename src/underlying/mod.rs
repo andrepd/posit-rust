@@ -43,6 +43,7 @@ pub trait Sealed:
   fn of_u32(x: u32) -> Self;
 
   fn to_be(self) -> Self;
+  fn from_be(self) -> Self;
 
   fn is_positive(self) -> bool;
   fn abs(self) -> Self;
@@ -123,7 +124,7 @@ pub trait Sealed:
   ///
   /// That is, `hi, lo` are the high and low words of the shifted result, and `index` is the offset
   /// in _bytes_, useful if we're representing the multiword number in an array.
-  fn multiword_shl(self, n: u32) -> (Self, Self::Unsigned, usize);
+  fn multiword_shl(self, n: u32) -> (Self, Self, usize);  // TODO return (Self::Double, usize)
 }
 
 /// This trait models the unsigned counterpart to an [`Int`].

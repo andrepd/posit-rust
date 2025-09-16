@@ -16,7 +16,7 @@ impl<
       // SAFETY: `value` is not 0 or NaR
       let decoded = unsafe { value.decode_regular() };
       // SAFETY: `decoded` comes from `Posit::decode_regular`, therefore its `exp` is in bounds
-      unsafe { quire.accumulate(decoded) };
+      unsafe { quire.accumulate_decoded(decoded) };
       quire
     }
   }

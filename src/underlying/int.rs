@@ -34,6 +34,9 @@ macro_rules! impl_common {
     fn to_be(self) -> Self { self.to_be() }
 
     #[inline]
+    fn from_be(self) -> Self { <$int>::from_be(self) }
+
+    #[inline]
     fn is_positive(self) -> bool {
       self >= 0
       // let mask = self >> (Self::BITS - 1);
@@ -110,18 +113,18 @@ macro_rules! impl_common {
 
     #[inline]
     fn carrying_add(self, other: Self, carry: bool) -> (Self, bool) {
-      let (a, b) = self.overflowing_add(other);
-      let (c, d) = a.overflowing_add(carry as $int);
-      (c, b | d)
+      let (a, b) = (self as $uint).overflowing_add(other as $uint);
+      let (c, d) = a.overflowing_add(carry as $uint);
+      (c as $int, b | d)
     }
 
-    fn multiword_shl(self, n: u32) -> (Self, Self::Unsigned, usize) {
+    fn multiword_shl(self, n: u32) -> (Self, Self, usize) {
       // Codegen seems pretty great when looking in godbolt!
       let bytes = n / Self::BITS * Self::BITS / 8;
       let bits = n % Self::BITS;
       let lo = self.unbounded_shl(bits);
       let hi = self.unbounded_shr(Self::BITS - bits);
-      (hi, lo as $uint, bytes as usize)
+      (hi, lo, bytes as usize)
     }
   }
 }
