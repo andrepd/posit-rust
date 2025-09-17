@@ -78,8 +78,8 @@ assert_eq!(p8::ONE.to_bits(), 0b01000000)
 
 ## Performance
 
-In terms of performance, you can expect as a *very rough estimate* 50 to 80 Mops/s (corresponding
-to about a 10–20× slowdown relative to native hw FPU operations) on an 11th gen Intel x86 core at
+In terms of performance, you can expect as a *very rough estimate* 50 to 250 Mops/s (corresponding
+to about a 4–20× slowdown relative to native hw FPU operations) on an 11th gen Intel x86 core at
 2.80GHz. Needless to say, both absolute performance and relative performance vs the FPU will vary
 depending on your system. See below for how to run benchmarks.
 

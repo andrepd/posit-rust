@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 
-use fast_posit::{p32, p64};
+use fast_posit::{p32, p64, q32, q64};
 
 // Establish a baseline by comparing with a single fpu add
 
@@ -131,6 +131,17 @@ fn div_p32(c: &mut Criterion) {
   g.finish();
 }
 
+fn quire_add_p32(c: &mut Criterion) {
+  let mut g = c.benchmark_group("quire_add_p32");
+  for num in NUMS_32 {
+    g.throughput(Throughput::Elements(1));
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:032b}", num.to_bits())), &num, |b, &num| {
+      b.iter(|| { let mut q = q32::ZERO; q += black_box(num) });
+    });
+  }
+  g.finish();
+}
+
 const NUMS_64: [p64; 4] = [
   unsafe { p64::from_bits_unchecked(0b0010101110010111011011110110001100101001101111011111000111100111u64 as _) },
   unsafe { p64::from_bits_unchecked(0b0000000001010101010011110010010100011000100101110110100010000011u64 as _) },
@@ -244,6 +255,17 @@ fn div_p64(c: &mut Criterion) {
   g.finish();
 }
 
+fn quire_add_p64(c: &mut Criterion) {
+  let mut g = c.benchmark_group("quire_add_p64");
+  for num in NUMS_64 {
+    g.throughput(Throughput::Elements(1));
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:032b}", num.to_bits())), &num, |b, &num| {
+      b.iter(|| { let mut q = q64::ZERO; q += black_box(num) });
+    });
+  }
+  g.finish();
+}
+
 criterion_group!(baseline_fpu,
   baseline_fpu_add_f32,
   baseline_fpu_add_f64,
@@ -282,4 +304,9 @@ criterion_group!(div,
   div_p64,
 );
 
-criterion_main!(baseline_fpu, decode, encode, add, mul, div);
+criterion_group!(quire,
+  quire_add_p32,
+  quire_add_p64,
+);
+
+criterion_main!(baseline_fpu, decode, encode, add, mul, div, quire);

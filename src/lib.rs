@@ -46,10 +46,10 @@
 //!
 //! # Performance
 //!
-//! In terms of performance, you can expect as a *very rough estimate* 50 to 80 Mops/s
-//! (corresponding to about a 10–20× slowdown relative to native hw FPU operations) on an 11th gen
-//! Intel x86 core at 2.80GHz. This is, as far as we're aware, faster (or at least as fast) as any
-//! freely available software implementation of posit arithmetic.
+//! In terms of performance, you can expect as a *very rough estimate* 50 to 250 Mops/s
+//! (corresponding to about a 4–20× slowdown relative to native hw FPU operations) on an 11th gen
+//! Intel x86 core at 2.80GHz. This is, as far as we're aware, faster (or at least as fast) than
+//! any freely available software implementation of posit arithmetic.
 //!
 //! Needless to say, both absolute performance and relative performance vs the FPU will vary
 //! depending on your system.

@@ -219,3 +219,43 @@ pub fn div_32(x: Posit<32, 2, i32>, y: Posit<32, 2, i32>) -> Posit<32, 2, i32> {
 pub fn div_64(x: Posit<64, 2, i64>, y: Posit<64, 2, i64>) -> Posit<64, 2, i64> {
   x.div(y)
 }
+
+#[unsafe(no_mangle)]
+pub fn quire_add_8(quire: &mut crate::q8, posit: crate::p8) {
+  *quire += posit
+}
+
+#[unsafe(no_mangle)]
+pub fn quire_add_16(quire: &mut crate::q16, posit: crate::p16) {
+  *quire += posit
+}
+
+#[unsafe(no_mangle)]
+pub fn quire_add_32(quire: &mut crate::q32, posit: crate::p32) {
+  *quire += posit
+}
+
+#[unsafe(no_mangle)]
+pub fn quire_add_64(quire: &mut crate::q64, posit: crate::p64) {
+  *quire += posit
+}
+
+#[unsafe(no_mangle)]
+pub fn accumulate_decoded_8(quire: &mut crate::q8, decoded: Decoded<8, 2, i8>) {
+  unsafe { quire.accumulate_decoded(decoded) }
+}
+
+#[unsafe(no_mangle)]
+pub fn accumulate_decoded_16(quire: &mut crate::q16, decoded: Decoded<16, 2, i8>) {
+  unsafe { quire.accumulate_decoded(decoded) }
+}
+
+#[unsafe(no_mangle)]
+pub fn accumulate_decoded_32(quire: &mut crate::q32, decoded: Decoded<32, 2, i8>) {
+  unsafe { quire.accumulate_decoded(decoded) }
+}
+
+#[unsafe(no_mangle)]
+pub fn accumulate_decoded_64(quire: &mut crate::q64, decoded: Decoded<64, 2, i8>) {
+  unsafe { quire.accumulate_decoded(decoded) }
+}
