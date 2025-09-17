@@ -23,6 +23,10 @@
 //!
 //! # Usage
 //!
+//! The following is an extended tour over the main functionality of the crate, sort of in the
+//! style of "learn X in Y minutes". For more information, refer to the documentation of specific
+//! types and functions.
+//!
 //! ```
 //! // Use standard posit types, or define your own.
 //! # use fast_posit::Posit;
@@ -36,12 +40,44 @@
 //! let c = p32::from_bits(0x7f001337);
 //! let d = p32::MIN_POSITIVE;
 //!
-//! // Perform basic arithmetic and comparisons with the usual operators.
-//! assert!(p16::round_from(2.14_f32) + p16::ONE == 3.14_f32.round_into());
-//! assert!(p16::MIN_POSITIVE < 1e-15_f32.round_into());
+//! // Perform basic arithmetic and comparisons using the usual operators.
+//! assert!(p16::round_from(2.14) + p16::ONE == p16::round_from(3.14));
+//! assert!(p16::MIN_POSITIVE < 1e-15.round_into());
 //!
 //! // Convert posits back to ints, IEEE floats, strings, or a raw bit representation.
-//! assert_eq!(p8::ONE.to_bits(), 0b01000000)
+//! assert_eq!(p8::ONE.to_bits(), 0b01000000);
+//!
+//! // Use a quire to calculate sums and dot products _without loss of precision_!
+//! use fast_posit::{q8, q16, q32, q64};
+//! let mut quire = q16::ZERO;  
+//! quire += p16::MAX;
+//! quire += p16::round_from(0.001); // Would overflow
+//! quire -= p16::MAX;
+//! //TODO let result = p16::from(quire);
+//! // Correct result with the quire, no issues with rounding errors.
+//! //TODO assert_eq!(result, p16::round_from(0.001))
+//! // The same sum without the quire would give a wrong result, due to double rounding.
+//! let posit = p16::MAX + p16::round_from(0.001) - p16::MAX;
+//! assert_eq!(posit, p16::ZERO);
+//!
+//! // Use a quire per thread to ensure the result is the same regardless of parallelisation!
+//! let mut quires = [q16::ZERO; 8];
+//! for thread in 0..8 {
+//!   let local_quire = &mut quires[thread];
+//!   *local_quire += p16::round_from(123);
+//!   *local_quire += p16::round_from(456);
+//!   // ...
+//! }
+//! // Assemble the final result by summing the thread-local quires first, then converting to posit.
+//! //TODO for thread in 1..8 {
+//! //TODO   quires[0] += quire[thread]
+//! //TODO }
+//! //TODO let result: p16 = quires[0].round_into();
+//!
+//! // Use mixed-precision with no hassle; it's very cheap when the ES is the same.
+//! //TODO let mut quire = q64::ZERO;
+//! //TODO quire += q64::from(42);
+//! //TODO quire += q8::round_from(12).into();
 //! ```
 //!
 //! # Performance
