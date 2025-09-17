@@ -7,9 +7,13 @@ use super::*;
 /// from solving systems of equations to evaluating neural networks.
 ///
 /// The `SIZE` is bounded from below based on the minimum size necessary to hold the product of two
-/// posits (smaller `SIZE`s are a compile-time error). Above this, the more extra space, the more
-/// terms can be accumulated without the risk of overflow (in practice the standard suggests ≈30
-/// extra bits, corresponding to over a billion terms).
+/// posits. Above this, the more extra space, the more terms can be accumulated without the risk
+/// of overflow (in practice the standard suggests ≈30 extra bits, corresponding to over a billion
+/// terms). It is also required to be a multiple of 8 (64 bits) for performance reasons
+/// (this requirement will be relaxed in the future).
+///
+/// If the quire `SIZE` is smaller than [the minimum size](Quire::MIN_SIZE), or if it is not a
+/// multiple of 8, a **compilation error** is raised.
 ///
 /// # Examples
 ///

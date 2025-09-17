@@ -5,6 +5,16 @@ impl<
   const ES: u32,
   const SIZE: usize,
 > Quire<N, ES, SIZE> {
+  /// The quire size in bits.
+  pub const BITS: u32 = Self::SIZE as u32 * 8;
+
+  /// The quire size in bytes.
+  pub const SIZE: usize = {
+    assert!(SIZE >= Self::MIN_SIZE, "This quire type has fewer than the minimum number of bytes");
+    // if const { SIZE < Self::MIN_SIZE } { compile_error!("asdf") }
+    SIZE
+  };
+
   /// Construct a quire from its raw bit representation, in big endian order.
   pub const fn from_bits(bytes: [u8; SIZE]) -> Self {
     Self(bytes)
@@ -13,6 +23,7 @@ impl<
   /// Access the storage as an array of `u64`s. 
   #[inline]
   pub(crate) const fn as_u64_array(&self) -> &[u64] {
+    const { assert!(SIZE % 8 == 0, "Quire SIZE must be a multiple of 64 bits (8 bytes)"); }
     let ptr = self.0.as_ptr() as *const u64;
     let len = SIZE / 8;
     // SAFETY: ptr and len form a valid slice; the size and alignment is correct, and any bit
@@ -41,6 +52,7 @@ impl<
   /// 2 <sup>[`PROD_LIMIT`](Self::PROD_LIMIT)</sup>; any number of [Self::add_prod] calls smaller
   /// than that is guaranteed not to overflow.
   pub const PROD_LIMIT: u32 = {
+    let _ = Self::SIZE;
     // The biggest possible product (Posit::MAX * Posit::MAX) takes `4 * MAX_EXP` bits. It can be
     // accumulated `2 ^ M` times, where `M` is the difference between that and this quire's
     // `SIZE`, before it overflows.
@@ -52,6 +64,7 @@ impl<
   /// 2 <sup>[`SUM_LIMIT`](Self::SUM_LIMIT)</sup>; any number of `+=` or `-=` operations smaller
   /// than that is guaranteed not to overflow.
   pub const SUM_LIMIT: u32 = {
+    let _ = Self::SIZE;
     // The biggest possible posit value (Posit::MAX) takes `3 * MAX_EXP` bits. It can be
     // accumulated `2 ^ M` times, where `M` is the difference between that and this quire's
     // `SIZE`, before it overflows.
@@ -61,7 +74,7 @@ impl<
 
   /// The position of the fixed point, that is: "1.0" is represented in the quire as `1 << WIDTH`.
   pub(crate) const WIDTH: u32 = {
-    assert!(SIZE >= Self::MIN_SIZE, "This quire type has fewer than the minimum number of bytes");
+    let _ = Self::SIZE;
     2 * Self::MAX_EXP
   };
 
@@ -74,7 +87,6 @@ impl<
 
   /// A quire that represents the posit value `NaR`.
   pub const NAR: Self = {
-    assert!(SIZE % 8 == 0, "Quire SIZE must be a multiple of 64 bits (8 bytes)");
     let mut nar = Self::ZERO;
     nar.0[0] = i8::MIN as u8;
     nar
@@ -109,6 +121,24 @@ impl<
 mod tests {
   use super::*;
 
+  /// Source: <https://posithub.org/docs/posit_standard-2.pdf#subsection.3.2>
+  #[test]
+  fn bits() {
+    assert_eq!(crate::q8::BITS, 128);
+    assert_eq!(crate::q16::BITS, 256);
+    assert_eq!(crate::q32::BITS, 512);
+    assert_eq!(crate::q64::BITS, 1024);
+  }
+
+  /// Source: <https://posithub.org/docs/posit_standard-2.pdf#subsection.3.2>
+  #[test]
+  fn size() {
+    assert_eq!(crate::q8::SIZE, 16);
+    assert_eq!(crate::q16::SIZE, 32);
+    assert_eq!(crate::q32::SIZE, 64);
+    assert_eq!(crate::q64::SIZE, 128);
+  }
+
   /// Source: <https://posithub.org/docs/posit_standard-2.pdf#subsection.3.4>
   #[test]
   fn width() {
@@ -125,6 +155,16 @@ mod tests {
     assert_eq!(8 * crate::q16::MIN_SIZE, 224 + 8);
     assert_eq!(8 * crate::q32::MIN_SIZE, 480 + 8);
     assert_eq!(8 * crate::q64::MIN_SIZE, 992 + 8);
+  }
+
+  /// With the above `MIN_SIZE`s, still compiles fine, but below that it doesn't (see
+  /// [tests_compile_fail]).
+  #[test]
+  fn min_size_compiles() {
+    let _ = Quire::<8,  2, {96 /8 + 1}>::SIZE;
+    let _ = Quire::<16, 2, {224/8 + 1}>::SIZE;
+    let _ = Quire::<32, 2, {480/8 + 1}>::SIZE;
+    let _ = Quire::<64, 2, {992/8 + 1}>::SIZE;
   }
 
   /// Source: <https://posithub.org/docs/posit_standard-2.pdf#subsection.3.2>
@@ -168,4 +208,40 @@ mod tests {
     let bits = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
     assert!(!crate::q8::from_bits(bits).is_nar());
   }
+}
+
+mod tests_compile_fail {
+  // TODO fix sizes in the future when relaxing the "multiple of 64 bits" constraint
+
+  /// ```compile_fail
+  /// use fast_posit::Quire;
+  /// let mut q: Quire<8, 2, /*12*/ 8> = Quire::ZERO;
+  /// q += fast_posit::p8::ONE;
+  /// ```
+  #[allow(dead_code)]
+  fn quire_size_too_small_8() {}
+
+  /// ```compile_fail
+  /// use fast_posit::Quire;
+  /// let mut q: Quire<16, 2, /*28*/ 24> = Quire::ZERO;
+  /// q += fast_posit::p16::ONE;
+  /// ```
+  #[allow(dead_code)]
+  fn quire_size_too_small_16() {}
+
+  /// ```compile_fail
+  /// use fast_posit::Quire;
+  /// let mut q: Quire<32, 2, /*60*/ 56> = Quire::ZERO;
+  /// q += fast_posit::p32::ONE;
+  /// ```
+  #[allow(dead_code)]
+  fn quire_size_too_small_32() {}
+
+  /// ```compile_fail
+  /// use fast_posit::Quire;
+  /// let mut q: Quire<64, 2, /*124*/ 120> = Quire::ZERO;
+  /// q += fast_posit::p64::ONE;
+  /// ```
+  #[allow(dead_code)]
+  fn quire_size_too_small_64() {}
 }
