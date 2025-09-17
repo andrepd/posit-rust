@@ -41,9 +41,12 @@ pub struct Quire<
 /// that `SIZE` is ≥ the minimum size, etc.
 mod basics;
 
-/// Here is the core algorithm of the quire: adding the product of two posits to the quire. The
-/// different user-facing functions wrap this algorithm and also live here.
+/// Here is the core algorithm of the quire: adding the product of two posits, as a fixed-point
+/// number, to the quire.
 mod add;
+
+/// The user-facing functions live here: `+=`, `-=`, `add_prod`, `sub_prod`.
+mod ops;
 
 /// [Quire] -> [Posit] and [Posit] -> [Quire].
 mod convert;

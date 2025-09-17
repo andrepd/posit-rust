@@ -273,6 +273,20 @@ where
   }
 }
 
+pub fn try_is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(
+  exact: Result<Rational, IsNaR>,
+  posit: Posit<N, ES, Int>,
+) -> bool
+where
+  Rational: TryFrom<Posit<N, ES, Int>>,
+  <Rational as TryFrom<Posit<N, ES, Int>>>::Error: core::fmt::Debug,
+{
+  match exact {
+    Ok(exact) => is_correct_rounded(exact, posit),
+    Err(IsNaR) => posit == Posit::NAR,
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
