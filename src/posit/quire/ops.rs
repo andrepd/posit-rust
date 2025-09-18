@@ -29,6 +29,7 @@ impl<
   Int: crate::Int,
   const SIZE: usize,
 > core::ops::AddAssign<Posit<N, ES, Int>> for Quire<N, ES, SIZE> {
+  /// Standard: "**qAddP**".
   fn add_assign(&mut self, rhs: Posit<N, ES, Int>) {
     self.add(rhs)
   }
@@ -40,6 +41,7 @@ impl<
   Int: crate::Int,
   const SIZE: usize,
 > core::ops::AddAssign<&Posit<N, ES, Int>> for Quire<N, ES, SIZE> {
+  /// Standard: "**qAddP**".
   fn add_assign(&mut self, rhs: &Posit<N, ES, Int>) {
     self.add(*rhs)
   }
@@ -51,6 +53,7 @@ impl<
   Int: crate::Int,
   const SIZE: usize,
 > core::ops::SubAssign<Posit<N, ES, Int>> for Quire<N, ES, SIZE> {
+  /// Standard: "**qSubP**".
   fn sub_assign(&mut self, rhs: Posit<N, ES, Int>) {
     self.sub(rhs)
   }
@@ -62,6 +65,7 @@ impl<
   Int: crate::Int,
   const SIZE: usize,
 > core::ops::SubAssign<&Posit<N, ES, Int>> for Quire<N, ES, SIZE> {
+  /// Standard: "**qSubP**".
   fn sub_assign(&mut self, rhs: &Posit<N, ES, Int>) {
     self.sub(*rhs)
   }

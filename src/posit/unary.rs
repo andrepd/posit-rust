@@ -7,14 +7,14 @@ impl<
 > Posit<N, ES, Int> {
   /// Returns the posit value of the lexicographic successor of `self`'s representation.
   ///
-  /// **Standard:** "next".
+  /// Standard: "**next**".
   pub fn next(self) -> Self {
     Self::from_bits(self.0.wrapping_add(Int::ONE))
   }
 
   /// Returns the posit value of the lexicographic predecessor of `self`'s representation.
   ///
-  /// **Standard:** "prior".
+  /// Standard: "**prior**".
   pub fn prior(self) -> Self {
     Self::from_bits(self.0.wrapping_sub(Int::ONE))
   }
@@ -24,6 +24,7 @@ impl<const N: u32,const ES: u32,Int: crate::Int>
 core::ops::Neg for Posit<N, ES, Int> {
   type Output = Posit<N, ES, Int>;
 
+  /// Standard: "**negate**".
   fn neg(self) -> Self::Output {
     Posit::from_bits(self.0.wrapping_neg())
   }
@@ -33,6 +34,7 @@ impl<const N: u32,const ES: u32,Int: crate::Int>
 core::ops::Neg for &Posit<N, ES, Int> {
   type Output = Posit<N, ES, Int>;
 
+  /// Standard: "**negate**".
   fn neg(self) -> Self::Output {
     Posit::from_bits(self.0.wrapping_neg())
   }

@@ -6,6 +6,7 @@ impl<
   Int: crate::Int,
   const SIZE: usize,
 > From<Posit<N, ES, Int>> for Quire<N, ES, SIZE> {
+  /// Standard: "**pToQ**".
   fn from(value: Posit<N, ES, Int>) -> Self {
     if value == Posit::ZERO {
       Self::ZERO

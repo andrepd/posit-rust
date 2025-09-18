@@ -27,6 +27,10 @@
 //! style of "learn X in Y minutes". For more information, refer to the documentation of specific
 //! types and functions.
 //!
+//! Wherever a function corresponds to a function in 
+//! [the standard](https://posithub.org/docs/posit_standard-2.pdf), it will be marked accordingly
+//! in its documentation.
+//!
 //! ```
 //! // Use standard posit types, or define your own.
 //! # use fast_posit::Posit;
