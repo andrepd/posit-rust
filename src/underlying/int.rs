@@ -109,6 +109,9 @@ macro_rules! impl_common {
     fn wrapping_neg(self) -> Self { self.wrapping_neg() }
 
     #[inline]
+    fn wrapping_abs(self) -> Self { self.wrapping_abs() }
+
+    #[inline]
     fn overflowing_add(self, other: Self) -> (Self, bool) { self.overflowing_add(other) }
 
     #[inline]

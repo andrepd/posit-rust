@@ -64,6 +64,32 @@ impl<const N: u32,const ES: u32,Int: crate::Int> Posit<N, ES, Int> {
   pub fn abs(self) -> Self {
     Posit::from_bits(self.0.wrapping_abs())
   }
+
+  /// Return [1](Self::ONE) if `self > 0`, [-1](Self::MINUS_ONE) if `self < 0`, [0](Self::ZERO) if
+  /// `self == 0`, and [NaR](Self::NAR) if `self == NaR`.
+  ///
+  /// Standard: "**sign**".
+  #[inline]
+  pub fn sign(self) -> Self {
+    // If this is true, `self` is 0 or NaR, so return unchanged.
+    if self.0 << Self::JUNK_BITS << 1 == Int::ZERO {
+      self
+    }
+    // Otherwise:
+    //
+    //   +1 is bit pattern 0b0100… 
+    //   -1 is bit pattern 0b1100…
+    //
+    // So we just need to set bits 0 to N-3 to `0`, and bit N-2 to `1`.
+    else {
+      let bits = self.to_bits() >> (Self::BITS - 2);
+      let bits = bits | Int::ONE;
+      let bits = bits << (Self::BITS - 2);
+      // SAFETY: The junk bits, if any, of `self.to_bits()` are unchanged, so `bits` is still valid
+      // input to `from_bits_unchecked`.
+      unsafe { Posit::from_bits_unchecked(bits) }
+    }
+  }
 }
 
 #[cfg(test)]
@@ -113,6 +139,34 @@ mod tests {
       assert_eq!(Posit::<10, 0, i16>::NAR.abs(), Posit::<10, 0, i16>::NAR);
       for p in Posit::<10, 0, i16>::cases_exhaustive() {
         assert_eq!(Rational::try_from(p.abs()).unwrap(), Rational::try_from(p).unwrap().abs())
+      }
+    }
+  }
+
+  mod sign {
+    use super::*;
+
+    #[test]
+    fn p8() {
+      assert_eq!(crate::p8::ZERO.sign(), crate::p8::ZERO);
+      assert_eq!(crate::p8::NAR.sign(), crate::p8::NAR);
+      for p in crate::p8::cases_exhaustive() {
+        assert_eq!(
+          p.sign(),
+          if p > Posit::ZERO {Posit::ONE} else {Posit::MINUS_ONE},
+        )
+      }
+    }
+
+    #[test]
+    fn posit_10_1() {
+      assert_eq!(Posit::<10, 0, i16>::ZERO.sign(), Posit::<10, 0, i16>::ZERO);
+      assert_eq!(Posit::<10, 0, i16>::NAR.sign(), Posit::<10, 0, i16>::NAR);
+      for p in Posit::<10, 0, i16>::cases_exhaustive() {
+        assert_eq!(
+          p.sign(),
+          if p > Posit::ZERO {Posit::ONE} else {Posit::MINUS_ONE},
+        )
       }
     }
   }

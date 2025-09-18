@@ -95,6 +95,7 @@ pub trait Sealed:
   fn wrapping_add(self, other: Self) -> Self;
   fn wrapping_sub(self, other: Self) -> Self;
   fn wrapping_neg(self) -> Self;
+  fn wrapping_abs(self) -> Self;
 
   fn overflowing_add(self, other: Self) -> (Self, bool);
   fn carrying_add(self, other: Self, carry: bool) -> (Self, bool);
