@@ -264,9 +264,8 @@ mod tests {
       assert_eq!(Posit::<10, 3, i16>::round_from(-f64::MIN_POSITIVE), Posit::<10, 3, i16>::MAX_NEGATIVE);
     }
 
-    const PROPTEST_CASES: u32 = if cfg!(debug_assertions) {0x1_0000} else {0x80_0000};
     proptest!{
-      #![proptest_config(ProptestConfig::with_cases(PROPTEST_CASES))]
+      #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
 
       #[test]
       fn posit_10_0_proptest(float in any::<f64>()) {
@@ -409,9 +408,8 @@ mod tests {
       assert_eq!(Posit::<10, 3, i16>::round_from(-f32::MIN_POSITIVE), Posit::<10, 3, i16>::MAX_NEGATIVE);
     }
 
-    const PROPTEST_CASES: u32 = if cfg!(debug_assertions) {0x1_0000} else {0x80_0000};
     proptest!{
-      #![proptest_config(ProptestConfig::with_cases(PROPTEST_CASES))]
+      #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
 
       #[test]
       fn posit_10_0_proptest(float in any::<f32>()) {

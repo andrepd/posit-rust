@@ -139,3 +139,9 @@ pub type q64 = Quire<64, 2, 128>;
 /// Re-export some internals for benchmarking purposes, only on `feature = "bench"`.
 #[cfg(feature = "bench")]
 mod bench;
+
+/// Set the number of proptest cases globally.
+///
+/// This number strikes a balance between coverage and practicality.
+#[cfg(test)]
+const PROPTEST_CASES: u32 = if cfg!(debug_assertions) {0x1_0000} else {0x80_0000};

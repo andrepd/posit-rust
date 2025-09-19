@@ -99,11 +99,11 @@ mod tests {
   macro_rules! test_proptest {
     ($name:ident, $posit:ty, $quire:ty,) => {
       proptest!{
-        // const PROPTEST_CASES: u32 = if cfg!(debug_assertions) {0x1_0000} else {0x80_0000};
-        // #![proptest_config(ProptestConfig::with_cases(PROPTEST_CASES))]
+        #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
+        #[test]
         fn $name(
-          a in <$posit>::cases_proptest(),
-          b in <$posit>::cases_proptest(),
+          a in <$posit>::cases_proptest_all(),
+          b in <$posit>::cases_proptest_all(),
         ) {
           let posit = a + b;
           let mut quire = <$quire>::from(a);

@@ -210,9 +210,8 @@ mod tests {
     }
   }
 
-  const PROPTEST_CASES: u32 = if cfg!(debug_assertions) {0x1_0000} else {0x80_0000};
   proptest!{
-    #![proptest_config(ProptestConfig::with_cases(PROPTEST_CASES))]
+    #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
 
     #[test]
     fn p32_proptest(p in crate::p32::cases_proptest()) {
