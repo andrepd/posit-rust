@@ -133,6 +133,8 @@ pub trait Unsigned:
   core::fmt::Debug + core::fmt::Display + core::fmt::Binary +
   Copy + Clone +
   Eq + Ord +
+  core::ops::Shl<u32, Output=Self> +
+  core::ops::Shr<u32, Output=Self> +
 {
   fn to_be(self) -> Self;
 

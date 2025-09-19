@@ -122,7 +122,7 @@ impl<
 > RoundFrom<f32> for Posit<N, ES, Int> {
   /// Convert an `f32` into a `Posit`, [rounding according to the standard]:
   ///
-  /// - If the value is any infinity or any NaN, it converts to [`NaR`](Posit::NAR).
+  /// - If the value is any infinity or any NaN, it converts to [NaR](Posit::NAR).
   /// - Otherwise, the float value is rounded (if necessary).
   ///
   /// [rounding according to the standard]: https://posithub.org/docs/posit_standard-2.pdf#subsection.6.5
@@ -146,7 +146,7 @@ impl<
 > RoundFrom<f64> for Posit<N, ES, Int> {
   /// Convert an `f64` into a `Posit`, [rounding according to the standard]:
   ///
-  /// - If the value is any infinity or any NaN, it converts to [`NaR`](Posit::NAR).
+  /// - If the value is any infinity or any NaN, it converts to [NaR](Posit::NAR).
   /// - Otherwise, the float value is rounded (if necessary).
   ///
   /// [rounding according to the standard]: https://posithub.org/docs/posit_standard-2.pdf#subsection.6.5
