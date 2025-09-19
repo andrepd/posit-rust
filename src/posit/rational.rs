@@ -338,6 +338,7 @@ mod tests {
 
   /// More manual examples from the notebook.
   #[test]
+  #[allow(overflowing_literals)]
   fn examples() {
     assert_eq!(Posit::<6, 1, i8>::from_bits(0b100001).try_into(), Ok(Rational::from(-256)));
     assert_eq!(Posit::<6, 1, i8>::from_bits(0b000001).try_into(), Ok(Rational::from_signeds(1, 256)));
@@ -353,14 +354,14 @@ mod tests {
     assert_eq!(Posit::<16, 2, i16>::from_bits(0b0_11110_10_11001000).try_into(), Ok(Rational::from(456 << 6)));
     assert_eq!(Posit::<16, 2, i16>::from_bits(0b0_11110_01_11001000).try_into(), Ok(Rational::from(456 << 5)));
 
-    assert_eq!(Posit::<16, 2, i16>::from_bits_unsigned(0b1_00001_10_00111000).try_into(), Ok(Rational::from(-456 << 5)));
-    assert_eq!(Posit::<16, 2, i16>::from_bits_unsigned(0b1_00001_01_00111000).try_into(), Ok(Rational::from(-456 << 6)));
-    assert_eq!(Posit::<16, 2, i16>::from_bits_unsigned(0b1_001_01_0100111000).try_into(), Ok(Rational::from_signeds(-1736, 1 << 4)));
-    assert_eq!(Posit::<16, 2, i16>::from_bits_unsigned(0b1_1110_10_100111000).try_into(), Ok(Rational::from_signeds(-712, 1 << 20)));
+    assert_eq!(Posit::<16, 2, i16>::from_bits(0b1_00001_10_00111000).try_into(), Ok(Rational::from(-456 << 5)));
+    assert_eq!(Posit::<16, 2, i16>::from_bits(0b1_00001_01_00111000).try_into(), Ok(Rational::from(-456 << 6)));
+    assert_eq!(Posit::<16, 2, i16>::from_bits(0b1_001_01_0100111000).try_into(), Ok(Rational::from_signeds(-1736, 1 << 4)));
+    assert_eq!(Posit::<16, 2, i16>::from_bits(0b1_1110_10_100111000).try_into(), Ok(Rational::from_signeds(-712, 1 << 20)));
 
-    assert_eq!(Posit::<16, 2, i16>::from_bits_unsigned(0b1_11111111111110_1_).try_into(), Ok(Rational::from_signeds(-1, 1i64 << 50)));
-    assert_eq!(Posit::<16, 2, i16>::from_bits_unsigned(0b1_11111111111110_0_).try_into(), Ok(Rational::from_signeds(-1, 1i64 << 48)));
-    assert_eq!(Posit::<16, 2, i16>::from_bits_unsigned(0b0_11111111110_00_10).try_into(), Ok(Rational::from(3i64 << 35)));
+    assert_eq!(Posit::<16, 2, i16>::from_bits(0b1_11111111111110_1_).try_into(), Ok(Rational::from_signeds(-1, 1i64 << 50)));
+    assert_eq!(Posit::<16, 2, i16>::from_bits(0b1_11111111111110_0_).try_into(), Ok(Rational::from_signeds(-1, 1i64 << 48)));
+    assert_eq!(Posit::<16, 2, i16>::from_bits(0b0_11111111110_00_10).try_into(), Ok(Rational::from(3i64 << 35)));
 
     assert_eq!(Posit::<16, 2, i16>::MAX.try_into(), Ok(Rational::from(1i64 << 56)));
     assert_eq!(Posit::<16, 2, i16>::MIN.try_into(), Ok(Rational::from(-1i64 << 56)));

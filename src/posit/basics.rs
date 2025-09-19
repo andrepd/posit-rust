@@ -88,16 +88,6 @@ impl<
   pub const fn to_bits(self) -> Int {
     self.0
   }
-
-  #[inline]
-  pub(crate) fn from_bits_unsigned(x: Int::Unsigned) -> Self {
-    Self::from_bits(Int::of_unsigned(x))
-  }
-
-  #[inline]
-  pub(crate) fn to_bits_unsigned(self) -> Int::Unsigned {
-    self.to_bits().as_unsigned()
-  }
 }
 
 impl<
@@ -198,13 +188,10 @@ mod tests {
   }
 
   #[test]
+  #[allow(overflowing_literals)]
   fn from_bits() {
-    fn assert_roundtrip<const N: u32, const ES: u32, Int: crate::Int>(a: Int::Unsigned, b: Int::Unsigned) {
-      use super::*;
-      assert_eq!(
-        Posit::<N, ES, Int>::from_bits_unsigned(a).to_bits(),
-        Int::of_unsigned(b),
-      )
+    fn assert_roundtrip<const N: u32, const ES: u32, Int: crate::Int>(a: Int, b: Int) {
+      assert_eq!(Posit::<N, ES, Int>::from_bits(a).to_bits(), b)
     }
 
     // N = width of type

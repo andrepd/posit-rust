@@ -305,14 +305,15 @@ mod tests {
     fn assert_encode_rounded<const N: u32, const ES: u32, Int: crate::Int>(
       rational: &str,
       decoded: Decoded<N, ES, Int>,
-      posit: Int::Unsigned,
+      posit: Int,
     ) where Rational: From<Decoded<N, ES, Int>> {
       use core::str::FromStr;
       assert_eq!(Rational::from(decoded), Rational::from_str(rational).unwrap());
-      assert_eq!(decoded.try_encode(), Some(Posit::<N, ES, Int>::from_bits_unsigned(posit)));
+      assert_eq!(decoded.try_encode(), Some(Posit::<N, ES, Int>::from_bits(posit)));
     }
 
     #[test]
+    #[allow(overflowing_literals)]
     fn posit_6_2_manual_pos() {
       type D = Decoded<6, 2, i8>;
       assert_encode_rounded("200/100", D { frac: 0b01_0000 << 2, exp: 1 }, 0b010010);  // 2    → 2
@@ -327,6 +328,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(overflowing_literals)]
     fn posit_6_2_manual_neg() {
       type D = Decoded<6, 2, i8>;
       assert_encode_rounded("-200/100", D { frac: 0b10_0000 << 2, exp: 0 }, 0b101110);  // -2    → -2
@@ -341,6 +343,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(overflowing_literals)]
     fn p8_manual_pos() {
       type D = Decoded<8, 2, i8>;
       assert_encode_rounded("900/100",  D { frac: 0b01_001000, exp: 3 }, 0b01011001);  // 9     → 9
@@ -355,6 +358,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(overflowing_literals)]
     fn p8_manual_neg() {
       type D = Decoded<8, 2, i8>;
       assert_encode_rounded("-900/100",  D { frac: 0b10_111000u8 as _, exp: 3 }, 0b10100111);  // -9     → -9

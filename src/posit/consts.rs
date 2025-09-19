@@ -66,6 +66,7 @@ impl<
 }
 
 #[cfg(test)]
+#[allow(overflowing_literals)]
 mod tests {
   use super::*;
 
@@ -93,11 +94,11 @@ mod tests {
   #[test]
   fn zero() {
     assert_eq!(
-      Posit::<16, 2, i16>::ZERO.to_bits_unsigned(),
+      Posit::<16, 2, i16>::ZERO.to_bits(),
       0,
     );
     assert_eq!(
-      Posit::<10, 1, i16>::ZERO.to_bits_unsigned(),
+      Posit::<10, 1, i16>::ZERO.to_bits(),
       0,
     );
     assert_eq!(
@@ -109,11 +110,11 @@ mod tests {
   #[test]
   fn nar() {
     assert_eq!(
-      Posit::<16, 2, i16>::NAR.to_bits_unsigned(),
+      Posit::<16, 2, i16>::NAR.to_bits(),
       0b1000_0000_0000_0000,
     );
     assert_eq!(
-      Posit::<10, 1, i16>::NAR.to_bits_unsigned(),
+      Posit::<10, 1, i16>::NAR.to_bits(),
       0b111111_10_0000_0000,
     );
     assert_eq!(
@@ -125,11 +126,11 @@ mod tests {
   #[test]
   fn min_positive() {
     assert_eq!(
-      Posit::<16, 2, i16>::MIN_POSITIVE.to_bits_unsigned(),
+      Posit::<16, 2, i16>::MIN_POSITIVE.to_bits(),
       0b0000_0000_0000_0001,
     );
     assert_eq!(
-      Posit::<10, 1, i16>::MIN_POSITIVE.to_bits_unsigned(),
+      Posit::<10, 1, i16>::MIN_POSITIVE.to_bits(),
       0b000000_00_0000_0001,
     );
     assert_eq!(
@@ -141,11 +142,11 @@ mod tests {
   #[test]
   fn max() {
     assert_eq!(
-      Posit::<16, 2, i16>::MAX.to_bits_unsigned(),
+      Posit::<16, 2, i16>::MAX.to_bits(),
       0b0111_1111_1111_1111,
     );
     assert_eq!(
-      Posit::<10, 1, i16>::MAX.to_bits_unsigned(),
+      Posit::<10, 1, i16>::MAX.to_bits(),
       0b000000_01_1111_1111,
     );
     assert_eq!(
@@ -157,11 +158,11 @@ mod tests {
   #[test]
   fn max_negative() {
     assert_eq!(
-      Posit::<16, 2, i16>::MAX_NEGATIVE.to_bits_unsigned(),
+      Posit::<16, 2, i16>::MAX_NEGATIVE.to_bits(),
       0b1111_1111_1111_1111,
     );
     assert_eq!(
-      Posit::<10, 1, i16>::MAX_NEGATIVE.to_bits_unsigned(),
+      Posit::<10, 1, i16>::MAX_NEGATIVE.to_bits(),
       0b111111_11_1111_1111,
     );
     assert_eq!(
@@ -173,11 +174,11 @@ mod tests {
   #[test]
   fn min() {
     assert_eq!(
-      Posit::<16, 2, i16>::MIN.to_bits_unsigned(),
+      Posit::<16, 2, i16>::MIN.to_bits(),
       0b1000_0000_0000_0001,
     );
     assert_eq!(
-      Posit::<10, 1, i16>::MIN.to_bits_unsigned(),
+      Posit::<10, 1, i16>::MIN.to_bits(),
       0b111111_10_0000_0001,
     );
     assert_eq!(
@@ -189,11 +190,11 @@ mod tests {
   #[test]
   fn one() {
     assert_eq!(
-      Posit::<16, 2, i16>::ONE.to_bits_unsigned(),
+      Posit::<16, 2, i16>::ONE.to_bits(),
       0b0100_0000_0000_0000,
     );
     assert_eq!(
-      Posit::<10, 1, i16>::ONE.to_bits_unsigned(),
+      Posit::<10, 1, i16>::ONE.to_bits(),
       0b000000_01_0000_0000,
     );
     assert_eq!(
@@ -205,11 +206,11 @@ mod tests {
   #[test]
   fn minus_one() {
     assert_eq!(
-      Posit::<16, 2, i16>::MINUS_ONE.to_bits_unsigned(),
+      Posit::<16, 2, i16>::MINUS_ONE.to_bits(),
       0b1100_0000_0000_0000,
     );
     assert_eq!(
-      Posit::<10, 1, i16>::MINUS_ONE.to_bits_unsigned(),
+      Posit::<10, 1, i16>::MINUS_ONE.to_bits(),
       0b111111_11_0000_0000,
     );
     assert_eq!(

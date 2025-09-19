@@ -74,17 +74,18 @@ impl<
 }
 
 #[cfg(test)]
+#[allow(overflowing_literals)]
 mod tests {
   use super::*;
 
   #[test]
   fn posit_nojunk() {
     assert_eq!(
-      format!("{:?}", Posit::<8, 2, i8>::from_bits_unsigned(0b00101011)).as_str(),
+      format!("{:?}", Posit::<8, 2, i8>::from_bits(0b00101011)).as_str(),
       "Posit(0b00101011)",
     );
     assert_eq!(
-      format!("{:?}", Posit::<8, 2, i8>::from_bits_unsigned(0b10101011)).as_str(),
+      format!("{:?}", Posit::<8, 2, i8>::from_bits(0b10101011)).as_str(),
       "Posit(0b10101011)",
     );
   }
@@ -92,11 +93,11 @@ mod tests {
   #[test]
   fn posit_junk() {
     assert_eq!(
-      format!("{:?}", Posit::<6, 2, i16>::from_bits_unsigned(0b001011)).as_str(),
+      format!("{:?}", Posit::<6, 2, i16>::from_bits(0b001011)).as_str(),
       "Posit(0b0000000000_001011)",
     );
     assert_eq!(
-      format!("{:?}", Posit::<6, 2, i16>::from_bits_unsigned(0b101011)).as_str(),
+      format!("{:?}", Posit::<6, 2, i16>::from_bits(0b101011)).as_str(),
       "Posit(0b1111111111_101011)",
     );
   }
@@ -108,7 +109,7 @@ mod tests {
       "Decoded { frac: 0b01_0010101110110_0, exp: 0b00000000000000_11 (+3) }",
     );
     assert_eq!(
-      format!("{:?}", Decoded::<6, 2, i16>{ frac: -0b01_0010101110110_0, exp: 3 }).as_str(),
+      format!("{:?}", Decoded::<6, 2, i16>{ frac: 0b10_1101010001010_0, exp: 3 }).as_str(),
       "Decoded { frac: 0b10_1101010001010_0, exp: 0b00000000000000_11 (+3) }",
     );
     assert_eq!(
