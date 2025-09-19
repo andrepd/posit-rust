@@ -1,6 +1,7 @@
 //! Re-export some internals for benchmarking purposes; available with feature = "bench".
 
 use crate::posit::{Posit, Decoded};
+use crate::{RoundFrom, RoundInto};
 
 impl<
   const N: u32,
@@ -258,4 +259,49 @@ pub fn accumulate_decoded_32(quire: &mut crate::q32, decoded: Decoded<32, 2, i8>
 #[unsafe(no_mangle)]
 pub fn accumulate_decoded_64(quire: &mut crate::q64, decoded: Decoded<64, 2, i8>) {
   unsafe { quire.accumulate_decoded(decoded) }
+}
+
+#[unsafe(no_mangle)]
+pub fn round_i32_to_p8(num: i32) -> crate::p8 {
+  num.round_into()
+}
+
+#[unsafe(no_mangle)]
+pub fn round_i32_to_p32(num: i32) -> crate::p32 {
+  num.round_into()
+}
+
+#[unsafe(no_mangle)]
+pub fn round_i32_to_p64(num: i32) -> crate::p64 {
+  num.round_into()
+}
+
+#[unsafe(no_mangle)]
+pub fn round_u32_to_p8(num: u32) -> crate::p8 {
+  num.round_into()
+}
+
+#[unsafe(no_mangle)]
+pub fn round_u32_to_p32(num: u32) -> crate::p32 {
+  num.round_into()
+}
+
+#[unsafe(no_mangle)]
+pub fn round_u32_to_p64(num: u32) -> crate::p64 {
+  num.round_into()
+}
+
+#[unsafe(no_mangle)]
+pub fn round_f32_to_p8(num: f32) -> crate::p8 {
+  num.round_into()
+}
+
+#[unsafe(no_mangle)]
+pub fn round_f32_to_p32(num: f32) -> crate::p32 {
+  num.round_into()
+}
+
+#[unsafe(no_mangle)]
+pub fn round_f32_to_p64(num: f32) -> crate::p64 {
+  num.round_into()
 }
