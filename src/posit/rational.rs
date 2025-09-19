@@ -196,8 +196,7 @@ pub fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(
   posit: Posit<N, ES, Int>,
 ) -> bool
 where
-  Rational: TryFrom<Posit<N, ES, Int>>,
-  <Rational as TryFrom<Posit<N, ES, Int>>>::Error: core::fmt::Debug,
+  Rational: TryFrom<Posit<N, ES, Int>, Error = IsNaR>,
 {
   // Only the exact number 0 is rounded to posit 0.
   if posit == Posit::<N, ES, Int>::ZERO { return exact == Rational::from(0) }
@@ -278,8 +277,7 @@ pub fn try_is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(
   posit: Posit<N, ES, Int>,
 ) -> bool
 where
-  Rational: TryFrom<Posit<N, ES, Int>>,
-  <Rational as TryFrom<Posit<N, ES, Int>>>::Error: core::fmt::Debug,
+  Rational: TryFrom<Posit<N, ES, Int>, Error = IsNaR>,
 {
   match exact {
     Ok(exact) => is_correct_rounded(exact, posit),

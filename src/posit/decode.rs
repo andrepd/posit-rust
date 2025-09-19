@@ -158,97 +158,46 @@ mod tests {
     decoded
   }
 
+  macro_rules! test_exhaustive {
+    ($name:ident, $posit:ty) => {
+      #[test]
+      fn $name() {
+        for p in <$posit>::cases_exhaustive() {
+          assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
+        }
+      }
+    }
+  }
+
+  macro_rules! test_proptest {
+    ($name:ident, $decoded:ty) => {
+      proptest!{
+        #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
+        #[test]
+        fn $name(p in <$decoded>::cases_proptest()) {
+          assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
+        }
+      }
+    }
+  }
+
   // Rule of thumb: in release builds, including the conversions to rational, 1-3us per iteration,
   // or 300k-1000k checks per second.
 
-  #[test]
-  fn posit_10_0_exhaustive() {
-    for p in Posit::<10, 0, i16>::cases_exhaustive() {
-      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
-    }
-  }
+  test_exhaustive!{posit_10_0_exhaustive, Posit::<10, 0, i16>}
+  test_exhaustive!{posit_10_1_exhaustive, Posit::<10, 1, i16>}
+  test_exhaustive!{posit_10_2_exhaustive, Posit::<10, 2, i16>}
+  test_exhaustive!{posit_10_3_exhaustive, Posit::<10, 3, i16>}
 
-  #[test]
-  fn posit_10_1_exhaustive() {
-    for p in Posit::<10, 1, i16>::cases_exhaustive() {
-      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
-    }
-  }
+  test_exhaustive!{posit_8_0_exhaustive, Posit::<8, 0, i8>}
+  test_exhaustive!{posit_20_4_exhaustive, Posit::<20, 4, i32>}
 
-  #[test]
-  fn posit_10_2_exhaustive() {
-    for p in Posit::<10, 2, i16>::cases_exhaustive() {
-      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
-    }
-  }
+  test_exhaustive!{p8_exhaustive, crate::p8}
+  test_exhaustive!{p16_exhaustive, crate::p16}
+  test_proptest!{p32_proptest, crate::p32}
+  test_proptest!{p64_proptest, crate::p64}
 
-  #[test]
-  fn posit_10_3_exhaustive() {
-    for p in Posit::<10, 3, i16>::cases_exhaustive() {
-      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
-    }
-  }
-
-  #[test]
-  fn posit_8_0_exhaustive() {
-    for p in Posit::<8, 0, i8>::cases_exhaustive() {
-      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
-    }
-  }
-
-  #[test]
-  fn p8_exhaustive() {
-    for p in crate::p8::cases_exhaustive() {
-      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
-    }
-  }
-
-  #[test]
-  fn p16_exhaustive() {
-    for p in crate::p16::cases_exhaustive() {
-      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
-    }
-  }
-
-  proptest!{
-    #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
-
-    #[test]
-    fn p32_proptest(p in crate::p32::cases_proptest()) {
-      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
-    }
-
-    #[test]
-    fn p64_proptest(p in crate::p64::cases_proptest()) {
-      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
-    }
-  }
-
-  #[test]
-  fn posit_20_4_exhaustive() {
-    for p in Posit::<20, 4, i32>::cases_exhaustive() {
-      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
-    }
-  }
-
-  #[test]
-  fn posit_3_0_exhaustive() {
-    for p in Posit::<3, 0, i8>::cases_exhaustive() {
-      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
-    }
-  }
-
-  #[test]
-  fn posit_4_0_exhaustive() {
-    for p in Posit::<4, 0, i8>::cases_exhaustive() {
-      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
-    }
-  }
-
-  #[test]
-  fn posit_4_1_exhaustive() {
-    for p in Posit::<4, 1, i8>::cases_exhaustive() {
-      assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
-    }
-  }
+  test_exhaustive!{posit_3_0_exhaustive, Posit::<3, 0, i8>}
+  test_exhaustive!{posit_4_0_exhaustive, Posit::<4, 0, i8>}
+  test_exhaustive!{posit_4_1_exhaustive, Posit::<4, 1, i8>}
 }

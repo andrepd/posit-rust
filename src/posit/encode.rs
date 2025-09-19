@@ -256,96 +256,45 @@ mod tests {
       assert_eq!(decoded.try_encode(), Some(p))
     }
 
-    #[test]
-    fn posit_10_0_exhaustive() {
-      for p in Posit::<10, 0, i16>::cases_exhaustive() {
-        assert_roundtrip(p)
+    macro_rules! test_exhaustive {
+      ($name:ident, $posit:ty) => {
+        #[test]
+        fn $name() {
+          for p in <$posit>::cases_exhaustive() {
+            assert_roundtrip(p)
+          }
+        }
       }
     }
 
-    #[test]
-    fn posit_10_1_exhaustive() {
-      for p in Posit::<10, 1, i16>::cases_exhaustive() {
-        assert_roundtrip(p)
+    macro_rules! test_proptest {
+      ($name:ident, $posit:ty) => {
+        proptest!{
+          #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
+          #[test]
+          fn $name(p in <$posit>::cases_proptest()) {
+            assert_roundtrip(p)
+          }
+        }
       }
     }
 
-    #[test]
-    fn posit_10_2_exhaustive() {
-      for p in Posit::<10, 2, i16>::cases_exhaustive() {
-        assert_roundtrip(p)
-      }
-    }
+    test_exhaustive!{posit_10_0_exhaustive, Posit::<10, 0, i16>}
+    test_exhaustive!{posit_10_1_exhaustive, Posit::<10, 1, i16>}
+    test_exhaustive!{posit_10_2_exhaustive, Posit::<10, 2, i16>}
+    test_exhaustive!{posit_10_3_exhaustive, Posit::<10, 3, i16>}
 
-    #[test]
-    fn posit_10_3_exhaustive() {
-      for p in Posit::<10, 3, i16>::cases_exhaustive() {
-        assert_roundtrip(p)
-      }
-    }
+    test_exhaustive!{posit_8_0_exhaustive, Posit::<8, 0, i8>}
+    test_exhaustive!{posit_20_4_exhaustive, Posit::<20, 4, i32>}
 
-    #[test]
-    fn posit_8_0_exhaustive() {
-      for p in Posit::<8, 0, i8>::cases_exhaustive() {
-        assert_roundtrip(p)
-      }
-    }
+    test_exhaustive!{p8_exhaustive, crate::p8}
+    test_exhaustive!{p16_exhaustive, crate::p16}
+    test_proptest!{p32_proptest, crate::p32}
+    test_proptest!{p64_proptest, crate::p64}
 
-    #[test]
-    fn p8_exhaustive() {
-      for p in crate::p8::cases_exhaustive() {
-        assert_roundtrip(p)
-      }
-    }
-
-    #[test]
-    fn p16_exhaustive() {
-      for p in crate::p16::cases_exhaustive() {
-        assert_roundtrip(p)
-      }
-    }
-
-    proptest!{
-      #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
-
-      #[test]
-      fn p32_proptest(p in crate::p32::cases_proptest()) {
-        assert_roundtrip(p)
-      }
-
-      #[test]
-      fn p64_proptest(p in crate::p64::cases_proptest()) {
-        assert_roundtrip(p)
-      }
-    }
-
-    #[test]
-    fn posit_20_4_exhaustive() {
-      for p in Posit::<20, 4, i32>::cases_exhaustive() {
-        assert_roundtrip(p)
-      }
-    }
-
-    #[test]
-    fn posit_3_0_exhaustive() {
-      for p in Posit::<3, 0, i8>::cases_exhaustive() {
-        assert_roundtrip(p)
-      }
-    }
-
-    #[test]
-    fn posit_4_0_exhaustive() {
-      for p in Posit::<4, 0, i8>::cases_exhaustive() {
-        assert_roundtrip(p)
-      }
-    }
-
-    #[test]
-    fn posit_4_1_exhaustive() {
-      for p in Posit::<4, 1, i8>::cases_exhaustive() {
-        assert_roundtrip(p)
-      }
-    }
+    test_exhaustive!{posit_3_0_exhaustive, Posit::<3, 0, i8>}
+    test_exhaustive!{posit_4_0_exhaustive, Posit::<4, 0, i8>}
+    test_exhaustive!{posit_4_1_exhaustive, Posit::<4, 1, i8>}
   }
 
   mod rounding {
@@ -357,7 +306,7 @@ mod tests {
       rational: &str,
       decoded: Decoded<N, ES, Int>,
       posit: Int::Unsigned,
-    ) where Rational: From<Decoded<N, ES, Int>>,  {
+    ) where Rational: From<Decoded<N, ES, Int>> {
       use core::str::FromStr;
       assert_eq!(Rational::from(decoded), Rational::from_str(rational).unwrap());
       assert_eq!(decoded.try_encode(), Some(Posit::<N, ES, Int>::from_bits_unsigned(posit)));
@@ -422,97 +371,53 @@ mod tests {
     /// Aux function: check that `decoded` is rounded correctly.
     fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(decoded: Decoded<N, ES, Int>) -> bool
     where
-      Rational: From<Decoded<N, ES, Int>> + TryFrom<Posit<N, ES, Int>>,
-      <Rational as TryFrom<Posit<N, ES, Int>>>::Error: core::fmt::Debug
+      Rational: From<Decoded<N, ES, Int>>,
+      Rational: TryFrom<Posit<N, ES, Int>, Error = super::rational::IsNaR>,
     {
       let posit = decoded.try_encode().expect("Invalid test case!");
       let exact = Rational::from(decoded);
       super::rational::is_correct_rounded(exact, posit)
     }
 
-    #[test]
-    fn posit_10_0_exhaustive() {
-      for decoded in Decoded::<10, 0, i16>::cases_exhaustive() {
-        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
+    macro_rules! test_exhaustive {
+      ($name:ident, $decoded:ty) => {
+        #[test]
+        fn $name() {
+          for d in <$decoded>::cases_exhaustive() {
+            assert!(is_correct_rounded(d), "{:?}: {:?}", d, d.try_encode())
+          }
+        }
       }
     }
 
-    #[test]
-    fn posit_10_1_exhaustive() {
-      for decoded in Decoded::<10, 1, i16>::cases_exhaustive() {
-        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
+    macro_rules! test_proptest {
+      ($name:ident, $decoded:ty) => {
+        proptest!{
+          #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
+          #[test]
+          fn $name(d in <$decoded>::cases_proptest()) {
+            assert!(is_correct_rounded(d), "{:?}: {:?}", d, d.try_encode())
+          }
+        }
       }
     }
 
-    #[test]
-    fn posit_10_2_exhaustive() {
-      for decoded in Decoded::<10, 2, i16>::cases_exhaustive() {
-        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
-      }
-    }
+    test_exhaustive!{posit_10_0_exhaustive, Decoded::<10, 0, i16>}
+    test_exhaustive!{posit_10_1_exhaustive, Decoded::<10, 1, i16>}
+    test_exhaustive!{posit_10_2_exhaustive, Decoded::<10, 2, i16>}
+    test_exhaustive!{posit_10_3_exhaustive, Decoded::<10, 3, i16>}
 
-    #[test]
-    fn posit_10_3_exhaustive() {
-      for decoded in Decoded::<10, 3, i16>::cases_exhaustive() {
-        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
-      }
-    }
+    test_exhaustive!{posit_8_0_exhaustive, Decoded::<8, 0, i8>}
+    test_proptest!{posit_20_4_proptest, Decoded::<20, 4, i32>}
 
-    #[test]
-    fn posit_8_0_exhaustive() {
-      for decoded in Decoded::<8, 0, i8>::cases_exhaustive() {
-        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
-      }
-    }
+    test_exhaustive!{p8_exhaustive, Decoded::<8, 2, i8>}
+    test_exhaustive!{p16_exhaustive, Decoded::<16, 2, i16>}
+    test_proptest!{p32_proptest, Decoded::<32, 2, i32>}
+    test_proptest!{p64_proptest, Decoded::<64, 2, i64>}
 
-    #[test]
-    fn p8_exhaustive() {
-      for decoded in Decoded::<8, 2, i8>::cases_exhaustive() {
-        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
-      }
-    }
-
-    #[test]
-    fn p16_exhaustive() {
-      for decoded in Decoded::<16, 2, i16>::cases_exhaustive() {
-        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
-      }
-    }
-
-    proptest!{
-      #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
-
-      #[test]
-      fn p32_proptest(decoded in Decoded::<32, 2, i32>::cases_proptest()) {
-        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
-      }
-
-      #[test]
-      fn p64_proptest(decoded in Decoded::<64, 2, i64>::cases_proptest()) {
-        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
-      }
-    }
-
-    #[test]
-    fn posit_3_0_exhaustive() {
-      for decoded in Decoded::<3, 0, i8>::cases_exhaustive() {
-        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
-      }
-    }
-
-    #[test]
-    fn posit_4_0_exhaustive() {
-      for decoded in Decoded::<4, 0, i8>::cases_exhaustive() {
-        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
-      }
-    }
-
-    #[test]
-    fn posit_4_1_exhaustive() {
-      for decoded in Decoded::<4, 1, i8>::cases_exhaustive() {
-        assert!(is_correct_rounded(decoded), "{:?}: {:?}", decoded, decoded.try_encode())
-      }
-    }
+    test_exhaustive!{posit_3_0_exhaustive, Decoded::<3, 0, i8>}
+    test_exhaustive!{posit_4_0_exhaustive, Decoded::<4, 0, i8>}
+    test_exhaustive!{posit_4_1_exhaustive, Decoded::<4, 1, i8>}
 
     #[test]
     fn p8_max() {

@@ -27,105 +27,100 @@ impl<
 mod tests {
   use super::*;
   use malachite::rational::Rational;
-
-  /*#[test]
-  fn posit_10_0_exhaustive() {
-    type P = Posit::<10, 0, i16>;
-    type Q = Quire::<10, 0, 128>;
-    for a in P::cases_exhaustive_all() {
-      assert_eq!(Rational::try_from(a), Rational::try_from(Q::from(a)))
-    }
-  }*/
-
-  #[test]
-  fn posit_10_1_exhaustive() {
-    type P = Posit::<10, 1, i16>;
-    type Q = Quire::<10, 1, 128>;
-    for a in P::cases_exhaustive_all() {
-      assert_eq!(Rational::try_from(a), Rational::try_from(Q::from(a)))
-    }
-  }
-
-  #[test]
-  fn posit_10_2_exhaustive() {
-    type P = Posit::<10, 2, i16>;
-    type Q = Quire::<10, 2, 128>;
-    for a in P::cases_exhaustive_all() {
-      assert_eq!(Rational::try_from(a), Rational::try_from(Q::from(a)))
-    }
-  }
-
-  #[test]
-  fn posit_10_3_exhaustive() {
-    type P = Posit::<10, 3, i16>;
-    type Q = Quire::<10, 3, 128>;
-    for a in P::cases_exhaustive_all() {
-      assert_eq!(Rational::try_from(a), Rational::try_from(Q::from(a)))
-    }
-  }
-
-  /*#[test]
-  fn posit_8_0_exhaustive() {
-    type P = Posit::<8, 0, i8>;
-    type Q = Quire::<8, 0, 128>;
-    for a in P::cases_exhaustive_all() {
-      assert_eq!(Rational::try_from(a), Rational::try_from(Q::from(a)))
-    }
-  }*/
-
-  #[test]
-  fn p8_exhaustive() {
-    for a in crate::p8::cases_exhaustive_all() {
-      assert_eq!(Rational::try_from(a), Rational::try_from(crate::q8::from(a)))
-    }
-  }
-
-  #[test]
-  fn p16_exhaustive() {
-    for a in crate::p16::cases_exhaustive_all() {
-      assert_eq!(Rational::try_from(a), Rational::try_from(crate::q16::from(a)))
-    }
-  }
-
   use proptest::prelude::*;
-  proptest!{
-    #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
 
-    #[test]
-    fn p32_proptest(a in crate::p32::cases_proptest()) {
-      assert_eq!(Rational::try_from(a), Rational::try_from(crate::q32::from(a)))
-    }
-
-    #[test]
-    fn p64_proptest(a in crate::p64::cases_proptest()) {
-      assert_eq!(Rational::try_from(a), Rational::try_from(crate::q64::from(a)))
-    }
+  macro_rules! test_exhaustive {
+    ($name:ident, $posit:ty, $quire:ty,) => {
+      #[test]
+      fn $name() {
+        for a in <$posit>::cases_exhaustive_all() {
+          assert_eq!(Rational::try_from(a), Rational::try_from(<$quire>::from(a)))
+        }
+      }
+    };
   }
 
-  /*#[test]
-  fn posit_3_0_exhaustive() {
-    type P = Posit::<3, 0, i8>;
-    type Q = Quire::<3, 0, 128>;
-    for a in P::cases_exhaustive_all() {
-      assert_eq!(Rational::try_from(a), Rational::try_from(Q::from(a)))
-    }
+  macro_rules! test_proptest {
+    ($name:ident, $posit:ty, $quire:ty,) => {
+      proptest!{
+        #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
+        #[test]
+        fn $name(a in <$posit>::cases_proptest_all()) {
+          assert_eq!(Rational::try_from(a), Rational::try_from(<$quire>::from(a)))
+        }
+      }
+    };
+  }
+
+  /*test_exhaustive!{
+    posit_10_0_exhaustive,
+    Posit::<10, 0, i16>,
+    Quire::<10, 0, 128>,
   }*/
 
-  /*#[test]
-  fn posit_4_0_exhaustive() {
-    type P = Posit::<4, 0, i8>;
-    type Q = Quire::<4, 0, 128>;
-    for a in P::cases_exhaustive_all() {
-      assert_eq!(Rational::try_from(a), Rational::try_from(Q::from(a)))
-    }
+  test_exhaustive!{
+    posit_10_1_exhaustive,
+    Posit::<10, 1, i16>,
+    Quire::<10, 1, 128>,
+  }
+
+  test_exhaustive!{
+    posit_10_2_exhaustive,
+    Posit::<10, 2, i16>,
+    Quire::<10, 2, 128>,
+  }
+
+  test_exhaustive!{
+    posit_10_3_exhaustive,
+    Posit::<10, 3, i16>,
+    Quire::<10, 3, 128>,
+  }
+
+  /*test_exhaustive!{
+    posit_8_0_exhaustive,
+    Posit::<8, 0, i8>,
+    Quire::<8, 0, 128>,
   }*/
 
-  /*#[test]
-  fn posit_4_1_exhaustive() {
-    type P = Posit::<4, 1, i8>;
-    type Q = Quire::<4, 1, 128>;
-    for a in P::cases_exhaustive_all() {
-      assert_eq!(Rational::try_from(a), Rational::try_from(Q::from(a)))
-    }
+  test_exhaustive!{
+    p8_exhaustive,
+    crate::p8,
+    crate::q8,
+  }
+
+  test_exhaustive!{
+    p16_exhaustive,
+    crate::p16,
+    crate::q16,
+  }
+
+  test_proptest!{
+    p32_proptest,
+    crate::p32,
+    crate::q32,
+  }
+
+  test_proptest!{
+    p64_proptest,
+    crate::p64,
+    crate::q64,
+  }
+
+  /*test_exhaustive!{
+    posit_3_0_exhaustive,
+    Posit::<3, 0, i8>,
+    Quire::<3, 0, 128>,
+  }*/
+
+  /*test_exhaustive!{
+    posit_4_0_exhaustive,
+    Posit::<4, 0, i8>,
+    Quire::<4, 0, 128>,
+  }*/
+
+  /*test_exhaustive!{
+    posit_4_1_exhaustive,
+    Posit::<4, 1, i8>,
+    Quire::<4, 1, 128>,
   }*/
 }
