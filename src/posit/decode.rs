@@ -1,34 +1,10 @@
 use super::*;
 
-#[derive(Debug)]
-#[derive(PartialEq, Eq)]
-pub enum TryDecoded<
-  const N: u32,
-  const ES: u32,
-  Int: crate::Int,
-> {
-  Zero,
-  NaR,
-  Regular(Decoded<N, ES, Int>),
-}
-
 impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
 > Posit<N, ES, Int> {
-  /// Decode a posit. The core logic lives in [Self::decode_regular].
-  pub(crate) fn try_decode(self) -> TryDecoded<N, ES, Int> {
-    if self == Self::ZERO {
-      TryDecoded::Zero
-    } else if self == Self::NAR {
-      TryDecoded::NaR
-    } else {
-      // SAFETY: `self` is not 0 or NaR
-      TryDecoded::Regular(unsafe { self.decode_regular() })
-    }
-  }
-
   /// Decode a posit **which is not 0 or NaR** into its constituent `frac`tion and `exp`onent.
   ///
   /// `self` cannot be 0 or NaR, or calling this is undefined behaviour.
@@ -136,6 +112,20 @@ impl<
     let exp = (regime << Self::ES) + exponent;
     Decoded{frac, exp}
   }
+
+  /// Decode a posit. The core logic lives in [Self::decode_regular].
+  ///
+  /// If the posit is an exception value ([0](Posit::ZERO) or [NaR](Posit::NAR)), return
+  /// `Err(self)` instead.
+  #[cfg(test)]
+  pub(crate) fn try_decode(self) -> Result<Decoded<N, ES, Int>, Posit<N, ES, Int>> {
+    if self == Self::ZERO || self == Self::NAR {
+      Err(self)
+    } else {
+      // SAFETY: `self` is not 0 or NaR
+      Ok(unsafe { self.decode_regular() })
+    }
+  }
 }
 
 #[cfg(test)]
@@ -153,17 +143,15 @@ mod tests {
     }
   }
 
-  fn decode<const N: u32, const ES: u32, Int: crate::Int>(p: Posit<N, ES, Int>) -> Decoded<N, ES, Int> {
-    let TryDecoded::Regular(decoded) = p.try_decode() else { panic!("Invalid test case") };
-    decoded
-  }
-
   macro_rules! test_exhaustive {
     ($name:ident, $posit:ty) => {
       #[test]
       fn $name() {
         for p in <$posit>::cases_exhaustive() {
-          assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
+          assert_eq!(
+            Rational::try_from(p),
+            Ok(Rational::from(p.try_decode().expect("Invalid test case!"))),
+          )
         }
       }
     }
@@ -175,7 +163,10 @@ mod tests {
         #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
         #[test]
         fn $name(p in <$decoded>::cases_proptest()) {
-          assert_eq!(Rational::try_from(p), Ok(Rational::from(decode(p))))
+          assert_eq!(
+            Rational::try_from(p),
+            Ok(Rational::from(p.try_decode().expect("Invalid test case!"))),
+          )
         }
       }
     }

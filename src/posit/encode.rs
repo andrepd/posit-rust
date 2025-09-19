@@ -5,19 +5,7 @@ impl<
   const ES: u32,
   Int: crate::Int,
 > Decoded<N, ES, Int> {
-  /// Aux function, for debug prints
-  fn bin(x: Int) -> Posit<N, ES, Int> { Posit(x) }
-
   const JUNK_BITS: u32 = Posit::<N, ES, Int>::JUNK_BITS;
-
-  /// Encode a posit, rounding if necessary. The core logic lives in [Self::encode_regular_round].
-  pub(crate) fn try_encode_round(self, sticky: Int) -> Option<Posit<N, ES, Int>> {
-    if self.is_normalised() {
-      Some(unsafe { self.encode_regular_round(sticky) })
-    } else {
-      None
-    }
-  }
 
   /// Encode a posit, rounding if necessary. The rounding rule is always the same: "round to
   /// nearest, round ties to even bit pattern, never round to 0 (i.e. never over- or under-flow)".
@@ -206,15 +194,6 @@ impl<
     unsafe { Posit::from_bits_unchecked(bits) }
   }
 
-  /// Encode a posit, **ignoring rounding**. The core logic lives in [Self::encode_regular].
-  pub(crate) fn try_encode(self) -> Option<Posit<N, ES, Int>> {
-    if self.is_normalised() {
-      Some(unsafe { self.encode_regular() })
-    } else {
-      None
-    }
-  }
-
   /// Encode a posit, **ignoring rounding**.
   ///
   /// This function is suitable for encoding a [`Decoded`] that was obtained from
@@ -230,6 +209,30 @@ impl<
     // TODO: bench vs specialised impl
     unsafe { self.encode_regular_round(Int::ZERO) }
   }
+
+  /// Encode a posit, rounding if necessary. The core logic lives in [Self::encode_regular_round].
+  ///
+  /// If `!self.is_normalised()`, return `Err(())` instead.
+  #[cfg(test)]
+  pub(crate) fn try_encode_round(self, sticky: Int) -> Result<Posit<N, ES, Int>, ()> {
+    if self.is_normalised() {
+      Ok(unsafe { self.encode_regular_round(sticky) })
+    } else {
+      Err(())
+    }
+  }
+
+  /// Encode a posit, **ignoring rounding**. The core logic lives in [Self::encode_regular].
+  ///
+  /// If `!self.is_normalised()`, return `Err(())` instead.
+  #[cfg(test)]
+  pub(crate) fn try_encode(self) -> Result<Posit<N, ES, Int>, ()> {
+    if self.is_normalised() {
+      Ok(unsafe { self.encode_regular() })
+    } else {
+      Err(())
+    }
+  }
 }
 
 #[cfg(test)]
@@ -239,7 +242,6 @@ mod tests {
   use malachite::rational::Rational;
   use proptest::prelude::*;
   use super::test::posit_6_2;
-  use super::decode::TryDecoded;
 
   mod roundtrip {
     use super::*;
@@ -251,17 +253,12 @@ mod tests {
       }
     }
 
-    fn assert_roundtrip<const N: u32, const ES: u32, Int: crate::Int>(p: Posit<N, ES, Int>) {
-      let super::decode::TryDecoded::Regular(decoded) = p.try_decode() else { panic!("Invalid test case") };
-      assert_eq!(decoded.try_encode(), Some(p))
-    }
-
     macro_rules! test_exhaustive {
       ($name:ident, $posit:ty) => {
         #[test]
         fn $name() {
           for p in <$posit>::cases_exhaustive() {
-            assert_roundtrip(p)
+            assert_eq!(p.try_decode().expect("Invalid test case!").try_encode(), Ok(p))
           }
         }
       }
@@ -273,7 +270,7 @@ mod tests {
           #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
           #[test]
           fn $name(p in <$posit>::cases_proptest()) {
-            assert_roundtrip(p)
+            assert_eq!(p.try_decode().expect("Invalid test case!").try_encode(), Ok(p))
           }
         }
       }
@@ -309,7 +306,7 @@ mod tests {
     ) where Rational: From<Decoded<N, ES, Int>> {
       use core::str::FromStr;
       assert_eq!(Rational::from(decoded), Rational::from_str(rational).unwrap());
-      assert_eq!(decoded.try_encode(), Some(Posit::<N, ES, Int>::from_bits(posit)));
+      assert_eq!(decoded.try_encode(), Ok(Posit::<N, ES, Int>::from_bits(posit)));
     }
 
     #[test]
@@ -428,7 +425,7 @@ mod tests {
       type P = Posit<8, 2, i16>;
       assert_eq!(
         P::MAX.try_decode(),
-        TryDecoded::Regular(Decoded {
+        Ok(Decoded {
           frac: 0b01_000000 << 8,  // 1 × 2^24
           exp: 24,
         }),
@@ -439,28 +436,28 @@ mod tests {
           frac: 0b01_000000 << 8,  // 1 × 2^25
           exp: 25,
         }.try_encode(),
-        Some(P::MAX),
+        Ok(P::MAX),
       );
       assert_eq!(
         Decoded {
           frac: 0b01_000000 << 8,  // 1 × 2^26
           exp: 26,
         }.try_encode(),
-        Some(P::MAX),
+        Ok(P::MAX),
       );
       assert_eq!(
         Decoded {
           frac: 0b01_000000 << 8,  // 1 × 2^53
           exp: 53,
         }.try_encode(),
-        Some(P::MAX),
+        Ok(P::MAX),
       );
       assert_eq!(
         Decoded {
           frac: 0b01_111001 << 8,  // -1.890625 × 2^24
           exp: 24,
         }.try_encode(),
-        Some(P::MAX),
+        Ok(P::MAX),
       );
     }
 
@@ -469,7 +466,7 @@ mod tests {
       type P = Posit<8, 2, i16>;
       assert_eq!(
         P::MIN.try_decode(),
-        TryDecoded::Regular(Decoded {
+        Ok(Decoded {
           frac: 0b10_000000 << 8,  // -1 × 2^24
           exp: 23,
         }),
@@ -480,28 +477,28 @@ mod tests {
           frac: 0b10_000000 << 8,  // -1 × 2^25
           exp: 24,
         }.try_encode(),
-        Some(P::MIN),
+        Ok(P::MIN),
       );
       assert_eq!(
         Decoded {
           frac: 0b10_000000 << 8,  // -1 × 2^26
           exp: 25,
         }.try_encode(),
-        Some(P::MIN),
+        Ok(P::MIN),
       );
       assert_eq!(
         Decoded {
           frac: 0b10_000000 << 8,  // -1 × 2^54
           exp: 53,
         }.try_encode(),
-        Some(P::MIN),
+        Ok(P::MIN),
       );
       assert_eq!(
         Decoded {
           frac: 0b10_111001 << 8,  // -1.109375 × 2^24
           exp: 24,
         }.try_encode(),
-        Some(P::MIN),
+        Ok(P::MIN),
       );
     }
 
@@ -510,7 +507,7 @@ mod tests {
       type P = Posit<8, 2, i16>;
       assert_eq!(
         P::MIN_POSITIVE.try_decode(),
-        TryDecoded::Regular(Decoded {
+        Ok(Decoded {
           frac: 0b01_000000 << 8,  // 1 × 2^-24
           exp: -24,
         }),
@@ -521,28 +518,28 @@ mod tests {
           frac: 0b01_000000 << 8,  // 1 × 2^-25
           exp: -25,
         }.try_encode(),
-        Some(P::MIN_POSITIVE),
+        Ok(P::MIN_POSITIVE),
       );
       assert_eq!(
         Decoded {
           frac: 0b01_000000 << 8,  // 1 × 2^-26
           exp: -26,
         }.try_encode(),
-        Some(P::MIN_POSITIVE),
+        Ok(P::MIN_POSITIVE),
       );
       assert_eq!(
         Decoded {
           frac: 0b01_000000 << 8,  // 1 × 2^-54
           exp: -54,
         }.try_encode(),
-        Some(P::MIN_POSITIVE),
+        Ok(P::MIN_POSITIVE),
       );
       assert_eq!(
         Decoded {
           frac: 0b01_111001 << 8,  // -1.890625/2 × 2^-24
           exp: -24 - 1,
         }.try_encode(),
-        Some(P::MIN_POSITIVE),
+        Ok(P::MIN_POSITIVE),
       );
     }
 
@@ -551,7 +548,7 @@ mod tests {
       type P = Posit<8, 2, i16>;
       assert_eq!(
         P::MAX_NEGATIVE.try_decode(),
-        TryDecoded::Regular(Decoded {
+        Ok(Decoded {
           frac: 0b10_000000 << 8,  // -1 × 2^-24
           exp: -25,
         }),
@@ -562,28 +559,28 @@ mod tests {
           frac: 0b10_000000 << 8,  // -1 × 2^-25
           exp: -26,
         }.try_encode(),
-        Some(P::MAX_NEGATIVE),
+        Ok(P::MAX_NEGATIVE),
       );
       assert_eq!(
         Decoded {
           frac: 0b10_000000 << 8,  // -1 × 2^-26
           exp: -27,
         }.try_encode(),
-        Some(P::MAX_NEGATIVE),
+        Ok(P::MAX_NEGATIVE),
       );
       assert_eq!(
         Decoded {
           frac: 0b10_000000 << 8,  // -1 × 2^-53
           exp: -54,
         }.try_encode(),
-        Some(P::MAX_NEGATIVE),
+        Ok(P::MAX_NEGATIVE),
       );
       assert_eq!(
         Decoded {
           frac: 0b10_111001 << 8,  // -1.109375/2 × 2^-24
           exp: -25 - 1,
         }.try_encode(),
-        Some(P::MAX_NEGATIVE),
+        Ok(P::MAX_NEGATIVE),
       );
     }
   }
