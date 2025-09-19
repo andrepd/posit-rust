@@ -36,7 +36,7 @@ unsafe fn round_from_signed_kernel<
   //    frac: 0b10000000
   //     exp: -1 (= (8 - 2) frac width - 7 underflow)
   //
-  // SAFETY: `int` is not 0 (we checked) and not MIN (function precondition)
+  // SAFETY: `int` is not 0 nor MIN (function precondition)
   let underflow = unsafe { int.leading_run_minus_one() };
   let frac = const_as::<FromInt, Int>(int << underflow >> shift_right) << shift_left;
   let exp = const_as::<i32, Int>(Decoded::<N, ES, FromInt>::FRAC_WIDTH.wrapping_sub(underflow) as i32);

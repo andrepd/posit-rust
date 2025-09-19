@@ -38,7 +38,7 @@
 //! type MyPosit = Posit<24, 3, i32>;  // Non-standard: 24 bits, 3 exponent bits
 //!
 //! // Create posits from ints, IEEE floats, strings, constants, or a raw bit representation.
-//! # use fast_posit::{RoundFrom, RoundInto};
+//! use fast_posit::{RoundFrom, RoundInto};
 //! let a = p32::round_from(2.71_f64);
 //! let b = p32::round_from(42_i32);
 //! let c = p32::from_bits(0x7f001337);

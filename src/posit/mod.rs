@@ -25,7 +25,7 @@
 /// A *posit* floating point number with `N` bits and `ES` exponent bits, using `Int` as its
 /// underlying type.
 ///
-/// # Examples:
+/// ## Examples:
 ///
 /// ```
 /// # use fast_posit::Posit;
@@ -35,7 +35,10 @@
 ///                                // 8-bit machine type.
 /// ```
 ///
-/// Type aliases are provided at the crate root for the posit types defined in
+/// Note that `Posit` will have the same size (and alignment) as its `Int` parameter, so it's
+/// currently not possible to create e.g. a 4-bit posit that only takes 4 bits in memory.
+///
+/// Type aliases are provided at the [crate root](crate#types) for the posit types defined in
 /// [the standard](https://posithub.org/docs/posit_standard-2.pdf#subsection.3.1).
 #[derive(Clone, Copy)]
 #[derive(Eq, PartialEq, Ord, PartialOrd, Hash)]  // Eq and Ord are the same as for two's complement int

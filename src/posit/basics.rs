@@ -72,14 +72,14 @@ impl<
 
   /// Construct a posit from its raw bit representation. Bits higher (more significant) than the
   /// lowest `N` ([`Self::BITS`]) bits, if any, are ignored.
-  pub /*const*/ fn from_bits(x: Int) -> Self {
-    Self(Self::sign_extend(x))
+  pub /*const*/ fn from_bits(bits: Int) -> Self {
+    Self(Self::sign_extend(bits))
   }
 
-  /// As [`Self::from_bits`], but if `x` is not a result of a [`Self::to_bits`] call, then calling
-  /// this function is undefined behaviour.
-  pub const unsafe fn from_bits_unchecked(x: Int) -> Self {
-    Self(x)
+  /// As [`Self::from_bits`], but if `bits` is not a result of a [`Self::to_bits`] call, then
+  /// calling this function is undefined behaviour.
+  pub const unsafe fn from_bits_unchecked(bits: Int) -> Self {
+    Self(bits)
   }
 
   /// Return the underlying bit representation of `self` as a machine int. Bits higher
