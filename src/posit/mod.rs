@@ -21,6 +21,21 @@
 //! Suggested reading order: [Posit] and [Decoded] types, [basics] and [constants](consts),
 //! [decode] implementation (Posit→Decoded), [encode] implementation (Decoded→Posit),
 //! [elementary arithmetic](ops).
+//!
+//! # Testing
+//!
+//! Extensive tests are included. When possible, we check all inputs exhaustively (e.g.: adding two
+//! 8-bit posits, there are only 256² possible inputs). Whenever this is not feasible (e.g: adding
+//! two 64-bit posits), we make use of the [`proptest`] crate, which allows us to
+//! probabilistically test inputs from a random distribution.
+//!
+//! Another key ingredient in the testing process is in the [`rational`] submodule. There, we
+//! define some tools to convert to and from *arbitrary precision* rational numbers. Since any
+//! non-NaR posit is a rational number, we can test any function in this crate involving posits by
+//! simply checking that the output matches the output of the equivalent function using
+//! infinite-precision rationals. For instance: to test addition of two posits, we simply check
+//! that `rational(a) + rational(b) == rational(a + b)`, i.e. adding the posits yields the same
+//! result as adding the arbitrary-precision rationals (modulo rounding, of course).
 
 /// A *posit* floating point number with `N` bits and `ES` exponent bits, using `Int` as its
 /// underlying type.
