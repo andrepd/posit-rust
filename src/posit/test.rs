@@ -1,5 +1,6 @@
 use super::*;
 use crate::underlying::const_as;
+use crate::Quire;
 use core::ops::{RangeInclusive, Range};
 
 impl<
@@ -86,6 +87,31 @@ impl<
     (any::<bool>(), Self::RANGE_FRAC_ABS, Self::RANGE_EXP).prop_map(|(sign, abs, exp)| {
       let frac = if sign {abs} else {!abs};
       Self { frac: const_as(frac), exp: const_as(exp)}
+    })
+  }
+}
+
+impl<
+  const N: u32,
+  const ES: u32,
+  const SIZE: usize,
+> Quire<N, ES, SIZE> {
+  /// A [proptest Strategy](proptest::strategy::Strategy) that yields any non-zero, non-NaR quire.
+  pub(crate) fn cases_proptest() -> impl proptest::strategy::Strategy<Value = Self> {
+    use proptest::prelude::*;
+    (any::<[u8; SIZE]>()).prop_map(|arr| { Quire(arr) })
+  }
+  /// A [proptest Strategy](proptest::strategy::Strategy) that yields any quire.
+  /// To make [0](Quire::ZERO) and [NaR](Quire::NAR) have a non-vanishing chance of appearing,
+  /// every 1 / `Quire::BITS` elements is 0 or NaR.
+  pub(crate) fn cases_proptest_all() -> impl proptest::strategy::Strategy<Value = Self> {
+    use proptest::prelude::*;
+    (Self::cases_proptest(), 0..Self::BITS).prop_map(|(quire, is_special)| {
+      if is_special == 0 {
+        if quire.0[0] > 0 {Self::ZERO} else {Self::NAR}
+      } else {
+        quire
+      }
     })
   }
 }

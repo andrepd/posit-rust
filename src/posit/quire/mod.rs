@@ -20,6 +20,9 @@ use super::*;
 /// ```
 /// // TODO
 /// ```
+///
+/// Type aliases are provided at the [crate root](crate#types) for the quire types defined in
+/// [the standard](https://posithub.org/docs/posit_standard-2.pdf#subsection.3.1).
 //
 // The quire is represented as an array of bytes in big-endian order. This is because (we theorise
 // at the moment, with no data) since most operations need to start by checking if the most
@@ -30,6 +33,7 @@ use super::*;
 // architectures... Need to try and profile.
 //
 // It is also aligned to 128 bits, and we restrict `SIZE` to be a multiple of 64-bits (8 bytes).
+#[derive(Clone, Hash)]
 #[repr(align(16))]
 pub struct Quire<
   const N: u32,
