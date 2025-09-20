@@ -38,11 +38,12 @@ fn decode_p32(c: &mut Criterion) {
 
 fn encode_p32(c: &mut Criterion) {
   let mut g = c.benchmark_group("encode_p32");
-  for num in NUMS_32 {
+  for (i, num) in NUMS_32.iter().enumerate() {
     let dec = unsafe { num.bench_decode_regular() };
+    let sticky = i as i32 % 2;
     g.throughput(Throughput::Elements(1));
     g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:032b}", num.to_bits())), &num, |b, &num| {
-      b.iter(|| unsafe { black_box(dec).bench_encode_regular() } );
+      b.iter(|| unsafe { black_box(dec).bench_encode_regular_round(black_box(sticky)) } );
     });
   }
   g.finish();
@@ -162,11 +163,12 @@ fn decode_p64(c: &mut Criterion) {
 
 fn encode_p64(c: &mut Criterion) {
   let mut g = c.benchmark_group("encode_p64");
-  for num in NUMS_64 {
+  for (i, num) in NUMS_64.iter().enumerate() {
     let dec = unsafe { num.bench_decode_regular() };
+    let sticky = i as i64 % 2;
     g.throughput(Throughput::Elements(1));
     g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:032b}", num.to_bits())), &num, |b, &num| {
-      b.iter(|| unsafe { black_box(dec).bench_encode_regular() } );
+      b.iter(|| unsafe { black_box(dec).bench_encode_regular_round(black_box(sticky)) } );
     });
   }
   g.finish();

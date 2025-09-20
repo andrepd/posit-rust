@@ -39,7 +39,7 @@ impl<
   }
 }
 
-// Export these for inspection with cargo asm
+// Export these for inspection with `cargo asm`.
 
 #[unsafe(no_mangle)]
 pub fn decode_8(arg: Posit<8, 2, i8>) -> Decoded<8, 2, i8> {
