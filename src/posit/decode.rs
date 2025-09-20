@@ -7,7 +7,10 @@ impl<
 > Posit<N, ES, Int> {
   /// Decode a posit **which is not 0 or NaR** into its constituent `frac`tion and `exp`onent.
   ///
-  /// `self` cannot be 0 or NaR, or calling this is undefined behaviour.
+  /// # Safety
+  ///
+  /// `self` cannot be [0](Self::ZERO) or [NaR](Self::NAR), or calling this function is *undefined
+  /// behaviour*.
   pub(crate) unsafe fn decode_regular(self) -> Decoded<N, ES, Int> {
     // This routine is central to nearly every nontrivial algorithm, so it's critical to get right!
     // With care, we can make it as small as ~20 instructions and ~7 cycles throughput on a modern

@@ -4,7 +4,10 @@ use crate::underlying::const_as;
 
 /// The kernel for converting a _signed_ int to a posit.
 ///
-/// If `int` is `FromInt::ZERO` or `FromInt::MIN`, calling this function is *undefined behaviour*.
+/// # Safety
+///
+/// `int` cannot be `FromInt::ZERO` or `FromInt::MIN`, or calling this function is *undefined
+/// behaviour*.
 #[inline]
 unsafe fn round_from_signed_kernel<
   FromInt: crate::Int,
@@ -54,7 +57,10 @@ unsafe fn round_from_signed_kernel<
 /// The kernel for converting an _unsigned_ int to a posit (note it takes a signed int as
 /// argument though).
 ///
-/// If `int` is `FromInt::ZERO` or `FromInt::MIN`, calling this function is *undefined behaviour*.
+/// # Safety
+///
+/// `int` cannot be `FromInt::ZERO` or `FromInt::MIN`, or calling this function is *undefined
+/// behaviour*.
 #[inline]
 unsafe fn round_from_unsigned_kernel<
   FromInt: crate::Int,

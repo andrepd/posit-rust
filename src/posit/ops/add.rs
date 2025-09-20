@@ -5,7 +5,13 @@ impl<
   const ES: u32,
   Int: crate::Int,
 > Posit<N, ES, Int> {
-  /// `x` and `y` cannot be symmetrical, or calling this function is *undefined behaviour*.
+  /// Return a [normalised](Decoded::is_normalised) `Decoded` that's the result of adding `x` and
+  /// `y`, plus the sticky bit.
+  ///
+  /// # Safety
+  ///
+  /// `x` and `y` have to be [normalised](Decoded::is_normalised) and cannot be symmetrical, or
+  /// calling this function is *undefined behaviour*.
   #[inline]
   pub(crate) unsafe fn add_kernel(x: Decoded<N, ES, Int>, y: Decoded<N, ES, Int>) -> (Decoded<N, ES, Int>, Int) {
     // Adding two numbers in the form `x.frac × 2^x.exp` and `y.exp × 2^y.exp` is easy, if only
@@ -73,6 +79,7 @@ impl<
     // To do this we use our trusty `leading_run_minus_one`, since we want to detect that the
     // number starts with n 0s followed by a 1 or n 1s followed by a 0, and shift them so that
     // it's just a 01 or a 10.
+    //
     // SAFETY: x and y are not symmetrical (precondition), so `frac` cannot be 0
     let underflow = unsafe { frac.leading_run_minus_one() };
     let frac = frac << underflow as u32;
@@ -108,7 +115,7 @@ impl<
       let b = unsafe { other.decode_regular() };
       // SAFETY: `self` and `other` aren't symmetrical
       let (result, sticky) = unsafe { Self::add_kernel(a, b) };
-      // SAFETY: `result` does not have an underflowing `frac`
+      // SAFETY: `result.is_normalised()` holds
       unsafe { result.encode_regular_round(sticky) }
     }
   }

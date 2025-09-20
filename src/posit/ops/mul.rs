@@ -5,6 +5,13 @@ impl<
   const ES: u32,
   Int: crate::Int,
 > Posit<N, ES, Int> {
+  /// Return a [normalised](Decoded::is_normalised) `Decoded` that's the result of multiplying `x`
+  /// and `y`, plus the sticky bit.
+  ///
+  /// # Safety
+  ///
+  /// `x` and `y` have to be [normalised](Decoded::is_normalised), or calling this function
+  /// is *undefined behaviour*.
   #[inline]
   pub(crate) unsafe fn mul_kernel(x: Decoded<N, ES, Int>, y: Decoded<N, ES, Int>) -> (Decoded<N, ES, Int>, Int) {
     // Multiplying two numbers in the form `frac × 2^exp` is much easier than adding them. We have
@@ -63,7 +70,7 @@ impl<
       let b = unsafe { other.decode_regular() };
       // SAFETY: `self` and `other` aren't symmetrical
       let (result, sticky) = unsafe { Self::mul_kernel(a, b) };
-      // SAFETY: `result` does not have an underflowing `frac`
+      // SAFETY: `result.is_normalised()` holds
       unsafe { result.encode_regular_round(sticky) }
     }
   }

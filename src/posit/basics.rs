@@ -76,8 +76,13 @@ impl<
     Self(Self::sign_extend(bits))
   }
 
-  /// As [`Self::from_bits`], but if `bits` is not a result of a [`Self::to_bits`] call, then
-  /// calling this function is undefined behaviour.
+  /// As [`Self::from_bits`], but does not check that `bits` is a valid bit pattern for `Self`.
+  ///
+  /// # Safety
+  ///
+  /// `bits` has to be a result of a [`Self::to_bits`] call, i.e. it has to be in the range 
+  /// `-1 << (N-1) .. 1 << (N-1) - 1`, or calling this function is *undefined behaviour*. Note
+  /// that if `Int::BITS == Self::BITS` this always holds.
   pub const unsafe fn from_bits_unchecked(bits: Int) -> Self {
     Self(bits)
   }
@@ -114,16 +119,19 @@ impl<
   /// and so on.
   pub(crate) const FRAC_DENOM: Int = const_as(1i128 << Self::FRAC_WIDTH);
 
-  /// The size of this Posit type in bits.
-  ///
-  /// Note: this is the logical size, not necessarily the size of the underlying type.
+  /// As [`Posit::BITS`].
   pub const BITS: u32 = Posit::<N, ES, Int>::BITS;
 
-  /// The number of exponent bits.
+  /// As [`Posit::ES`].
   pub const ES: u32 = Posit::<N, ES, Int>::ES;
 
-  /// Checks whether `self` is normalised, i.e. whether `self.frac` starts with `0b01` or `0b10`,
-  /// and `self.exp >> ES` starts with `0b00` or `0b11` (which is guaranteed if `ES > 0`).
+  /// As [`Posit::JUNK_BITS`].
+  pub(crate) const JUNK_BITS: u32 = Posit::<N, ES, Int>::JUNK_BITS;
+
+  /// Checks whether `self` is "normalised", i.e. whether 
+  ///
+  /// - `self.frac` starts with `0b01` or `0b10`, and
+  /// - `self.exp >> ES` starts with `0b00` or `0b11` (which is guaranteed if `ES > 0`).
   pub(crate) fn is_normalised(self) -> bool {
     let frac = self.frac >> Self::FRAC_WIDTH;
     let exp = self.exp >> Self::FRAC_WIDTH;

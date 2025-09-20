@@ -5,6 +5,13 @@ impl<
   const ES: u32,
   Int: crate::Int,
 > Posit<N, ES, Int> {
+  /// Return a [normalised](Decoded::is_normalised) `Decoded` that's the result of dividing `x` by
+  /// `y`, plus the sticky bit.
+  ///
+  /// # Safety
+  ///
+  /// `x` and `y` have to be [normalised](Decoded::is_normalised), or calling this function
+  /// is *undefined behaviour*.
   #[inline]
   pub(crate) unsafe fn div_kernel(x: Decoded<N, ES, Int>, y: Decoded<N, ES, Int>) -> (Decoded<N, ES, Int>, Int) {
     // Let's use ÷ to denote true mathematical division, and / denote integer division *that rounds
@@ -58,7 +65,7 @@ impl<
       let a = unsafe { self.decode_regular() };
       let b = unsafe { other.decode_regular() };
       let (result, sticky) = unsafe { Self::div_kernel(a, b) };
-      // SAFETY: `result` does not have an underflowing `frac`
+      // SAFETY: `result.is_normalised()` holds
       unsafe { result.encode_regular_round(sticky) }
     }
   }

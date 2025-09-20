@@ -22,7 +22,7 @@ impl<
   ///
   /// # Safety
   ///
-  /// `limbs.len() * size_of::<Int>() + offset < SIZE`, otherwise calling this function
+  /// `limbs.len() * size_of::<Int>() + offset < SIZE` must hold, or calling this function
   /// is *undefined behaviour*.
   pub(crate) unsafe fn accumulate<const L: usize, Int: crate::Int>(
     &mut self,
@@ -82,7 +82,7 @@ impl<
   ///
   /// # Safety
   ///
-  /// `x` must be the result of a [`Posit::decode_regular`] call, otherwise calling this function
+  /// `x` must be the result of a [`Posit::decode_regular`] call, or calling this function
   /// is *undefined behaviour*.
   pub(crate) unsafe fn accumulate_decoded<Int: crate::Int>(&mut self, x: Decoded<N, ES, Int>) {
     debug_assert!(x.exp <= Posit::<N, ES, Int>::MAX_EXP + Int::ONE);

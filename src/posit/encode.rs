@@ -5,8 +5,6 @@ impl<
   const ES: u32,
   Int: crate::Int,
 > Decoded<N, ES, Int> {
-  const JUNK_BITS: u32 = Posit::<N, ES, Int>::JUNK_BITS;
-
   /// Encode a posit, rounding if necessary. The rounding rule is always the same: "round to
   /// nearest, round ties to even bit pattern, never round to 0 (i.e. never over- or under-flow)".
   ///
@@ -17,6 +15,11 @@ impl<
   /// This function is suitable for encoding a [`Decoded`] that might need rounding to produce a
   /// valid Posit (for example, if it was obtained from doing an arithmetic operation). If you
   /// don't need to round, see [`Self::encode_regular`].
+  ///
+  /// # Safety
+  ///
+  /// [`self.is_normalised()`](Self::is_normalised) has to hold, or calling this function
+  /// is *undefined behaviour*.
   pub(crate) unsafe fn encode_regular_round(self, mut sticky: Int) -> Posit<N, ES, Int> {
     debug_assert!(
       self.is_normalised(),
@@ -200,6 +203,11 @@ impl<
   /// [`Posit::decode_regular`], or that was otherwise crafted as a valid Posit. If if might need
   /// rounding (for instance, if you obtained it from doing an arithmetic operation), see
   /// [`Self::encode_regular_round`].
+  ///
+  /// # Safety
+  ///
+  /// [`self.is_normalised()`](Self::is_normalised) has to hold, or calling this function
+  /// is *undefined behaviour*.
   #[inline]
   pub(crate) unsafe fn encode_regular(self) -> Posit<N, ES, Int> {
     debug_assert!(
