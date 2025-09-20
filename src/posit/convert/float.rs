@@ -167,296 +167,88 @@ impl<
 mod tests {
   use super::*;
 
-  use malachite::rational::Rational;
-  use proptest::prelude::*;
+  /// Instantiate a suite of tests
+  macro_rules! make_tests {
+    ($float:ty, $posit:ty) => {
+      use super::*;
+      use malachite::rational::Rational;
+      use proptest::prelude::*;
 
+      #[test]
+      fn zero() {
+        assert_eq!(<$posit>::round_from(0.0 as $float), <$posit>::ZERO)
+      }
+
+      #[test]
+      fn one() {
+        assert_eq!(<$posit>::round_from(1.0 as $float), <$posit>::ONE)
+      }
+
+      #[test]
+      fn minus_one() {
+        assert_eq!(<$posit>::round_from(-1.0 as $float), <$posit>::MINUS_ONE)
+      }
+
+      #[test]
+      fn nan() {
+        assert_eq!(<$posit>::round_from(<$float>::NAN), <$posit>::NAR)
+      }
+
+      #[test]
+      fn min_positive() {
+        if const { <$posit>::MAX_EXP as i64 <= 127 } {
+          assert_eq!(<$posit>::round_from(<$float>::MIN_POSITIVE), <$posit>::MIN_POSITIVE)
+        }
+      }
+
+      #[test]
+      fn max_negative() {
+        if const { <$posit>::MAX_EXP as i64 <= 127 } {
+          assert_eq!(<$posit>::round_from(-<$float>::MIN_POSITIVE), <$posit>::MAX_NEGATIVE)
+        }
+      }
+
+      proptest!{
+        #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
+        #[test]
+        fn proptest(float: $float) {
+          let posit = <$posit>::round_from(float);
+          match Rational::try_from(float) {
+            Ok(exact) => assert!(super::rational::is_correct_rounded(exact, posit)),
+            Err(_) => assert!(posit == <$posit>::NAR),
+          }
+        }
+      }
+    };
+  }
+ 
   mod f64 {
     use super::*;
 
-    /// Aux function: check that `float` is converted to a posit with the correct rounding.
-    fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(float: f64) -> bool
-    where
-      Rational: From<Decoded<N, ES, Int>> + TryFrom<Posit<N, ES, Int>> + TryFrom<f64>,
-      <Rational as TryFrom<Posit<N, ES, Int>>>::Error: core::fmt::Debug
-    {
-      let posit = Posit::<N, ES, Int>::round_from(float);
-      match Rational::try_from(float) {
-        Ok(exact) => super::rational::is_correct_rounded(exact, posit),
-        Err(_) => posit == Posit::NAR,
-      }
-    }
+    mod p8 { make_tests!{f64, crate::p8} }
+    mod p16 { make_tests!{f64, crate::p16} }
+    mod p32 { make_tests!{f64, crate::p32} }
+    mod p64 { make_tests!{f64, crate::p64} }
 
-    #[test]
-    fn zero() {
-      assert_eq!(crate::p8::round_from(0.0f64), crate::p8::ZERO);
-      assert_eq!(crate::p16::round_from(0.0f64), crate::p16::ZERO);
-      assert_eq!(crate::p32::round_from(0.0f64), crate::p32::ZERO);
-      assert_eq!(crate::p64::round_from(0.0f64), crate::p64::ZERO);
-      assert_eq!(Posit::<8, 0, i8>::round_from(0.0f64), Posit::<8, 0, i8>::ZERO);
-      assert_eq!(Posit::<10, 0, i16>::round_from(0.0f64), Posit::<10, 0, i16>::ZERO);
-      assert_eq!(Posit::<10, 1, i16>::round_from(0.0f64), Posit::<10, 1, i16>::ZERO);
-      assert_eq!(Posit::<10, 2, i16>::round_from(0.0f64), Posit::<10, 2, i16>::ZERO);
-      assert_eq!(Posit::<10, 3, i16>::round_from(0.0f64), Posit::<10, 3, i16>::ZERO);
-    }
-
-    #[test]
-    fn one() {
-      assert_eq!(crate::p8::round_from(1.0f64), crate::p8::ONE);
-      assert_eq!(crate::p16::round_from(1.0f64), crate::p16::ONE);
-      assert_eq!(crate::p32::round_from(1.0f64), crate::p32::ONE);
-      assert_eq!(crate::p64::round_from(1.0f64), crate::p64::ONE);
-      assert_eq!(Posit::<8, 0, i8>::round_from(1.0f64), Posit::<8, 0, i8>::ONE);
-      assert_eq!(Posit::<10, 0, i16>::round_from(1.0f64), Posit::<10, 0, i16>::ONE);
-      assert_eq!(Posit::<10, 1, i16>::round_from(1.0f64), Posit::<10, 1, i16>::ONE);
-      assert_eq!(Posit::<10, 2, i16>::round_from(1.0f64), Posit::<10, 2, i16>::ONE);
-      assert_eq!(Posit::<10, 3, i16>::round_from(1.0f64), Posit::<10, 3, i16>::ONE);
-    }
-
-    #[test]
-    fn minus_one() {
-      assert_eq!(crate::p8::round_from(-1.0f64), crate::p8::MINUS_ONE);
-      assert_eq!(crate::p16::round_from(-1.0f64), crate::p16::MINUS_ONE);
-      assert_eq!(crate::p32::round_from(-1.0f64), crate::p32::MINUS_ONE);
-      assert_eq!(crate::p64::round_from(-1.0f64), crate::p64::MINUS_ONE);
-      assert_eq!(Posit::<8, 0, i8>::round_from(-1.0f64), Posit::<8, 0, i8>::MINUS_ONE);
-      assert_eq!(Posit::<10, 0, i16>::round_from(-1.0f64), Posit::<10, 0, i16>::MINUS_ONE);
-      assert_eq!(Posit::<10, 1, i16>::round_from(-1.0f64), Posit::<10, 1, i16>::MINUS_ONE);
-      assert_eq!(Posit::<10, 2, i16>::round_from(-1.0f64), Posit::<10, 2, i16>::MINUS_ONE);
-      assert_eq!(Posit::<10, 3, i16>::round_from(-1.0f64), Posit::<10, 3, i16>::MINUS_ONE);
-    }
-
-    #[test]
-    fn nan() {
-      assert_eq!(crate::p8::round_from(f64::NAN), crate::p8::NAR);
-      assert_eq!(crate::p16::round_from(f64::NAN), crate::p16::NAR);
-      assert_eq!(crate::p32::round_from(f64::NAN), crate::p32::NAR);
-      assert_eq!(crate::p64::round_from(f64::NAN), crate::p64::NAR);
-      assert_eq!(Posit::<8, 0, i8>::round_from(f64::NAN), Posit::<8, 0, i8>::NAR);
-      assert_eq!(Posit::<10, 0, i16>::round_from(f64::NAN), Posit::<10, 0, i16>::NAR);
-      assert_eq!(Posit::<10, 1, i16>::round_from(f64::NAN), Posit::<10, 1, i16>::NAR);
-      assert_eq!(Posit::<10, 2, i16>::round_from(f64::NAN), Posit::<10, 2, i16>::NAR);
-      assert_eq!(Posit::<10, 3, i16>::round_from(f64::NAN), Posit::<10, 3, i16>::NAR);
-    }
-
-    #[test]
-    fn min_positive() {
-      assert_eq!(crate::p8::round_from(f64::MIN_POSITIVE), crate::p8::MIN_POSITIVE);
-      assert_eq!(crate::p16::round_from(f64::MIN_POSITIVE), crate::p16::MIN_POSITIVE);
-      assert_eq!(crate::p32::round_from(f64::MIN_POSITIVE), crate::p32::MIN_POSITIVE);
-      assert_eq!(crate::p64::round_from(f64::MIN_POSITIVE), crate::p64::MIN_POSITIVE);
-      assert_eq!(Posit::<8, 0, i8>::round_from(f64::MIN_POSITIVE), Posit::<8, 0, i8>::MIN_POSITIVE);
-      assert_eq!(Posit::<10, 0, i16>::round_from(f64::MIN_POSITIVE), Posit::<10, 0, i16>::MIN_POSITIVE);
-      assert_eq!(Posit::<10, 1, i16>::round_from(f64::MIN_POSITIVE), Posit::<10, 1, i16>::MIN_POSITIVE);
-      assert_eq!(Posit::<10, 2, i16>::round_from(f64::MIN_POSITIVE), Posit::<10, 2, i16>::MIN_POSITIVE);
-      assert_eq!(Posit::<10, 3, i16>::round_from(f64::MIN_POSITIVE), Posit::<10, 3, i16>::MIN_POSITIVE);
-    }
-
-    #[test]
-    fn max_negative() {
-      assert_eq!(crate::p8::round_from(-f64::MIN_POSITIVE), crate::p8::MAX_NEGATIVE);
-      assert_eq!(crate::p16::round_from(-f64::MIN_POSITIVE), crate::p16::MAX_NEGATIVE);
-      assert_eq!(crate::p32::round_from(-f64::MIN_POSITIVE), crate::p32::MAX_NEGATIVE);
-      assert_eq!(crate::p64::round_from(-f64::MIN_POSITIVE), crate::p64::MAX_NEGATIVE);
-      assert_eq!(Posit::<8, 0, i8>::round_from(-f64::MIN_POSITIVE), Posit::<8, 0, i8>::MAX_NEGATIVE);
-      assert_eq!(Posit::<10, 0, i16>::round_from(-f64::MIN_POSITIVE), Posit::<10, 0, i16>::MAX_NEGATIVE);
-      assert_eq!(Posit::<10, 1, i16>::round_from(-f64::MIN_POSITIVE), Posit::<10, 1, i16>::MAX_NEGATIVE);
-      assert_eq!(Posit::<10, 2, i16>::round_from(-f64::MIN_POSITIVE), Posit::<10, 2, i16>::MAX_NEGATIVE);
-      assert_eq!(Posit::<10, 3, i16>::round_from(-f64::MIN_POSITIVE), Posit::<10, 3, i16>::MAX_NEGATIVE);
-    }
-
-    proptest!{
-      #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
-
-      #[test]
-      fn posit_10_0_proptest(float in any::<f64>()) {
-        assert!(is_correct_rounded::<10, 0, i16>(float), "{:?}", float)
-      }
-
-      #[test]
-      fn posit_10_1_proptest(float in any::<f64>()) {
-        assert!(is_correct_rounded::<10, 1, i16>(float), "{:?}", float)
-      }
-
-      #[test]
-      fn posit_10_2_proptest(float in any::<f64>()) {
-        assert!(is_correct_rounded::<10, 2, i16>(float), "{:?}", float)
-      }
-
-      #[test]
-      fn posit_10_3_proptest(float in any::<f64>()) {
-        assert!(is_correct_rounded::<10, 3, i16>(float), "{:?}", float)
-      }
-
-      #[test]
-      fn posit_8_0_proptest(float in any::<f64>()) {
-        assert!(is_correct_rounded::<8, 0, i8>(float), "{:?}", float)
-      }
-
-      #[test]
-      fn p8_proptest(float in any::<f64>()) {
-        assert!(is_correct_rounded::<8, 2, i8>(float), "{:?}", float)
-      }
-
-      #[test]
-      fn p16_proptest(float in any::<f64>()) {
-        assert!(is_correct_rounded::<16, 2, i16>(float), "{:?}", float)
-      }
-
-      #[test]
-      fn p32_proptest(float in any::<f64>()) {
-        assert!(is_correct_rounded::<32, 2, i32>(float), "{:?}", float)
-      }
-
-      #[test]
-      fn p64_proptest(float in any::<f64>()) {
-        assert!(is_correct_rounded::<64, 2, i64>(float), "{:?}", float)
-      }
-    }
+    mod posit_8_0 { make_tests!{f64, Posit::<8, 0, i8>} }
+    mod posit_10_0 { make_tests!{f64, Posit::<10, 0, i16>} }
+    mod posit_10_1 { make_tests!{f64, Posit::<10, 1, i16>} }
+    mod posit_10_2 { make_tests!{f64, Posit::<10, 2, i16>} }
+    mod posit_10_3 { make_tests!{f64, Posit::<10, 3, i16>} }
   }
 
   mod f32 {
     use super::*;
 
-    /// Aux function: check that `float` is converted to a posit with the correct rounding.
-    fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(float: f32) -> bool
-    where
-      Rational: From<Decoded<N, ES, Int>> + TryFrom<Posit<N, ES, Int>> + TryFrom<f32>,
-      <Rational as TryFrom<Posit<N, ES, Int>>>::Error: core::fmt::Debug
-    {
-      let posit = Posit::<N, ES, Int>::round_from(float);
-      match Rational::try_from(float) {
-        Ok(exact) => super::rational::is_correct_rounded(exact, posit),
-        Err(_) => posit == Posit::NAR,
-      }
-    }
+    mod p8 { make_tests!{f32, crate::p8} }
+    mod p16 { make_tests!{f32, crate::p16} }
+    mod p32 { make_tests!{f32, crate::p32} }
+    mod p64 { make_tests!{f32, crate::p64} }
 
-    #[test]
-    fn zero() {
-      assert_eq!(crate::p8::round_from(0.0f32), crate::p8::ZERO);
-      assert_eq!(crate::p16::round_from(0.0f32), crate::p16::ZERO);
-      assert_eq!(crate::p32::round_from(0.0f32), crate::p32::ZERO);
-      assert_eq!(crate::p64::round_from(0.0f32), crate::p64::ZERO);
-      assert_eq!(Posit::<8, 0, i8>::round_from(0.0f32), Posit::<8, 0, i8>::ZERO);
-      assert_eq!(Posit::<10, 0, i16>::round_from(0.0f32), Posit::<10, 0, i16>::ZERO);
-      assert_eq!(Posit::<10, 1, i16>::round_from(0.0f32), Posit::<10, 1, i16>::ZERO);
-      assert_eq!(Posit::<10, 2, i16>::round_from(0.0f32), Posit::<10, 2, i16>::ZERO);
-      assert_eq!(Posit::<10, 3, i16>::round_from(0.0f32), Posit::<10, 3, i16>::ZERO);
-    }
-
-    #[test]
-    fn one() {
-      assert_eq!(crate::p8::round_from(1.0f32), crate::p8::ONE);
-      assert_eq!(crate::p16::round_from(1.0f32), crate::p16::ONE);
-      assert_eq!(crate::p32::round_from(1.0f32), crate::p32::ONE);
-      assert_eq!(crate::p64::round_from(1.0f32), crate::p64::ONE);
-      assert_eq!(Posit::<8, 0, i8>::round_from(1.0f32), Posit::<8, 0, i8>::ONE);
-      assert_eq!(Posit::<10, 0, i16>::round_from(1.0f32), Posit::<10, 0, i16>::ONE);
-      assert_eq!(Posit::<10, 1, i16>::round_from(1.0f32), Posit::<10, 1, i16>::ONE);
-      assert_eq!(Posit::<10, 2, i16>::round_from(1.0f32), Posit::<10, 2, i16>::ONE);
-      assert_eq!(Posit::<10, 3, i16>::round_from(1.0f32), Posit::<10, 3, i16>::ONE);
-    }
-
-    #[test]
-    fn minus_one() {
-      assert_eq!(crate::p8::round_from(-1.0f32), crate::p8::MINUS_ONE);
-      assert_eq!(crate::p16::round_from(-1.0f32), crate::p16::MINUS_ONE);
-      assert_eq!(crate::p32::round_from(-1.0f32), crate::p32::MINUS_ONE);
-      assert_eq!(crate::p64::round_from(-1.0f32), crate::p64::MINUS_ONE);
-      assert_eq!(Posit::<8, 0, i8>::round_from(-1.0f32), Posit::<8, 0, i8>::MINUS_ONE);
-      assert_eq!(Posit::<10, 0, i16>::round_from(-1.0f32), Posit::<10, 0, i16>::MINUS_ONE);
-      assert_eq!(Posit::<10, 1, i16>::round_from(-1.0f32), Posit::<10, 1, i16>::MINUS_ONE);
-      assert_eq!(Posit::<10, 2, i16>::round_from(-1.0f32), Posit::<10, 2, i16>::MINUS_ONE);
-      assert_eq!(Posit::<10, 3, i16>::round_from(-1.0f32), Posit::<10, 3, i16>::MINUS_ONE);
-    }
-
-    #[test]
-    fn nan() {
-      assert_eq!(crate::p8::round_from(f32::NAN), crate::p8::NAR);
-      assert_eq!(crate::p16::round_from(f32::NAN), crate::p16::NAR);
-      assert_eq!(crate::p32::round_from(f32::NAN), crate::p32::NAR);
-      assert_eq!(crate::p64::round_from(f32::NAN), crate::p64::NAR);
-      assert_eq!(Posit::<8, 0, i8>::round_from(f32::NAN), Posit::<8, 0, i8>::NAR);
-      assert_eq!(Posit::<10, 0, i16>::round_from(f32::NAN), Posit::<10, 0, i16>::NAR);
-      assert_eq!(Posit::<10, 1, i16>::round_from(f32::NAN), Posit::<10, 1, i16>::NAR);
-      assert_eq!(Posit::<10, 2, i16>::round_from(f32::NAN), Posit::<10, 2, i16>::NAR);
-      assert_eq!(Posit::<10, 3, i16>::round_from(f32::NAN), Posit::<10, 3, i16>::NAR);
-    }
-
-    #[test]
-    fn min_positive() {
-      assert_eq!(crate::p8::round_from(f32::MIN_POSITIVE), crate::p8::MIN_POSITIVE);
-      assert_eq!(crate::p16::round_from(f32::MIN_POSITIVE), crate::p16::MIN_POSITIVE);
-      assert_eq!(crate::p32::round_from(f32::MIN_POSITIVE), crate::p32::MIN_POSITIVE);
-      // assert_eq!(crate::p64::round_from(f32::MIN_POSITIVE), crate::p64::MIN_POSITIVE);
-      assert_eq!(Posit::<8, 0, i8>::round_from(f32::MIN_POSITIVE), Posit::<8, 0, i8>::MIN_POSITIVE);
-      assert_eq!(Posit::<10, 0, i16>::round_from(f32::MIN_POSITIVE), Posit::<10, 0, i16>::MIN_POSITIVE);
-      assert_eq!(Posit::<10, 1, i16>::round_from(f32::MIN_POSITIVE), Posit::<10, 1, i16>::MIN_POSITIVE);
-      assert_eq!(Posit::<10, 2, i16>::round_from(f32::MIN_POSITIVE), Posit::<10, 2, i16>::MIN_POSITIVE);
-      assert_eq!(Posit::<10, 3, i16>::round_from(f32::MIN_POSITIVE), Posit::<10, 3, i16>::MIN_POSITIVE);
-    }
-
-    #[test]
-    fn max_negative() {
-      assert_eq!(crate::p8::round_from(-f32::MIN_POSITIVE), crate::p8::MAX_NEGATIVE);
-      assert_eq!(crate::p16::round_from(-f32::MIN_POSITIVE), crate::p16::MAX_NEGATIVE);
-      assert_eq!(crate::p32::round_from(-f32::MIN_POSITIVE), crate::p32::MAX_NEGATIVE);
-      // assert_eq!(crate::p64::round_from(-f32::MIN_POSITIVE), crate::p64::MAX_NEGATIVE);
-      assert_eq!(Posit::<8, 0, i8>::round_from(-f32::MIN_POSITIVE), Posit::<8, 0, i8>::MAX_NEGATIVE);
-      assert_eq!(Posit::<10, 0, i16>::round_from(-f32::MIN_POSITIVE), Posit::<10, 0, i16>::MAX_NEGATIVE);
-      assert_eq!(Posit::<10, 1, i16>::round_from(-f32::MIN_POSITIVE), Posit::<10, 1, i16>::MAX_NEGATIVE);
-      assert_eq!(Posit::<10, 2, i16>::round_from(-f32::MIN_POSITIVE), Posit::<10, 2, i16>::MAX_NEGATIVE);
-      assert_eq!(Posit::<10, 3, i16>::round_from(-f32::MIN_POSITIVE), Posit::<10, 3, i16>::MAX_NEGATIVE);
-    }
-
-    proptest!{
-      #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
-
-      #[test]
-      fn posit_10_0_proptest(float in any::<f32>()) {
-        assert!(is_correct_rounded::<10, 0, i16>(float), "{:?}", float)
-      }
-
-      #[test]
-      fn posit_10_1_proptest(float in any::<f32>()) {
-        assert!(is_correct_rounded::<10, 1, i16>(float), "{:?}", float)
-      }
-
-      #[test]
-      fn posit_10_2_proptest(float in any::<f32>()) {
-        assert!(is_correct_rounded::<10, 2, i16>(float), "{:?}", float)
-      }
-
-      #[test]
-      fn posit_10_3_proptest(float in any::<f32>()) {
-        assert!(is_correct_rounded::<10, 3, i16>(float), "{:?}", float)
-      }
-
-      #[test]
-      fn posit_8_0_proptest(float in any::<f32>()) {
-        assert!(is_correct_rounded::<8, 0, i8>(float), "{:?}", float)
-      }
-
-      #[test]
-      fn p8_proptest(float in any::<f32>()) {
-        assert!(is_correct_rounded::<8, 2, i8>(float), "{:?}", float)
-      }
-
-      #[test]
-      fn p16_proptest(float in any::<f32>()) {
-        assert!(is_correct_rounded::<16, 2, i16>(float), "{:?}", float)
-      }
-
-      #[test]
-      fn p32_proptest(float in any::<f32>()) {
-        assert!(is_correct_rounded::<32, 2, i32>(float), "{:?}", float)
-      }
-
-      #[test]
-      fn p64_proptest(float in any::<f32>()) {
-        assert!(is_correct_rounded::<64, 2, i64>(float), "{:?}", float)
-      }
-    }
+    mod posit_8_0 { make_tests!{f32, Posit::<8, 0, i8>} }
+    mod posit_10_0 { make_tests!{f32, Posit::<10, 0, i16>} }
+    mod posit_10_1 { make_tests!{f32, Posit::<10, 1, i16>} }
+    mod posit_10_2 { make_tests!{f32, Posit::<10, 2, i16>} }
+    mod posit_10_3 { make_tests!{f32, Posit::<10, 3, i16>} }
   }
-
-  // TODO remove code duplication in tests...?
 }
