@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 
-use fast_posit::{p32, p64, q32, q64};
+use fast_posit::{p32, p64, q32, q64, RoundFrom};
 
 // Establish a baseline by comparing with a single fpu add
 
@@ -143,6 +143,29 @@ fn quire_add_p32(c: &mut Criterion) {
   g.finish();
 }
 
+fn quire_from_p32(c: &mut Criterion) {
+  let mut g = c.benchmark_group("quire_from_p32");
+  for num in NUMS_32 {
+    g.throughput(Throughput::Elements(1));
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:032b}", num.to_bits())), &num, |b, &num| {
+      b.iter(|| { q32::from(black_box(num)) });
+    });
+  }
+  g.finish();
+}
+
+fn quire_into_p32(c: &mut Criterion) {
+  let mut g = c.benchmark_group("quire_into_p32");
+  for num in NUMS_32 {
+    let quire = q32::from(num);
+    g.throughput(Throughput::Elements(1));
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:032b}", num.to_bits())), &num, |b, &num| {
+      b.iter(|| { p32::round_from(black_box(&quire)) });
+    });
+  }
+  g.finish();
+}
+
 const NUMS_64: [p64; 4] = [
   unsafe { p64::from_bits_unchecked(0b0010101110010111011011110110001100101001101111011111000111100111u64 as _) },
   unsafe { p64::from_bits_unchecked(0b0000000001010101010011110010010100011000100101110110100010000011u64 as _) },
@@ -154,7 +177,7 @@ fn decode_p64(c: &mut Criterion) {
   let mut g = c.benchmark_group("decode_p64");
   for num in NUMS_64 {
     g.throughput(Throughput::Elements(1));
-    g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:032b}", num.to_bits())), &num, |b, &num| {
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:064b}", num.to_bits())), &num, |b, &num| {
       b.iter(|| unsafe { black_box(num).bench_decode_regular() } );
     });
   }
@@ -167,7 +190,7 @@ fn encode_p64(c: &mut Criterion) {
     let dec = unsafe { num.bench_decode_regular() };
     let sticky = i as i64 % 2;
     g.throughput(Throughput::Elements(1));
-    g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:032b}", num.to_bits())), &num, |b, &num| {
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:064b}", num.to_bits())), &num, |b, &num| {
       b.iter(|| unsafe { black_box(dec).bench_encode_regular_round(black_box(sticky)) } );
     });
   }
@@ -261,8 +284,31 @@ fn quire_add_p64(c: &mut Criterion) {
   let mut g = c.benchmark_group("quire_add_p64");
   for num in NUMS_64 {
     g.throughput(Throughput::Elements(1));
-    g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:032b}", num.to_bits())), &num, |b, &num| {
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:064b}", num.to_bits())), &num, |b, &num| {
       b.iter(|| { let mut q = q64::ZERO; q += black_box(num) });
+    });
+  }
+  g.finish();
+}
+
+fn quire_from_p64(c: &mut Criterion) {
+  let mut g = c.benchmark_group("quire_from_p64");
+  for num in NUMS_64 {
+    g.throughput(Throughput::Elements(1));
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:064b}", num.to_bits())), &num, |b, &num| {
+      b.iter(|| { q64::from(black_box(num)) });
+    });
+  }
+  g.finish();
+}
+
+fn quire_into_p64(c: &mut Criterion) {
+  let mut g = c.benchmark_group("quire_into_p64");
+  for num in NUMS_64 {
+    let quire = q64::from(num);
+    g.throughput(Throughput::Elements(1));
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("0b{:064b}", num.to_bits())), &num, |b, &num| {
+      b.iter(|| { p64::round_from(black_box(&quire)) });
     });
   }
   g.finish();
@@ -309,6 +355,10 @@ criterion_group!(div,
 criterion_group!(quire,
   quire_add_p32,
   quire_add_p64,
+  quire_from_p32,
+  quire_from_p64,
+  quire_into_p32,
+  quire_into_p64,
 );
 
 criterion_main!(baseline_fpu, decode, encode, add, mul, div, quire);
