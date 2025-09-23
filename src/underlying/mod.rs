@@ -128,6 +128,8 @@ pub trait Sealed:
   fn multiword_shl(self, n: u32) -> (Self, Self, usize);  // TODO return (Self::Double, usize)
 }
 
+// TODO pub trait IntBigEndian
+
 /// This trait models the unsigned counterpart to an [`Int`].
 pub trait Unsigned:
   core::fmt::Debug + core::fmt::Display + core::fmt::Binary +

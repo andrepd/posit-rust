@@ -83,13 +83,13 @@ assert_eq!(p8::ONE.to_bits(), 0b01000000);
 use fast_posit::{q8, q16, q32, q64};
 let mut quire = q16::ZERO;
 quire += p16::MAX;
-quire += p16::round_from(0.001); // Would overflow
+quire += p16::round_from(0.1);
 quire -= p16::MAX;
-let result = p16::from(quire);
+let result: p16 = (&quire).round_into();
 // Correct result with the quire, no issues with rounding errors.
-assert_eq!(result, p16::round_from(0.001))
+assert_eq!(result, p16::round_from(0.1))
 // The same sum without the quire would give a wrong result, due to double rounding.
-let posit = p16::MAX + p16::round_from(0.001) - p16::MAX;
+let posit = p16::MAX + p16::round_from(0.1) - p16::MAX;
 assert_eq!(posit, p16::ZERO);
 
 // Use a quire per thread to ensure the result is the same regardless of parallelisation!
@@ -104,7 +104,7 @@ for thread in 0..8 {
 for thread in 1..8 {
   quires[0] += quire[thread]
 }
-let result: p16 = quires[0].round_into();
+let result: p16 = (&quires[0]).round_into();
 
 // Use mixed-precision with no hassle; it's very cheap when the ES is the same.
 let mut quire = q64::ZERO;

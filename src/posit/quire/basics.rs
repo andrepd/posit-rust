@@ -20,12 +20,16 @@ impl<
     Self(bytes)
   }
 
-  /// Access the storage as an array of `u64`s. 
+  /// Access the storage as an array of **big-endian** `Int`s. 
+  ///
+  /// Limitation: even though the return size is known, we cannot return an `&[Int; N]` due to
+  /// limitations in the Rust type system. We have to hope that the compiler will inline and fold
+  /// the slice len :)
   #[inline]
-  pub(crate) const fn as_u64_array(&self) -> &[u64] {
+  pub(crate) const fn as_int_array<Int: crate::Int>(&self) -> &[Int] {
     const { assert!(SIZE % 8 == 0, "Quire SIZE must be a multiple of 64 bits (8 bytes)"); }
-    let ptr = self.0.as_ptr() as *const u64;
-    let len = SIZE / 8;
+    let ptr = self.0.as_ptr() as *const Int;
+    let len = SIZE / (Int::BITS as usize / 8);
     // SAFETY: ptr and len form a valid slice; the size and alignment is correct, and any bit
     // pattern is a valid u64 value.
     unsafe { core::slice::from_raw_parts(ptr, len) }
@@ -105,8 +109,8 @@ impl<
     // Therefore, for almost all cases where the quire is not NaR, we only need a compare and
     // branch. Only on when the quire is NaR, or in the rare cases where it's not NaR but still
     // starts with `0b1000…`, will we need to scan through the whole thing.
-    let quire = self.as_u64_array();
-    if quire[0] != (i64::MIN as u64).to_be() { return false }  // TODO mark likely?
+    let quire: &[i64] = self.as_int_array();
+    if quire[0] != i64::MIN.to_be() { return false }  // TODO mark likely?
     // Written in this awkward way because it's a `const fn`...
     let mut i = 1;
     while i < quire.len() {
