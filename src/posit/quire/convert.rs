@@ -52,11 +52,11 @@ mod tests {
     };
   }
 
-  /*test_exhaustive!{
+  test_exhaustive!{
     posit_10_0_exhaustive,
     Posit::<10, 0, i16>,
     Quire::<10, 0, 128>,
-  }*/
+  }
 
   test_exhaustive!{
     posit_10_1_exhaustive,
@@ -76,11 +76,11 @@ mod tests {
     Quire::<10, 3, 128>,
   }
 
-  /*test_exhaustive!{
+  test_exhaustive!{
     posit_8_0_exhaustive,
     Posit::<8, 0, i8>,
     Quire::<8, 0, 128>,
-  }*/
+  }
 
   test_exhaustive!{
     p8_exhaustive,
@@ -106,21 +106,21 @@ mod tests {
     crate::q64,
   }
 
-  /*test_exhaustive!{
+  test_exhaustive!{
     posit_3_0_exhaustive,
     Posit::<3, 0, i8>,
     Quire::<3, 0, 128>,
-  }*/
+  }
 
-  /*test_exhaustive!{
+  test_exhaustive!{
     posit_4_0_exhaustive,
     Posit::<4, 0, i8>,
     Quire::<4, 0, 128>,
-  }*/
+  }
 
-  /*test_exhaustive!{
+  test_exhaustive!{
     posit_4_1_exhaustive,
     Posit::<4, 1, i8>,
     Quire::<4, 1, 128>,
-  }*/
+  }
 }

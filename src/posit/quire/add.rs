@@ -85,22 +85,41 @@ impl<
   /// `x` must be the result of a [`Posit::decode_regular`] call, or calling this function
   /// is *undefined behaviour*.
   pub(crate) unsafe fn accumulate_decoded<Int: crate::Int>(&mut self, x: Decoded<N, ES, Int>) {
-    debug_assert!(x.exp <= Posit::<N, ES, Int>::MAX_EXP + Int::ONE);
+    debug_assert!(x.exp.abs() <= Posit::<N, ES, Int>::MAX_EXP + Int::ONE);
 
     // The quire is a fixed-point accumulator wide enough to accomodate the product of any two
     // posits (i.e. exponents from 2×MIN_EXP to 2×MAX_EXP), plus a number of carry bits.
     //
-    // Accumulating a decoded is easy: we just take the `frac` and shift it `exp` places from the
+    // Accumulating a Decoded is easy: we just take the `frac` and shift it `exp` places from the
     // fixed point, which is `WIDTH` places from the right. Positive `exp`s mean the `frac` is
     // shifted left of the fixed point, negative `exp`s mean the `frac` is shifted right of the
     // fixed point.
     //
-    // TODO: if `WIDTH` is small enough, then `shift` could be negative. In this case, we have to
-    // shift right by the inverse amount.
-    let shift = (Int::of_u32(Self::WIDTH - Decoded::<N, ES, Int>::FRAC_WIDTH) + x.exp).as_u32();
-    let (hi, lo, offset) = x.frac.multiword_shl(shift);
+    // Writing `base_shift` as `WIDTH - FRAC_WIDTH`: we need to shift by `base_shift + x.exp`.
+    let base_shift = Int::of_u32(Self::WIDTH) - Int::of_u32(Decoded::<N, ES, Int>::FRAC_WIDTH);
+    let shift = base_shift + x.exp;
 
-    // SAFETY: `x.exp` is between `MIN_EXP` and `MAX_EXP`, so the `offset` is always `< SIZE / 2`.
-    unsafe { self.accumulate([hi, lo], offset) }
+    // One caveat: even though `shift` is almost always positive (a left-shift), if `FRAC_WIDTH` is
+    // wide enough, then `shift` might be negative and we might actually need to shift the `frac`
+    // right, not left.
+    //
+    // To ensure we do not do an extra branch when this is guaranteed not to happen (which is the
+    // case for most "reasonable" types, including standard types), we place this branch behind an
+    // `if const` (well, not quite because of limitations in Rust, but yes, `base_shift` is a
+    // constant and will be folded out). We simply check if `base_shift - MAX_EXP` can ever be
+    // negative (a right-shift). If not, this branch is not even included in the binary.
+    if base_shift <= Posit::<N, ES, Int>::MAX_EXP && shift < Int::ZERO {
+      // Note: no bits of `frac` are actually lost in the right-shift; this is just because `Int`
+      // itself is wide enough relative to `N` and `ES`.
+      let shift_right = (-shift).as_u32();
+      debug_assert_eq!(x.frac.mask_lsb(shift_right), Int::ZERO);
+      // SAFETY: `limbs` is only one `Int`, and `offset` is `0`.
+      unsafe { self.accumulate([x.frac >> shift_right], 0) }
+    } else {
+      let shift_left = shift.as_u32();
+      let (hi, lo, offset) = x.frac.multiword_shl(shift_left);
+      // SAFETY: `x.exp` is between `MIN_EXP` and `MAX_EXP`, so the `offset` is always `< SIZE / 2`.
+      unsafe { self.accumulate([hi, lo], offset) }
+    }
   }
 }
