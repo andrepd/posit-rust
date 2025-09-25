@@ -151,7 +151,7 @@ impl<
     //   ...x | 0     |  x     | round down (+0)
     //   ...0 | 1     | =0     | round down to even (+0)
     //   ...1 | 1     | =0     | round up to even (+1)
-    //   ...x | 1     | ≠1     | round up (+1)
+    //   ...x | 1     | ≠0     | round up (+1)
     //
     // So this means that if we keep track of these three things, that is: (1) set `round` equal to
     // the leftmost of all the shifted out bits, (2) accumulate into `sticky` all the rest of the

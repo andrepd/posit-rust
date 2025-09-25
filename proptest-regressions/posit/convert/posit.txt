@@ -1,0 +1,16 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc dc80a9e9a79f39cff97ff48210b45cc98daf3960d06215a7861457b2530f4a65 # shrinks to src = Posit(0b1111111111111111)
+cc d72047597e82c8a2eb0732b786cfd60243baa0401d0ab8d1798dc1eabbd0cca2 # shrinks to src = Posit(0b1111111111111111)
+cc 422fe85a1fc07e74b513867a30a84faba206523f4058df44d2a3c885b9ef2e30 # shrinks to src = Posit(0b1111111111111111)
+cc bd2282db8c106b6c330935ba5fef3a7a99f960c4bbebb985515bf04cf52ae64a # shrinks to src = Posit(0b1000000010000000)
+cc 80c3acce084d9c8fbdeb424cd3700fd26cc772d9a55937616b00d61a1fe691de # shrinks to src = Posit(0b1111111111111111)
+cc 7d896929af799e7c218cf26551f4844ff97af7304081edaff4d3550e73b7e747 # shrinks to src = Posit(0b11111111111111111111111111111111)
+cc cfcb8d1458b78b83b4d0ab6c46126e1df303a29857429f8530531d50a44d8168 # shrinks to src = Posit(0b1111111111111111111111111111111111111111111111111111111111111111)
+cc 0270d051d76fcda2a86d80c2237f79e056020f1e6d59f702d6e01985f1712101 # shrinks to src = Posit(0b1000000010000000)
+cc aadfb77cb7b50b9f830c9401d12bf2e9c21784cd574fe2b7f373229fcd456c9a # shrinks to src = Posit(0b1000000000100000)
+cc cbc1daa835124d74ebbf58dc4477237a355804db7987e0cdf442e6953658cb38 # shrinks to src = Posit(0b0111111111100000)

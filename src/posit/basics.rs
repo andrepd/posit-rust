@@ -96,6 +96,13 @@ impl<
   pub const fn to_bits(self) -> Int {
     self.0
   }
+
+  /// Checks whether `self` is an exception ([0](Self::ZERO) or [NaR](Self::NAR)), that is, the
+  /// same as `self == Self::ZERO || self == Self::NAR`, but faster.
+  #[inline]
+  pub(crate) fn is_special(&self) -> bool {
+    (self.0 << Self::JUNK_BITS) << 1 == Int::ZERO
+  }
 }
 
 impl<
@@ -121,6 +128,8 @@ impl<
   ///
   /// and so on.
   pub(crate) const FRAC_DENOM: Int = const_as(1i128 << Self::FRAC_WIDTH);
+
+  // TODO MIN/MAX_EXP? Used a couple of times
 
   /// As [`Posit::BITS`].
   pub const BITS: u32 = Posit::<N, ES, Int>::BITS;

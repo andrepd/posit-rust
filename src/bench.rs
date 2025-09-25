@@ -305,3 +305,13 @@ pub fn round_f32_to_p32(num: f32) -> crate::p32 {
 pub fn round_f32_to_p64(num: f32) -> crate::p64 {
   num.round_into()
 }
+
+#[unsafe(no_mangle)]
+pub fn round_p32_to_p16(num: crate::p32) -> crate::p16 {
+  num.convert()
+}
+
+#[unsafe(no_mangle)]
+pub fn round_p16_to_p32(num: crate::p16) -> crate::p32 {
+  num.convert()
+}

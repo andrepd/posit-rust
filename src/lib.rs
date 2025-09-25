@@ -79,9 +79,15 @@
 //! let result: p16 = (&quires[0]).round_into();
 //!
 //! // Use mixed-precision with no hassle; it's very cheap when the ES is the same.
-//! //TODO let mut quire = q64::ZERO;
-//! //TODO quire += q64::from(42);
-//! //TODO quire += q8::round_from(12).into();
+//! let terms = [3, 7, 15, 1].map(p8::round_from);
+//! let pi = {
+//!   let mut partial = p64::ZERO;
+//!   for i in terms[1..].iter().rev() {
+//!     partial = p64::ONE / (i.convert() + partial)
+//!   }
+//!   terms[0].convert() + partial
+//! };
+//! assert!((3.141592.round_into() .. 3.141593.round_into()).contains(&pi));
 //! ```
 //!
 //! # Performance
