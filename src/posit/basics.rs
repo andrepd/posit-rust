@@ -6,7 +6,7 @@ impl<
   const ES: u32,
   Int: crate::Int,
 > Posit<N, ES, Int> {
-  /// The size of this Posit type in bits.
+  /// The size of this Posit type in bits (i.e. parameter `N`).
   ///
   /// Note: this is the logical size, not necessarily the size of the underlying type.
   pub const BITS: u32 = {
@@ -21,7 +21,7 @@ impl<
     N
   };
 
-  /// The number of exponent bits.
+  /// The number of exponent bits (i.e. parameter `ES`).
   pub const ES: u32 = {
     assert!(
       ES <= N,

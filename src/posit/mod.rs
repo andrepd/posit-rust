@@ -40,21 +40,21 @@
 /// A *posit* floating point number with `N` bits and `ES` exponent bits, using `Int` as its
 /// underlying type.
 ///
-/// ## Examples:
+/// Type aliases are provided at the [crate root](crate#types) for the posit types defined in
+/// [the standard](https://posithub.org/docs/posit_standard-2.pdf#subsection.3.1).
+///
+/// # Examples:
 ///
 /// ```
 /// # use fast_posit::Posit;
-/// type Foo = Posit::<32, 2, i32>;  // A 32-bit posit with 2-bit exponent field, represented in a
-///                                  // 32-bit machine type
-/// type Bar = Posit::<6, 1, i8>;  // A 6-bit posit with 1-bit exponent field, represented in an
-///                                // 8-bit machine type.
+/// // A 32-bit posit with 2-bit exponent field, represented in a 32-bit machine type
+/// type Foo = Posit<32, 2, i32>;
+/// // A 6-bit posit with 1-bit exponent field, represented in an 8-bit machine type.
+/// type Bar = Posit<6, 1, i8>;
 /// ```
 ///
 /// Note that `Posit` will have the same size (and alignment) as its `Int` parameter, so it's
 /// currently not possible to create e.g. a 4-bit posit that only takes 4 bits in memory.
-///
-/// Type aliases are provided at the [crate root](crate#types) for the posit types defined in
-/// [the standard](https://posithub.org/docs/posit_standard-2.pdf#subsection.3.1).
 #[derive(Clone, Copy)]
 #[derive(Eq, PartialEq, Ord, PartialOrd, Hash)]  // Eq and Ord are the same as for two's complement int
 #[derive(Default)]

@@ -15,14 +15,14 @@ use super::*;
 /// If the quire `SIZE` is smaller than [the minimum size](Quire::MIN_SIZE), or if it is not a
 /// multiple of 8, a **compilation error** is raised.
 ///
+/// Type aliases are provided at the [crate root](crate#types) for the quire types defined in
+/// [the standard](https://posithub.org/docs/posit_standard-2.pdf#subsection.3.1).
+///
 /// # Examples
 ///
 /// ```
 /// // TODO
 /// ```
-///
-/// Type aliases are provided at the [crate root](crate#types) for the quire types defined in
-/// [the standard](https://posithub.org/docs/posit_standard-2.pdf#subsection.3.1).
 //
 // The quire is represented as an array of bytes in big-endian order. This is because (we theorise
 // at the moment, with no data) since most operations need to start by checking if the most
