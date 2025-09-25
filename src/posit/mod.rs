@@ -26,13 +26,13 @@
 //!
 //! Extensive tests are included. When possible, we check all inputs exhaustively (e.g.: adding two
 //! 8-bit posits, there are only 256² possible inputs). Whenever this is not feasible (e.g: adding
-//! two 64-bit posits), we make use of the [`proptest`] crate, which allows us to
-//! probabilistically test inputs from a random distribution.
+//! two 64-bit posits), we make use of the `proptest` crate, which allows us to probabilistically
+//! test inputs from a random distribution.
 //!
-//! Another key ingredient in the testing process is in the [`rational`] submodule. There, we
-//! define some tools to convert to and from *arbitrary precision* rational numbers. Since any
-//! non-NaR posit is a rational number, we can test any function in this crate involving posits by
-//! simply checking that the output matches the output of the equivalent function using
+//! Another key ingredient in the testing process is in the `rational` submodule. There, we define
+//! some tools to convert to and from *arbitrary precision* rational numbers. Since any non-NaR
+//! posit is a rational number, we can test any function in this crate involving posits by simply
+//! checking that the output matches the output of the equivalent function using
 //! infinite-precision rationals. For instance: to test addition of two posits, we simply check
 //! that `rational(a) + rational(b) == rational(a + b)`, i.e. adding the posits yields the same
 //! result as adding the arbitrary-precision rationals (modulo rounding, of course).
@@ -71,30 +71,33 @@ pub struct Posit<
 /// This is represented as a `Decoded<N, ES, Int>`, a struct that contains two integer fields,
 /// `frac` and `exp`, such that it represents the value
 ///
-/// ```md
-/// `frac` / `FRAC_DENOM` × 2 ^ `exp`
+/// ```text
+/// (frac / FRAC_DENOM) × (2 ^ exp)
 /// ```
 ///
-/// where `FRAC_DENOM` is a fixed power of two, `2 ^ (B-2)`, where `B` = `Int::BITS`.
+/// where `FRAC_DENOM` is a fixed power of two, equal to `2 ^ (B-2)`, where `B` = `Int::BITS`.
 ///
-/// That is to say: this encodes the `f × 2^e` referred above using two integers: the integer `exp`
-/// is the integer `e`, and the integer `frac` is the rational `f` *with an implicit denominator*
-/// of `1 << (B-2)`.
+/// That is to say: this encodes the `f × 2^e` referred above using two integers:
+/// - The integer [`exp`](Self::exp) is the integer `e`, and
+/// - The integer [`frac`](Self::frac) is the rational `f` *with an implicit denominator* of
+/// `1 << (B-2)`.
 ///
 /// Another way to think of it is that `frac` is a fixed-point rational number, where the dot is
 /// two places from the left. For instance (for an 8-bit `frac`):
 ///
-///   - 0b01_000000 = +1.00
-///   - 0b01_100000 = +1.50
-///   - 0b10_000000 = -2.00
-///   - 0b11_100000 = -0.50
+///   - `0b01_000000` = +1.00
+///   - `0b01_100000` = +1.50
+///   - `0b10_000000` = -2.00
+///   - `0b11_100000` = -0.50
 ///
-/// and so on. See the docstrings for [both](Decoded::frac) [fields](Decoded::exp) for more detail
-/// about their values.
+/// and so on.
+///
+/// The docstrings for [both](Decoded::frac) [fields](Decoded::exp) contain more detail, more
+/// examples, and further considerations about their values.
 ///
 /// Extracting these fields from a posit, and converting back to a posit with correct rounding, can
 /// be done **very** efficiently, and indeed those two algorithms lie at the heart of many
-/// operations.
+/// operations: [`Posit::decode_regular`] and [`Decoded::encode_regular_round`].
 #[derive(Clone, Copy)]
 #[derive(Eq, PartialEq, Hash)]
 pub struct Decoded<
@@ -120,12 +123,12 @@ pub struct Decoded<
   ///   - `0b10_100000`  = -1.5
   ///   - `0b10_110000`  = -1.25
   ///   - `0b10_010000`  = -1.75
-  ///   - `0b10_000001`  = -1.015625
-  ///   - `0b10_111111`  = -1.984375
+  ///   - `0b10_000001`  = -1.984375
+  ///   - `0b10_111111`  = -1.015625
   ///
   /// # Valid ranges
   ///
-  /// Now, the result of [Posit::decode_regular] always has a `frac` lying within the following
+  /// Now, the result of [`Posit::decode_regular`] always has a `frac` lying within the following
   /// ranges:
   ///
   ///   - [+1.0, +2.0[ for positive numbers
@@ -139,19 +142,21 @@ pub struct Decoded<
   /// In terms of bit patterns, this corresponds to requiring that the `frac` starts with either
   /// `0b01` (positive) or `0b10` (negative), and never with `0b00` or `0b11`.
   ///
-  /// Likewise, for the input to [Decoded::encode_regular] we **also** require that `frac` **must**
-  /// always be in such a valid range. Whenever this is not the case, we say that the `frac`
-  /// is "*underflowing*".
+  /// Likewise, for the input to [`Decoded::encode_regular`] we **also** require that
+  /// `frac` **must** always be in such a valid range. Whenever this is not the case, we say that
+  /// the `frac` is "*underflowing*". This is checked, together with the bounds for
+  /// [`exp`](Self::exp), by the function [`Self::is_normalised`].
   ///
-  /// Often, when we feed a [Decoded] to [Decoded::encode_regular], such as when implementing
-  /// arithmetic operations, we will need to adjust the `frac` so that it is in the correct range
-  /// (and possibly compensate by adjusting the `exp`onent in the opposite direction).
+  /// This is important. Often, when we feed a [`Decoded`] to [`Decoded::encode_regular`], such as
+  /// when implementing arithmetic operations, we will need to for instance adjust the `frac` so
+  /// that it is in the correct range, and possibly compensate by adjusting the `exp`onent in the
+  /// opposite direction.
   pub frac: Int,
-  /// The `exp`onent is the `2 ^ exp` part. of the posit value.
+  /// The `exp`onent is the `2 ^ exp` part of the posit value.
   ///
   /// The `exp` field is made up from both the "regime" and "exponent" fields of a posit: the
-  /// lowest `ES` bits are the exponent field exactly, while the highest come from the regime's
-  /// length and sign. The structure is apparent when looking at the binary `exp`.
+  /// lowest `ES` bits are the exponent field verbatim, while the highest come from the regime's
+  /// length and sign. The structure is apparent when looking at the `exp` in binary.
   ///
   /// Examples (8-bit posit, 2-bit exponent):
   ///
@@ -160,15 +165,18 @@ pub struct Decoded<
   ///
   /// # Valid ranges
   ///
-  /// For reasons that become apparent when implementing [Self::encode_regular], we will also
-  /// require that `exp` lies in a certain range, namely between `Int::MIN / 2` and `Int::MAX /
-  /// 2`, inclusive.
+  /// For reasons that become apparent when implementing [`Decoded::encode_regular`], we will also
+  /// require that `exp >> ES` lies in a certain range, namely between `Int::MIN / 2` and
+  /// `Int::MAX / 2`, inclusive.
   ///
-  /// In terms of bit patterns, this corresponds to requiring that `exp` starts with `0b00`
-  /// (positive) or `0b11` (negative), and never with `0b01` or `0b10`.
+  /// In terms of bit patterns, this corresponds to requiring that `exp >> ES` starts with `0b00`
+  /// (positive) or `0b11` (negative), and never with `0b01` or `0b10`. Plainly, this is only an
+  /// issue if `ES` is 0, or the bounds automatically hold.
   ///
-  /// This is not a concern unless `ES` takes absurdly big values, in which case compile-time
-  /// checks will trigger an error.
+  /// It may happen that, for posits of very high dynamic range, the maximum exponent would
+  /// overflow an `Int`, and thus not be able to be stored in the `exp` field. Although his is not
+  /// a concern unless `ES` takes absurdly big values, in that case compile-time checks will
+  /// trigger an error, and suggest the user lower the dynamic range or pick a bigger `Int`.
   pub exp: Int,
 }
 

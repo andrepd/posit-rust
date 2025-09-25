@@ -110,23 +110,18 @@ impl<
   const ES: u32,
   Int: crate::Int,
 > Decoded<N, ES, Int> {
-  /// The [Decoded::frac] field has the decimal point [Decoded::FRAC_WIDTH] bits from the right.
+  /// The [`Decoded::frac`] field has the decimal point [`Decoded::FRAC_WIDTH`] bits from the
+  /// right.
+  ///
+  /// If you're unsure what this means, refer to the documentation for the
+  /// [`frac`][Decoded::frac] field.
   pub(crate) const FRAC_WIDTH: u32 = Int::BITS - 2;
 
-  /// The [Decoded::frac] field represents the fraction / mantissa of a posit as a fixed-point
-  /// number, with absolute value between 1 and 2.
+  /// The [`Decoded::frac`] field represents the fraction/mantissa of a posit as a fixed-point
+  /// number. [`Decoded::FRAC_DENOM`] is the denominator of that fixed-point number.
   ///
-  /// What this means is that an (integer) number `frac` represents the (rational) number `frac` /
-  /// `FRAC_DENOM`, where `FRAC_DENOM` is the bit pattern `0b01000...`. For instance
-  ///
-  ///   | `frac`        | rational value |
-  ///   | `0b01_000000` | +1             |
-  ///   | `0b01_100000` | +1.5           |
-  ///   | `0b01_010000` | +1.25          |
-  ///   | `0b10_010000` | -1.75          |
-  ///   | `0b10_110000` | -1.25          |
-  ///
-  /// and so on.
+  /// If you're unsure what this means, refer to the documentation for the
+  /// [`frac`][Decoded::frac] field.
   pub(crate) const FRAC_DENOM: Int = const_as(1i128 << Self::FRAC_WIDTH);
 
   // TODO MIN/MAX_EXP? Used a couple of times
