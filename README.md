@@ -142,14 +142,27 @@ standard paths you may need to set `RUSTFLAGS="-L /path/to/lib"`.
 ## Features
 
 - [x] Posits with arbitrary size and arbitrary exponent size
-- [x] Basic arithmetic (+, -, ×, ÷)
-- [ ] Elementary functions (sqrt, exp)
-  - [ ] Exponentiation (sqrt, pow, hypot, etc)
-  - [ ] Exponentials and logarithms (exp, log, exp2, logPlus1, etc)
-  - [ ] Trigonometry (sin, cos, asin, cosh, etc)
+- [ ] Basics
+  - [x] Arithmetic (+, -, ×, ÷)
+  - [x] Comparisons (>, ==, …)
+  - [ ] Rounding to integer (floor, ceil, …)
+- [ ] Elementary functions
+  - [ ] Exponentials and logarithms (exp, log, exp2, logPlus1, …)
+  - [ ] Trigonometry (sin, cos, asin, …)
+  - [ ] Hyperbolics (sinh, cosh, asinh, …)
+  - [ ] Exponentiation (sqrt, pow, hypot, …)
 - [ ] Conversions
+  - [ ] To integers
+  - [x] From integers
+  - [ ] To floats
+  - [x] From floats
+  - [x] To/from posits
 - [ ] Parsing and printing
 - [ ] Quire
+  - [x] Loading/storing
+  - [x] Adding posits
+  - [ ] Adding products of posits
+  - [ ] Adding quires
 
 ## Dependencies
 
