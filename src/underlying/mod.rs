@@ -14,6 +14,7 @@ pub trait Sealed:
   core::fmt::Debug + core::fmt::Display + core::fmt::Binary +
   Copy + Clone +
   Eq + Ord +
+  core::hash::Hash + Default +
   core::ops::Add<Self, Output=Self> + core::ops::AddAssign<Self> +
   core::ops::Sub<Self, Output=Self> + core::ops::AddAssign<Self> +
   // core::ops::Mul<Self, Output=Self> +

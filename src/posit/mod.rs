@@ -55,9 +55,6 @@
 ///
 /// Note that `Posit` will have the same size (and alignment) as its `Int` parameter, so it's
 /// currently not possible to create e.g. a 4-bit posit that only takes 4 bits in memory.
-#[derive(Clone, Copy)]
-#[derive(Eq, PartialEq, Ord, PartialOrd, Hash)]  // Eq and Ord are the same as for two's complement int
-#[derive(Default)]
 pub struct Posit<
   const N: u32,
   const ES: u32,
@@ -183,6 +180,11 @@ pub struct Decoded<
 /// Some basic constants and functions, such as a check that `N` and `ES` make sense for `Int`, or
 /// functions to convert to/from raw bits.
 mod basics;
+
+/// Manual implementation of `derive`able traits for [`Posit`]. This is because the derive macro
+/// isn't smart enough to figure some transitive bounds in `Int` → `Sealed`, so we would be left
+/// with superfluous bounds on those traits.
+mod traits;
 
 /// Numeric constants: zero, NaR, min, min_positive, etc.
 mod consts;
