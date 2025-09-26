@@ -1,6 +1,6 @@
-![Github CI status](https://img.shields.io/github/actions/workflow/status/andrepd/posit-rust/ci.yml)
-![crates.io](https://img.shields.io/crates/v/fast_posit)
-![docs.rs](https://img.shields.io/docsrs/fast_posit)
+[<img alt="crates.io" src="https://img.shields.io/crates/v/fast_posit">](https://crates.io/crates/fast-posit)
+[<img alt="Github CI status" src="https://img.shields.io/github/actions/workflow/status/andrepd/posit-rust/ci.yml">](https://github.com/andrepd/posit-rust)
+[<img alt="docs.rs" src="https://img.shields.io/docsrs/fast-posit">](https://docs.rs/fast-posit/latest/fast_posit/)
 
 **🚧 Work in progress! 🚧**
 
