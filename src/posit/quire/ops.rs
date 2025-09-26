@@ -30,6 +30,15 @@ impl<
   const SIZE: usize,
 > core::ops::AddAssign<Posit<N, ES, Int>> for Quire<N, ES, SIZE> {
   /// Standard: "**qAddP**".
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// let mut quire = q16::from(p16::ONE);
+  /// quire += p16::round_from(0.42);
+  /// assert_eq!(p16::round_from(1.42), (&quire).round_into())
+  /// ```
   fn add_assign(&mut self, rhs: Posit<N, ES, Int>) {
     self.add(rhs)
   }
@@ -42,6 +51,15 @@ impl<
   const SIZE: usize,
 > core::ops::AddAssign<&Posit<N, ES, Int>> for Quire<N, ES, SIZE> {
   /// Standard: "**qAddP**".
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// let mut quire = q16::from(p16::ONE);
+  /// quire += p16::round_from(0.42);
+  /// assert_eq!(p16::round_from(1.42), (&quire).round_into())
+  /// ```
   fn add_assign(&mut self, rhs: &Posit<N, ES, Int>) {
     self.add(*rhs)
   }
@@ -54,6 +72,15 @@ impl<
   const SIZE: usize,
 > core::ops::SubAssign<Posit<N, ES, Int>> for Quire<N, ES, SIZE> {
   /// Standard: "**qSubP**".
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// let mut quire = q16::from(p16::ONE);
+  /// quire -= p16::round_from(0.42);
+  /// assert_eq!(p16::round_from(0.58), (&quire).round_into())
+  /// ```
   fn sub_assign(&mut self, rhs: Posit<N, ES, Int>) {
     self.sub(rhs)
   }
@@ -66,6 +93,15 @@ impl<
   const SIZE: usize,
 > core::ops::SubAssign<&Posit<N, ES, Int>> for Quire<N, ES, SIZE> {
   /// Standard: "**qSubP**".
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// let mut quire = q16::from(p16::ONE);
+  /// quire -= p16::round_from(0.42);
+  /// assert_eq!(p16::round_from(0.58), (&quire).round_into())
+  /// ```
   fn sub_assign(&mut self, rhs: &Posit<N, ES, Int>) {
     self.sub(*rhs)
   }

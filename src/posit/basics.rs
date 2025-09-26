@@ -9,6 +9,14 @@ impl<
   /// The size of this Posit type in bits (i.e. parameter `N`).
   ///
   /// Note: this is the logical size, not necessarily the size of the underlying type.
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// assert_eq!(p16::BITS, 16);                  // Standard posit
+  /// assert_eq!(Posit::<20, 1, i32>::BITS, 20);  // Non-standard posit
+  /// ```
   pub const BITS: u32 = {
     assert!(
       N >= 3,
@@ -22,6 +30,14 @@ impl<
   };
 
   /// The number of exponent bits (i.e. parameter `ES`).
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// assert_eq!(p16::ES, 2);                  // Standard posit
+  /// assert_eq!(Posit::<20, 1, i32>::ES, 1);  // Non-standard posit
+  /// ```
   pub const ES: u32 = {
     assert!(
       ES <= N,
@@ -71,7 +87,19 @@ impl<
   }
 
   /// Construct a posit from its raw bit representation. Bits higher (more significant) than the
-  /// lowest `N` ([`Self::BITS`]) bits, if any, are ignored.
+  /// lowest `N` bits, if any, are ignored.
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # #![allow(overflowing_literals)]
+  /// # use fast_posit::*;
+  /// assert_eq!(p8::from_bits(0), p8::ZERO);
+  /// assert_eq!(p8::from_bits(1), p8::MIN_POSITIVE);
+  /// assert_eq!(p8::from_bits(i8::MAX), p8::MAX);
+  /// assert_eq!(p8::from_bits(0b0_10_01_011), 2.75.round_into());
+  /// assert_eq!(p8::from_bits(0b1_110_00_01), (-0.0546875).round_into());
+  /// ```
   #[inline]
   pub /*const*/ fn from_bits(bits: Int) -> Self {
     Self(Self::sign_extend(bits))
@@ -84,14 +112,49 @@ impl<
   /// `bits` has to be a result of a [`Self::to_bits`] call, i.e. it has to be in the range 
   /// `-1 << (N-1) .. 1 << (N-1) - 1`, or calling this function is *undefined behaviour*. Note
   /// that if `Int::BITS == Self::BITS` this always holds.
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # #![allow(overflowing_literals)]
+  /// # use fast_posit::*;
+  /// type Posit4 = Posit<4, 1, i8>;
+  /// assert_eq!(Posit4::from_bits(0b0000_0100), Posit4::ONE);
+  /// assert_eq!(Posit4::from_bits(0b1111_1000), Posit4::NAR);
+  /// ```
+  ///
+  /// but the following would not be valid as the bits are not in a valid range (i.e. not
+  /// sign-extended past 4 bits).
+  ///
+  /// ```no_run
+  /// # #![allow(overflowing_literals)]
+  /// # use fast_posit::*;
+  /// # type Posit4 = Posit<4, 1, i8>;
+  /// Posit4::from_bits(0b0110_0100);  // Undefined behaviour!
+  /// ```
   #[inline]
   pub const unsafe fn from_bits_unchecked(bits: Int) -> Self {
     Self(bits)
   }
 
   /// Return the underlying bit representation of `self` as a machine int. Bits higher
-  /// (more significant) than the lowest `N` ([`Self::BITS`]) bits, if any, are set as equal to
-  /// the `N-1`th bit (i.e. sign-extended).
+  /// (more significant) than the lowest `N` bits, if any, are set as equal to the `N-1`th bit
+  /// (i.e. sign-extended).
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # #![allow(overflowing_literals)]
+  /// # use fast_posit::*;
+  /// assert_eq!(0b00000000, p8::ZERO.to_bits());
+  /// assert_eq!(0b01000000, p8::ONE.to_bits());
+  /// assert_eq!(0b01111111, p8::MAX.to_bits());
+  /// assert_eq!(0b00000001, p8::MIN_POSITIVE.to_bits());
+  /// assert_eq!(0b11000000, p8::MINUS_ONE.to_bits());
+  /// assert_eq!(0b10000001, p8::MIN.to_bits());
+  /// assert_eq!(0b11111111, p8::MAX_NEGATIVE.to_bits());
+  /// assert_eq!(0b10000000, p8::NAR.to_bits());
+  /// ```
   #[inline]
   pub const fn to_bits(self) -> Int {
     self.0

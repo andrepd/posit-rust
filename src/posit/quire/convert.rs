@@ -49,6 +49,17 @@ impl<
   /// the quire, and the *only* step that actually rounds.
   ///
   /// Standard: "**qToP**".
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// let mut quire = q16::from(p16::MAX);
+  /// quire += p16::round_from(0.1);
+  /// quire -= p16::MAX;
+  /// let result: p16 = (&quire).round_into();
+  /// assert_eq!(result, p16::round_from(0.1))
+  /// ```
   fn round_from(value: &'_ Quire<N, ES, SIZE>) -> Self {
     // Find the number of leading 0s or 1s in the quire. This is what will determine the `exp`, as
     // well as the position of the `frac` bits.
@@ -172,6 +183,14 @@ impl<
   /// Create a quire from a posit value.
   ///
   /// Standard: "**pToQ**".
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// let posit = p16::round_from(123);
+  /// let quire = q16::from(posit);
+  /// ```
   fn from(value: Posit<N, ES, Int>) -> Self {
     if value == Posit::ZERO {
       Self::ZERO

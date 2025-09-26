@@ -6,9 +6,23 @@ impl<
   const SIZE: usize,
 > Quire<N, ES, SIZE> {
   /// The quire size in bits.
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// assert_eq!(q16::BITS, 256);
+  /// ```
   pub const BITS: u32 = Self::SIZE as u32 * 8;
 
   /// The quire size in bytes.
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// assert_eq!(q16::SIZE, 32);
+  /// ```
   pub const SIZE: usize = {
     assert!(SIZE >= Self::MIN_SIZE, "This quire type has fewer than the minimum number of bytes");
     // if const { SIZE < Self::MIN_SIZE } { compile_error!("asdf") }
@@ -16,11 +30,19 @@ impl<
   };
 
   /// Construct a quire from its raw bit representation, in big endian order.
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// let quire = q8::from_bits([0,0,0,0, 0,0,0,0,0,1, 0,0,0,0,0,0]);
+  /// assert_eq!(p8::round_from(&quire), p8::ONE);
+  /// ```
   pub const fn from_bits(bytes: [u8; SIZE]) -> Self {
     Self(bytes)
   }
 
-  /// Access the storage as an array of **big-endian** `Int`s. 
+  /// Access the storage as an array of **big-endian** `Int`s.
   ///
   /// Limitation: even though the return size is known, we cannot return an `&[Int; N]` due to
   /// limitations in the Rust type system. We have to hope that the compiler will inline and fold
@@ -44,6 +66,13 @@ impl<
   };
 
   /// The minimum size of a quire for `Posit<N, ES, Int>`.
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// assert_eq!(q16::MIN_SIZE, 29);
+  /// ```
   pub const MIN_SIZE: usize = {
     // At worst, need to be able to represent [Posit::MAX]² + [Posit::MIN]² as a fixed point
     // number. So that's a number of bits equal to 2×2×max_exp. Then add 1 sign bit: that's the
@@ -52,9 +81,16 @@ impl<
     min_size_bits.div_ceil(8) as usize
   };
 
-  /// The minimum number of operations on the quire that can lead to overflow is 
-  /// 2 <sup>[`PROD_LIMIT`](Self::PROD_LIMIT)</sup>; any number of [Self::add_prod] calls smaller
-  /// than that is guaranteed not to overflow.
+  /// The minimum number of operations on the quire that can lead to overflow is
+  /// 2 <sup>[`PROD_LIMIT`](Self::PROD_LIMIT)</sup>; any number of [`Self::add_prod`] calls
+  /// smaller than that is guaranteed not to overflow.
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// assert_eq!(q32::PROD_LIMIT, 31);  // Can do at least 2^31 - 1 products without overflow
+  /// ```
   pub const PROD_LIMIT: u32 = {
     let _ = Self::SIZE;
     // The biggest possible product (Posit::MAX * Posit::MAX) takes `4 * MAX_EXP` bits. It can be
@@ -64,9 +100,16 @@ impl<
     8 * SIZE as u32 - min_size_bits
   };
 
-  /// The minimum number of additions of posits that can lead to overflow is 
+  /// The minimum number of additions of posits that can lead to overflow is
   /// 2 <sup>[`SUM_LIMIT`](Self::SUM_LIMIT)</sup>; any number of `+=` or `-=` operations smaller
   /// than that is guaranteed not to overflow.
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// assert_eq!(q32::SUM_LIMIT, 151);  // Can sum at least 2^151 - 1 terms without overflow
+  /// ```
   pub const SUM_LIMIT: u32 = {
     let _ = Self::SIZE;
     // The biggest possible posit value (Posit::MAX) takes `3 * MAX_EXP` bits. It can be
@@ -83,7 +126,7 @@ impl<
   };
 
   // TODO assert this on operations with posits (cannot assert here because needs to take into
-  // account the posit's underlying Int): 
+  // account the posit's underlying Int):
   // assert!(SIZE % N == 0, "The size of the quire type is not a multiple of the posit size");
 
   /// A quire that represents the posit number 0.
@@ -97,6 +140,13 @@ impl<
   };
 
   /// Checks whether `self` represents a NaR value.
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// assert!(q32::NAR.is_nar());
+  /// ```
   pub const fn is_nar(&self) -> bool {
     let _ = Self::NAR;
     // This is more optimised than it looks. If the quire is not NaR, which is the "normal" and

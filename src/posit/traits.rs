@@ -22,6 +22,19 @@ Clone for Posit<N, ES, Int> {
 impl<const N: u32, const ES: u32, Int: crate::Int>
 Copy for Posit<N, ES, Int> {}
 
+/// Note that, **unlike IEEE floats**, [NaR](Self::NAR) is equal to itself (and different from any
+/// other value).
+///
+/// # Example
+///
+/// ```
+/// # use fast_posit::*;
+/// assert!(p32::NAR == p32::NAR);
+/// assert!(f32::NAN != f32::NAN);
+///
+/// assert!(p32::NAR != 3.round_into());
+/// assert!(f32::NAN != 3.);
+/// ```
 impl<const N: u32, const ES: u32, Int: crate::Int>
 PartialEq for Posit<N, ES, Int> {
   #[inline]
@@ -33,6 +46,20 @@ PartialEq for Posit<N, ES, Int> {
 impl<const N: u32, const ES: u32, Int: crate::Int>
 Eq for Posit<N, ES, Int> {}
 
+/// Note that, **unlike IEEE floats**, posits have a total order (i.e. implement [`Ord`]).
+/// [NaR](Self::NAR) is always smaller than any other value, and equal to itself.
+///
+/// # Example
+///
+/// ```
+/// # use fast_posit::*;
+/// # use core::cmp::Ordering;
+/// assert_eq!(p32::NAR.partial_cmp(&p32::NAR), Some(Ordering::Equal));
+/// assert_eq!(f32::NAN.partial_cmp(&f32::NAN), None);
+///
+/// assert!(p32::NAR < p32::round_from(-3));
+/// assert!(!(f32::NAN < -3.) && !(f32::NAN >= -3.));
+/// ```
 impl<const N: u32, const ES: u32, Int: crate::Int>
 PartialOrd for Posit<N, ES, Int> {
   #[inline]

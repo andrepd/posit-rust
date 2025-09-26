@@ -40,21 +40,45 @@
 /// A *posit* floating point number with `N` bits and `ES` exponent bits, using `Int` as its
 /// underlying type.
 ///
+/// If `Int` = `iX`, then `N` must be in the range `3 ..= X`, and `ES` must be in the range `0 ..
+/// N`. If this is not the case, a **compile-time** error will be raised.
+///
 /// Type aliases are provided at the [crate root](crate#types) for the posit types defined in
 /// [the standard](https://posithub.org/docs/posit_standard-2.pdf#subsection.3.1).
 ///
-/// # Examples:
+/// # Example
 ///
 /// ```
 /// # use fast_posit::Posit;
-/// // A 32-bit posit with 2-bit exponent field, represented in a 32-bit machine type
+/// // A 32-bit posit with 2-bit exponent field, represented in a 32-bit machine type.
 /// type Foo = Posit<32, 2, i32>;
 /// // A 6-bit posit with 1-bit exponent field, represented in an 8-bit machine type.
 /// type Bar = Posit<6, 1, i8>;
 /// ```
 ///
+/// The standard [`p8`](crate::p8), [`p16`](crate::p16), [`p32`](crate::p32), and
+/// [`p64`](crate::p64) types are simply type aliases for `Posit<X, 2, iX>`.
+///
 /// Note that `Posit` will have the same size (and alignment) as its `Int` parameter, so it's
 /// currently not possible to create e.g. a 4-bit posit that only takes 4 bits in memory.
+///
+/// If the combination of parameters is invalid, the code will not compile.
+///
+/// ```compile_fail
+/// # use fast_posit::Posit;
+/// type Foo = Posit<40, 2, i32>;   // N=40 too large for i32
+/// # let _ = Foo::ONE;
+/// ```
+/// ```compile_fail
+/// # use fast_posit::Posit;
+/// type Bar = Posit<1, 0, i8>;     // N=1 can't be ≤ 2
+/// # let _ = Bar::ONE;
+/// ```
+/// ```compile_fail
+/// # use fast_posit::Posit;
+/// type Baz = Posit<32, 33, i32>;  // ES=33 too big for N=32
+/// # let _ = Baz::ONE + Baz::ONE;
+/// ```
 pub struct Posit<
   const N: u32,
   const ES: u32,

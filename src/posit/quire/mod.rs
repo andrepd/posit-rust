@@ -12,16 +12,33 @@ use super::*;
 /// terms). It is also required to be a multiple of 8 (64 bits) for performance reasons
 /// (this requirement will be relaxed in the future).
 ///
-/// If the quire `SIZE` is smaller than [the minimum size](Quire::MIN_SIZE), or if it is not a
-/// multiple of 8, a **compilation error** is raised.
+/// If the quire `SIZE` is smaller than [the minimum size](Quire::MIN_SIZE) necessary for an `N`
+/// bit posit with `ES` exponent bits, or if that size is not a multiple of 8, a **compilation
+/// error** is raised.
 ///
 /// Type aliases are provided at the [crate root](crate#types) for the quire types defined in
 /// [the standard](https://posithub.org/docs/posit_standard-2.pdf#subsection.3.1).
 ///
-/// # Examples
+/// # Example
 ///
 /// ```
-/// // TODO
+/// # use fast_posit::{p16, q16, Quire, RoundFrom, RoundInto};
+/// // A 256-bit (32-byte) quire for a posit with 16 bits and 1 exponent bit
+/// type Foo = Quire<16, 1, 32>;
+///
+/// // Compute sums and products in the quire with *no* loss of precision.
+/// let mut quire = q16::ZERO;
+/// quire += p16::MAX;
+/// quire += p16::round_from(0.1);
+/// quire -= p16::MAX;
+/// let result: p16 = (&quire).round_into();  // Only the final step rounds
+///
+/// // Correct result with the quire, no issues with rounding errors.
+/// assert_eq!(result, p16::round_from(0.1));
+///
+/// // The same sum without the quire would give a wrong result, due to double rounding.
+/// let posit = (p16::MAX + p16::round_from(0.1)) - p16::MAX;
+/// assert_eq!(posit, p16::ZERO);
 /// ```
 //
 // The quire is represented as an array of bytes in big-endian order. This is because (we theorise

@@ -11,6 +11,16 @@ impl<
   /// [NaR](Posit::NAR) output on a [NaR](Posit::NAR) input.
   ///
   /// Standard: "**next**".
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// assert_eq!(p8::round_from(1.).next(), p8::round_from(1.125));
+  /// assert_eq!(p8::round_from(128.).next(), p8::round_from(160.));
+  /// assert_eq!(p8::MAX.next(), p8::NAR);
+  /// assert_eq!(p8::NAR.next(), p8::MIN);
+  /// ```
   #[inline]
   pub fn next(self) -> Self {
     Self::from_bits(self.0.wrapping_add(Int::ONE))
@@ -22,6 +32,16 @@ impl<
   /// [NaR](Posit::NAR) output on a [NaR](Posit::NAR) input.
   ///
   /// Standard: "**prior**".
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// assert_eq!(p8::round_from(1.).prior(), p8::round_from(0.9375));
+  /// assert_eq!(p8::round_from(128.).prior(), p8::round_from(112.));
+  /// assert_eq!(p8::MIN.prior(), p8::NAR);
+  /// assert_eq!(p8::NAR.prior(), p8::MAX);
+  /// ```
   #[inline]
   pub fn prior(self) -> Self {
     Self::from_bits(self.0.wrapping_sub(Int::ONE))
@@ -33,6 +53,14 @@ core::ops::Neg for Posit<N, ES, Int> {
   type Output = Posit<N, ES, Int>;
 
   /// Standard: "**negate**".
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// assert_eq!(-p16::round_from(3), p16::round_from(-3));
+  /// assert_eq!(-p16::MAX, p16::MIN);
+  /// ```
   #[inline]
   fn neg(self) -> Self::Output {
     Posit::from_bits(self.0.wrapping_neg())
@@ -44,6 +72,14 @@ core::ops::Neg for &Posit<N, ES, Int> {
   type Output = Posit<N, ES, Int>;
 
   /// Standard: "**negate**".
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// assert_eq!(-p16::round_from(3), p16::round_from(-3));
+  /// assert_eq!(-p16::MAX, p16::MIN);
+  /// ```
   #[inline]
   fn neg(self) -> Self::Output {
     Posit::from_bits(self.0.wrapping_neg())
@@ -60,6 +96,13 @@ impl<const N: u32,const ES: u32,Int: crate::Int> Posit<N, ES, Int> {
   /// Return the absolute value of `self`.
   ///
   /// Standard: "**abs**".
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// assert_eq!(p16::ONE.abs(), p16::MINUS_ONE.abs())
+  /// ```
   #[inline]
   pub fn abs(self) -> Self {
     Posit::from_bits(self.0.wrapping_abs())
@@ -69,6 +112,16 @@ impl<const N: u32,const ES: u32,Int: crate::Int> Posit<N, ES, Int> {
   /// `self == 0`, and [NaR](Self::NAR) if `self == NaR`.
   ///
   /// Standard: "**sign**".
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// assert_eq!(p16::round_from(2).sign(), p16::round_from(1));
+  /// assert_eq!(p16::round_from(-3).sign(), p16::round_from(-1));
+  /// assert_eq!(p16::round_from(0).sign(), p16::round_from(0));
+  /// assert_eq!(p16::NAR.sign(), p16::NAR);
+  /// ```
   #[inline]
   pub fn sign(self) -> Self {
     // If this is true, `self` is 0 or NaR, so return unchanged.

@@ -111,9 +111,20 @@ impl<
 > Posit<N, ES, Int> {
   /// Convert a posit into a different one, [rounding according to the standard].
   ///
-  /// If the source and target types have the same ES (i.e. `ES == ES2`), this is especially fast.
+  /// If the source and target types have the same ES (i.e. `ES == ES2`), such as is the case with
+  /// the standard types, this is especially fast.
   ///
   /// [rounding according to the standard]: https://posithub.org/docs/posit_standard-2.pdf#subsection.6.1
+  ///
+  /// # Examples
+  ///
+  /// ```
+  /// # use fast_posit::{p8, p64, RoundFrom, RoundInto};
+  /// let pi: p64 = core::f64::consts::PI.round_into();
+  /// let two: p8 = 2.round_into();
+  /// let tau: p64 = pi * two.convert();
+  /// assert_eq!(tau, core::f64::consts::TAU.round_into())
+  /// ```
   pub fn convert<
     const N2: u32,
     const ES2: u32,
