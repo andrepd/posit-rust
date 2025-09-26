@@ -1,3 +1,7 @@
+![Github CI status](https://img.shields.io/github/actions/workflow/status/andrepd/posit-rust/ci.yml)
+![crates.io](https://img.shields.io/crates/v/fast_posit)
+![docs.rs](https://img.shields.io/docsrs/fast_posit)
+
 **🚧 Work in progress! 🚧**
 
 # fast-posit
@@ -13,24 +17,24 @@ replacement for traditional IEEE754 floats, in domains such as neural networks o
 
 Some highlights of the Posit format:
 
-- Generally higher accuracy and/or dynamic range for the *same number of bits* (e.g. 32-bit posits
-  are often a suitable replacement for 64-bit floats). Posits have a *smaller* decimal error for
-  the overwhelming majority of operations (+, ×, sqrt, etc) compared to IEEE724 floats of the
-  same size.
+- Generally higher accuracy and/or dynamic range for the *same number of bits*, as compared to IEEE
+  floats. Posits have a *smaller* decimal error for the majority of operations (+, ×, sqrt, etc)
+  compared to a IEEE float of the same size.
+- Simple and deterministic rounding, with bounded errors, and no infinite loss of precision via
+  under- and over-flows, in any circumstance. Unlike IEEE floats, all operations are
+  deterministic, portable, and *fully reproducible* across systems.
 - Tapered accuracy, elegantly allocating more bits to the mantissa for values close to ±1,
   and gradually decreasing the precision as the absolute value of the exponent increases.
 - The ability to calculate sums and dot products with up to $2^{30}$ terms very fast and with NO
-  intermediate rounding whatsoever!
+  intermediate rounding whatsoever, even with parallelisation!
 - Flexibility to choose any bit width ≥ 2 and any exponent width ≤ bit width, tailored to the
   parameters of your application: accuracy, dynamic range, memory constraints, etc.
-- Simple and deterministic rounding, with bounded errors, and no infinite loss of precision via
-  under- and over-flows, in any circumstance.
 - No signed zero, no quadrillions of NaNs, no subnormals, no redundant bit patterns, no exceptions.
   Just one 0, one NaN, and regular numbers. This is not only simpler to reason about and debug,
   but also unlocks faster software implementations and less power-hungry hardware
   implementations.
-- Many other goodies: deterministic and correct elementary functions in the standard, a blazing
-  fast sigmoid for ML, etc.
+- Many other niceties: standard-mandated elementary functions with correct rounding, first-class
+  support for mixed-precision, a blazing fast sigmoid for ML, etc.
 
 Posits are pretty cool, you should read about them [here](https://posithub.org/docs/Posits4.pdf) or
 [here](https://posithub.org/docs/posit_standard-2.pdf) or
@@ -128,6 +132,11 @@ depending on your system. See below for how to run benchmarks.
 ## Testing
 
 Run tests with `cargo test`.
+
+The test suite is very comprehensive. Testing is exhaustive where feasible, and probabilistic where
+not. Emphasis is put on the standard types, but also on various other combinations of parameters.
+Since the implementations are generic, this gives a high degree of confidence that all
+combinations of parameters are bug-free.
 
 ## Benchmarks
 
