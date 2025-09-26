@@ -77,7 +77,7 @@ pub struct Posit<
 /// That is to say: this encodes the `f × 2^e` referred above using two integers:
 /// - The integer [`exp`](Self::exp) is the integer `e`, and
 /// - The integer [`frac`](Self::frac) is the rational `f` *with an implicit denominator* of
-/// `1 << (B-2)`.
+///   `1 << (B-2)`.
 ///
 /// Another way to think of it is that `frac` is a fixed-point rational number, where the dot is
 /// two places from the left. For instance (for an 8-bit `frac`):

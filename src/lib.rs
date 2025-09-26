@@ -27,7 +27,7 @@
 //! style of "learn X in Y minutes". For more information, refer to the documentation of specific
 //! types and functions.
 //!
-//! Wherever a function corresponds to a function in 
+//! Wherever a function corresponds to a function in
 //! [the standard](https://posithub.org/docs/posit_standard-2.pdf), it will be marked accordingly
 //! in its documentation.
 //!
@@ -53,7 +53,7 @@
 //!
 //! // Use a quire to calculate sums and dot products _without loss of precision_!
 //! use fast_posit::{q8, q16, q32, q64};
-//! let mut quire = q16::ZERO;  
+//! let mut quire = q16::ZERO;
 //! quire += p16::MAX;
 //! quire += p16::round_from(0.1);
 //! quire -= p16::MAX;

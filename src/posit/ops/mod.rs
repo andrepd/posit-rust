@@ -62,6 +62,7 @@ macro_rules! mk_ops {
 pub(crate) use mk_ops;
 
 /// Macro for instantating the suite of tests for a binary operator of posits.
+#[cfg(test)]
 macro_rules! mk_tests {
   ($op:tt, $op_assign:tt) => {
     use crate::Posit;
@@ -148,4 +149,5 @@ macro_rules! mk_tests {
   }
 }
 
+#[cfg(test)]
 pub(crate) use mk_tests;

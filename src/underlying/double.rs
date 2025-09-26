@@ -55,7 +55,7 @@ impl Double for Pair<i128> {
 impl core::ops::Shl<u32> for Pair<i128> {
   type Output = Self;
 
-  fn shl(self, rhs: u32) -> Self::Output {
+  fn shl(self, _rhs: u32) -> Self::Output {
     todo!()
   }
 }
@@ -63,7 +63,7 @@ impl core::ops::Shl<u32> for Pair<i128> {
 impl core::ops::Shr<u32> for Pair<i128> {
   type Output = Self;
 
-  fn shr(self, rhs: u32) -> Self::Output {
+  fn shr(self, _rhs: u32) -> Self::Output {
     todo!()
   }
 }

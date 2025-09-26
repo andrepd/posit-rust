@@ -32,7 +32,7 @@ impl<
           1
         } else {
           use crate::underlying::Sealed;
-          unsafe { (leading.to_be() as i64).leading_run_minus_one() + 1 }
+          unsafe { leading.to_be().leading_run_minus_one() + 1 }
         }
       },
     }

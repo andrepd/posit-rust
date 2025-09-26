@@ -156,11 +156,11 @@ impl Int for i128 {}
 impl Sealed for i128 {
   impl_common!{i128, u128, super::double::Pair<i128>, NonZeroI128}
 
-  fn doubling_mul(self, other: Self) -> Self::Double {
+  fn doubling_mul(self, _other: Self) -> Self::Double {
     todo!()
   }
 
-  fn shift_div_rem(self, other: Self, precision: u32) -> (Self, Self) {
+  fn shift_div_rem(self, _other: Self, _precision: u32) -> (Self, Self) {
     todo!()
   }
 

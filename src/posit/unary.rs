@@ -72,7 +72,7 @@ impl<const N: u32,const ES: u32,Int: crate::Int> Posit<N, ES, Int> {
   #[inline]
   pub fn sign(self) -> Self {
     // If this is true, `self` is 0 or NaR, so return unchanged.
-    if self.0 << Self::JUNK_BITS << 1 == Int::ZERO {
+    if self.is_special() {
       self
     }
     // Otherwise:

@@ -82,7 +82,7 @@ impl<
     //
     // SAFETY: x and y are not symmetrical (precondition), so `frac` cannot be 0
     let underflow = unsafe { frac.leading_run_minus_one() };
-    let frac = frac << underflow as u32;
+    let frac = frac << underflow;
     let exp = exp - Int::of_u32(underflow);
     // If an underflow by `n` occurs, then we need to "recover" `n` of the bits we have shifted out
     // in `yfrac`, and add them onto the result, because we have set `yfrac = y.frac >> shift`,
@@ -95,7 +95,7 @@ impl<
     //    y.frac >> (shift - underflow) = 0b01111010|1       ← but should only discard 1
     //
     // Here only 1 bit should be shifted out to sticky.
-    let true_shift = shift.checked_sub(underflow).unwrap_or(0);  // TODO ver
+    let true_shift = shift.saturating_sub(underflow);  // TODO ver
     let recovered = y.frac.mask_lsb(shift) >> true_shift;
     let sticky = y.frac.mask_lsb(true_shift);
     let frac = frac | recovered;
