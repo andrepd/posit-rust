@@ -87,6 +87,48 @@ fn add_32(c: &mut Criterion) {
   g.finish();
 }
 
+/// Generate arrays of random floats/posits and benchmark our impl and external impls in
+/// multiplying pairs of numbers.
+fn mul_32(c: &mut Criterion) {
+  let data_float = arr::<{LEN * 2}, _>(rand_f32);
+  let data_posit = arr::<{LEN * 2}, _>(rand_p32);
+  let mut g = c.benchmark_group("mul_32");
+
+  #[cfg(feature = "berkeley-softfloat")]
+  let _ = bench_2ary(&mut g, "berkeley-softfloat", &data_float, |x, y| unsafe { berkeley_softfloat::f32_mul(x, y) });
+
+  #[cfg(feature = "cerlane-softposit")]
+  let _ = bench_2ary(&mut g, "cerlane-softposit", &data_posit, |x, y| unsafe { cerlane_softposit::p32_mul(x, y) });
+
+  #[cfg(feature = "stillwater-softposit")]
+  let _ = bench_2ary(&mut g, "stillwater-softposit", &data_posit, |x, y| unsafe { stillwater_softposit::posit32_mulp32(x, y) });
+
+  let _ = bench_2ary(&mut g, "posit", &data_posit, |x: p32, y: p32| x * y);
+
+  g.finish();
+}
+
+/// Generate arrays of random floats/posits and benchmark our impl and external impls in dividing
+/// pairs of numbers.
+fn div_32(c: &mut Criterion) {
+  let data_float = arr::<{LEN * 2}, _>(rand_f32);
+  let data_posit = arr::<{LEN * 2}, _>(rand_p32);
+  let mut g = c.benchmark_group("div_32");
+
+  #[cfg(feature = "berkeley-softfloat")]
+  let _ = bench_2ary(&mut g, "berkeley-softfloat", &data_float, |x, y| unsafe { berkeley_softfloat::f32_div(x, y) });
+
+  #[cfg(feature = "cerlane-softposit")]
+  let _ = bench_2ary(&mut g, "cerlane-softposit", &data_posit, |x, y| unsafe { cerlane_softposit::p32_div(x, y) });
+
+  #[cfg(feature = "stillwater-softposit")]
+  let _ = bench_2ary(&mut g, "stillwater-softposit", &data_posit, |x, y| unsafe { stillwater_softposit::posit32_divp32(x, y) });
+
+  let _ = bench_2ary(&mut g, "posit", &data_posit, |x: p32, y: p32| x / y);
+
+  g.finish();
+}
+
 /// Generate arrays of random floats/posits and benchmark our impl and external impls in adding
 /// pairs of numbers.
 fn add_64(c: &mut Criterion) {
@@ -108,9 +150,61 @@ fn add_64(c: &mut Criterion) {
   g.finish();
 }
 
+/// Generate arrays of random floats/posits and benchmark our impl and external impls in
+/// multiplying pairs of numbers.
+fn mul_64(c: &mut Criterion) {
+  let data_float = arr::<{LEN * 2}, _>(rand_f64);
+  let data_posit = arr::<{LEN * 2}, _>(rand_p64);
+  let mut g = c.benchmark_group("mul_64");
+
+  #[cfg(feature = "berkeley-softfloat")]
+  let _ = bench_2ary(&mut g, "berkeley-softfloat", &data_float, |x, y| unsafe { berkeley_softfloat::f64_mul(x, y) });
+
+  /*#[cfg(feature = "cerlane-softposit")]
+  let _ = bench_2ary(&mut g, "cerlane-softposit", &data_posit, |x, y| unsafe { cerlane_softposit::p64_mul(x, y) };*/
+
+  #[cfg(feature = "stillwater-softposit")]
+  let _ = bench_2ary(&mut g, "stillwater-softposit", &data_posit, |x, y| unsafe { stillwater_softposit::posit64_mulp64(x, y) });
+
+  let _ = bench_2ary(&mut g, "posit", &data_posit, |x: p64, y: p64| x * y);
+
+  g.finish();
+}
+
+/// Generate arrays of random floats/posits and benchmark our impl and external impls in dividing
+/// pairs of numbers.
+fn div_64(c: &mut Criterion) {
+  let data_float = arr::<{LEN * 2}, _>(rand_f64);
+  let data_posit = arr::<{LEN * 2}, _>(rand_p64);
+  let mut g = c.benchmark_group("div_64");
+
+  #[cfg(feature = "berkeley-softfloat")]
+  let _ = bench_2ary(&mut g, "berkeley-softfloat", &data_float, |x, y| unsafe { berkeley_softfloat::f64_div(x, y) });
+
+  /*#[cfg(feature = "cerlane-softposit")]
+  let _ = bench_2ary(&mut g, "cerlane-softposit", &data_posit, |x, y| unsafe { cerlane_softposit::p64_div(x, y) };*/
+
+  #[cfg(feature = "stillwater-softposit")]
+  let _ = bench_2ary(&mut g, "stillwater-softposit", &data_posit, |x, y| unsafe { stillwater_softposit::posit64_divp64(x, y) });
+
+  let _ = bench_2ary(&mut g, "posit", &data_posit, |x: p64, y: p64| x / y);
+
+  g.finish();
+}
+
 criterion_group!(add,
   add_32,
   add_64,
 );
 
-criterion_main!(add);
+criterion_group!(mul,
+  mul_32,
+  mul_64,
+);
+
+criterion_group!(div,
+  div_32,
+  div_64,
+);
+
+criterion_main!(add, mul, div);
