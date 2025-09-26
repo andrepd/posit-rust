@@ -124,10 +124,22 @@ assert!((3.141592.round_into() .. 3.141593.round_into()).contains(&pi));
 
 ## Performance
 
-In terms of performance, you can expect as a *very rough estimate* 50 to 250 Mops/s (corresponding
-to about a 4–20× slowdown relative to native hw FPU operations) on an 11th gen Intel x86 core at
-2.80GHz. Needless to say, both absolute performance and relative performance vs the FPU will vary
+In terms of performance, you can expect as a *very rough estimate* 50 to 250 Mops/s depending on
+the operation (corresponding to about a 4–20× slowdown relative to native hw FPU operations) on an
+11th gen Intel x86 core at 2.80GHz.
+
+![Benchmark results for a few operations like addition, multiplication, etc](perf.svg)
+
+"[fast-posit]" is this crate, "[cerlane-softposit]" is a mature library for posit arithmetic
+written in C, and "[berkeley-softfloat]" is a *very* mature library for IEEE float arithmetic
+written in C, considered the gold standard for that number system.
+
+Needless to say, both absolute performance and relative performance vs the FPU will vary
 depending on your system. See below for how to run benchmarks.
+
+[fast-posit]: https://crates.io/crates/fast-posit
+[cerlane-softposit]: https://gitlab.com/cerlane/SoftPosit
+[berkeley-softfloat]: http://www.jhauser.us/arithmetic/SoftFloat.html
 
 ## Testing
 
