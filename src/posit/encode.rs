@@ -378,13 +378,18 @@ mod tests {
     }
 
     /// Aux function: check that `decoded` is rounded correctly.
-    fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(decoded: Decoded<N, ES, Int>) -> bool
+    fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(
+      decoded: Decoded<N, ES, Int>,
+      sticky: bool,
+    ) -> bool
     where
       Rational: From<Decoded<N, ES, Int>>,
       Rational: TryFrom<Posit<N, ES, Int>, Error = super::rational::IsNaR>,
     {
-      let posit = decoded.try_encode().expect("Invalid test case!");
-      let exact = Rational::from(decoded);
+      use malachite::base::num::arithmetic::traits::Pow;
+      let epsilon = Rational::try_from(Posit::<N, ES, Int>::MIN_POSITIVE).unwrap().pow(32i64);
+      let posit = decoded.try_encode_round(Int::from(sticky)).expect("Invalid test case!");
+      let exact = if !sticky {Rational::from(decoded)} else {Rational::from(decoded) + epsilon};
       super::rational::is_correct_rounded(exact, posit)
     }
 
@@ -393,7 +398,9 @@ mod tests {
         #[test]
         fn $name() {
           for d in <$decoded>::cases_exhaustive() {
-            assert!(is_correct_rounded(d), "{:?}: {:?}", d, d.try_encode())
+            for s in [false, true] {
+              assert!(is_correct_rounded(d, s), "decoded={:?} sticky={:?}", d, s)
+            }
           }
         }
       }
@@ -402,10 +409,10 @@ mod tests {
     macro_rules! test_proptest {
       ($name:ident, $decoded:ty) => {
         proptest!{
-          #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
+          #![proptest_config(ProptestConfig::with_cases(4 * crate::PROPTEST_CASES))]
           #[test]
-          fn $name(d in <$decoded>::cases_proptest()) {
-            assert!(is_correct_rounded(d), "{:?}: {:?}", d, d.try_encode())
+          fn $name(d in <$decoded>::cases_proptest(), s: bool) {
+            assert!(is_correct_rounded(d, s), "decoded={:?} sticky={:?}", d, s)
           }
         }
       }
