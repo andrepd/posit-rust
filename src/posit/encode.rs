@@ -97,17 +97,20 @@ impl<
     // allowed. This is enough to clamp the exponent to be no greater than the maximum exponent
     // and no smaller than the maximum exponent.
     //
-    // The maximum regime length is `Self::BITS - 3`, thus is `regime_raw >= Self::BITS - 2`, the
-    // posit consists entirely of regime bits (plus the sign bit). In this case, we return early,
-    // and the rest of the code can assume `regime_raw < Self::BITS - 2`.
-    let regime_raw_max = Self::BITS - 2;
-    if regime_raw >= regime_raw_max {  // TODO mark unlikely?
-      // See the code outside this branch for an explanation.
-      let regime_bits = (!frac_xor_regime).mask_msb(2) >> regime_raw_max;
-      let sign_and_regime_bits = self.frac.mask_msb(1) | regime_bits.lshr(1);
-      let sign_and_regime_bits = sign_and_regime_bits >> Self::JUNK_BITS;
-      return unsafe { Posit::from_bits_unchecked(sign_and_regime_bits | Int::ONE) }
-    }
+    // The maximum regime length is `Self::BITS - 3` in the case of a run of 0s, and 
+    // `Self::BITS - 2` in the case of a run of 1s. Respectively, the maximum `regime_raw` is thus 
+    // `Self::BITS - 2` and `Self::BITS - 1` in the case of a run of 0s and of a run of 1s.
+    //
+    //   - Maximum regime of 0s: s000…001
+    //   - Maximum regime of 1s: s111…111
+    //
+    // We can, however, clamp always the `regime_raw` to `Self::BITS - 3`, and simply set the lsb
+    // to 1 whenever the `regime_raw` would exceed that value, since both the cases above end in
+    // 1. This way we posit consists entirely of regime bits (plus the sign bit). In this case, we
+    // return early, and the rest of the code can assume `regime_raw < Self::BITS - 2`.
+    let regime_raw_max = Self::BITS - 3;
+    let regime_overflow = regime_raw > regime_raw_max;
+    let regime_raw = if regime_overflow {regime_raw_max} else {regime_raw};
 
     // Continue assembling the regime bits.
     let regime_bits = (!frac_xor_regime).mask_msb(2) >> regime_raw;
@@ -116,10 +119,10 @@ impl<
     let sign_and_regime_bits = self.frac.mask_msb(1) | regime_bits.lshr(1);
     let sign_and_regime_bits = sign_and_regime_bits >> Self::JUNK_BITS;
 
-    // Next we need to place the exponent bits in the right place, just after the regime bits. This
-    // is in total 1 bit (sign) + regime_raw + 1 bits (run of 0s/1s) + 1 bit (regime terminating
-    // 1/0); exponent bits go this amount of bits from the left. The fraction bits (sans the
-    // hidden bits) go immediately after that.
+    // Next we need to place the exponent bits in the right place, just after the regime bits. The
+    // sign and regime take up: 1 bit (sign) + regime_raw + 1 bits (run of 0s/1s) + 1 bit
+    // (regime terminating 1/0). Exponent bits go this amount of bits from the left. The fraction
+    // bits (sans the hidden bits of course) go immediately after that.
     //
     // To do this, we will first assemble the exponent and fraction bits in a register, then shift
     // them to the right place (saves 1/2 instructions and—more importantly—makes rounding
@@ -162,39 +165,42 @@ impl<
     //
     // that tells us whether to round down (0) or up (+1).
 
+    // Okay! So let's assemble the `sign_and_regime_bits` and `exponent_and_fraction_bits` into
+    // `all_bits`, while accumulating all but the last shifted out bits to `sticky`, and the last
+    // shifted out bit to `round`.
+
     // If Self::ES > 2, then we lost some bits of fraction already (see `fraction_bits`). If there
     // are JUNK_BITS, likewise (see `exponent_and_fraction_bits`).
     if const { Self::JUNK_BITS + Self::ES > 2 } {
       sticky |= self.frac.mask_lsb(Self::JUNK_BITS + Self::ES - 2);
     };
-    // There is at least 3 bits we shift out (srr, 1 sign bit and 2 regime bits, is the shortest
-    // thing possible before the exponent_and_fraction_bits). Accumulate 2 onto sticky and shift 2
-    // out.
-    sticky |= exponent_and_fraction_bits.mask_lsb(2);
-    let exponent_and_fraction_bits = exponent_and_fraction_bits.lshr(2);
-    // Now remember, we need to shift out exponent_and_fraction_bits in total by `regime_raw + 3`
-    // bits, the lowest `regime_raw + 2` of which need to be accumulated to `sticky`, and the last
-    // one to `round`. We have already shifted 2 bits to sticky, so we need to shift `regime_raw`
-    // more bits there,
-    sticky |= exponent_and_fraction_bits.mask_lsb(regime_raw);
-    // and the bit afterwards to sticky,
-    let exponent_and_fraction_bits = exponent_and_fraction_bits.lshr(regime_raw);
+    // Now remember, like we said, the lowest `regime_raw + 3` bits (1 sign bit, `regime_raw + 1`
+    // run of 0s or 1s, 1 terminating bit) of `exponent_and_fraction_bits` are shifted out.
+    //
+    // Example:
+    //
+    //   regime_raw+3 = 6
+    //   sign_and_regime_bits               = 0b100001_000000…
+    //   exponent_and_fraction_bits         = 0b11010010100011
+    //   exponent_and_fraction_bits.lshr(6) = 0b…00000_1101001
+    //
+    // The lowest `regime_raw + 2` bits of `exponent_and_fraction_bits` go to `sticky`, and the
+    // last one shifted out goes to `round`.
+    sticky |= exponent_and_fraction_bits.mask_lsb(2 + regime_raw);
+    let exponent_and_fraction_bits = exponent_and_fraction_bits.lshr(2 + regime_raw);
     let round = exponent_and_fraction_bits.get_lsb();
-    // and the bit after that (i.e. the lowest bit actually in the final result), tells us whether
-    // the unrounded bit pattern is even.
     let exponent_and_fraction_bits = exponent_and_fraction_bits.lshr(1);
-    let mut even = exponent_and_fraction_bits.get_lsb();
-    // But if we shift the *whole thing* out, then the even bit is actually the lsb of regime_bits
-    if regime_raw >= Self::BITS - 3 { even = sign_and_regime_bits.get_lsb() }  // TODO find better way of doing this + clamping exp (= clamping regime_raw)
-    // Finally, we have the result of whether we need to round or not
+
+    // Assemble the bits of the (unrounded) result; the lowest determines whether it is odd, and
+    // thus we can compute the formula above to decide whether we need to round up.
+    let all_bits = sign_and_regime_bits | exponent_and_fraction_bits;  // TODO problematic data dependency
+    let even = all_bits.get_lsb();
+
     let round_up: bool = round & (even | (sticky != Int::ZERO));
 
     // Assemble the final result, and return
-    let bits =
-      sign_and_regime_bits
-      + exponent_and_fraction_bits
-      + Int::from(round_up);
-    unsafe { Posit::from_bits_unchecked(bits) }
+    let bits = all_bits + Int::from(round_up & !regime_overflow);
+    unsafe { Posit::from_bits_unchecked(bits | Int::from(regime_overflow)) }
   }
 
   /// Encode a posit, **ignoring rounding**.
