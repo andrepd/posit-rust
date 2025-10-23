@@ -124,9 +124,9 @@ assert!((3.141592.round_into() .. 3.141593.round_into()).contains(&pi));
 
 ## Performance
 
-In terms of performance, you can expect as a *very rough estimate* 50 to 250 Mops/s depending on
-the operation (corresponding to about a 4–20× slowdown relative to native hw FPU operations) on an
-11th gen Intel x86 core at 2.80GHz.
+In terms of performance, you can expect for example, as a *very rough estimate*, 70 to 350 Mops/s
+depending on the operation (corresponding to about a 4–20× slowdown relative to native hw FPU
+operations) on an 11th gen Intel x86 core at 3.80GHz.
 
 ![Benchmark results for a few operations like addition, multiplication, etc](perf.svg)
 
