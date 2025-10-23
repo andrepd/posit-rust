@@ -89,17 +89,22 @@ impl<
     // complement absolute value of its bits).
     //
     // A detail is that this is where the carry comes in TODO ELABORATE
-    let exponent = if const { Self::ES != 0 } {y.not_if_negative(x).lshr(Int::BITS - Self::ES)} else {Int::ZERO};  // Logical, not arithmetic shift
+    let exponent =
+      if const { Self::ES != 0 } {
+        y.not_if_negative(x).lshr(Int::BITS - Self::ES)
+      } else {
+        Int::ZERO
+      };
 
     // The rest of the bits of `y` are the fraction. Here we *don't* need to do anything about the
     // two's complement absolute value, since the `frac` we want to decode is signed (with the
     // same sign as the posit, of course). We just need to shift out the leftmost ES bits from
     // `y`.
     let fraction =
-      // Compile-time special case if ES == 2 case, since it's a common choice (the standard's
-      // choice!) and we can do it with 1 less instruction.
+      // Compile-time special case for ES == 2, since it's a common choice (the standard's choice!)
+      // and we can do it with 1 less instruction.
       if const { Self::ES == 2 } {
-        // TODO Benchmark whether this is actually faster! It's a movabs+and instead of a shl+shr
+        // TODO Benchmark whether this is actually faster! It can be movabs+and instead of shl+shr
         y.mask_lsb(Int::BITS - 2)
       } else {
         y.shl(Self::ES).lshr(2)
@@ -111,8 +116,8 @@ impl<
     // A note about the hidden bits: the fraction bits always have an implicit `1.0` factor
     // (meaning the `fffff` fraction bits encode a value `1.fffff`). For negative numbers this a
     // factor of `-1`. TODO ELABORATE
-    let frac = Int::MIN.lshr(x.is_positive() as u32) + fraction;
-    let exp = (regime << Self::ES) + exponent;
+    let frac = Int::MIN.lshr(x.is_positive() as u32) | fraction;
+    let exp = (regime << Self::ES) | exponent;
     Decoded{frac, exp}
   }
 
@@ -163,7 +168,7 @@ mod tests {
   macro_rules! test_proptest {
     ($name:ident, $decoded:ty) => {
       proptest!{
-        #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
+        #![proptest_config(ProptestConfig::with_cases(4 * crate::PROPTEST_CASES))]
         #[test]
         fn $name(p in <$decoded>::cases_proptest()) {
           assert_eq!(

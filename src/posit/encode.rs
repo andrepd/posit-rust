@@ -147,21 +147,21 @@ impl<
     //   0b010100|100000 -> tied, round to even = down -> 0b010100
     //
     // How do we achieve this in practice? Let's call the lsb of the bits we want to keep (the bit
-    // just before the |) `even`, the first bit afterwards `round`, and the remaining bits
+    // just before the |) `odd`, the first bit afterwards `round`, and the remaining bits
     // `sticky`. In terms of these, we have
     //
-    //   even | round | sticky | result
-    //   ...x | 0     |  x     | round down (+0)
-    //   ...0 | 1     | =0     | round down to even (+0)
-    //   ...1 | 1     | =0     | round up to even (+1)
-    //   ...x | 1     | ≠0     | round up (+1)
+    //   odd | round | sticky | result
+    //   ..x | 0     |  x     | round down (+0)
+    //   ..0 | 1     | =0     | round down to even (+0)
+    //   ..1 | 1     | =0     | round up to even (+1)
+    //   ..x | 1     | ≠0     | round up (+1)
     //
     // So this means that if we keep track of these three things, that is: (1) set `round` equal to
     // the leftmost of all the shifted out bits, (2) accumulate into `sticky` all the rest of the
-    // shifted out bits, and (3) set `even` to the lsb of the unrounded result, we have a boolean
+    // shifted out bits, and (3) set `odd` to the lsb of the unrounded result, we have a boolean
     // formula
     //
-    //   round & (even | (sticky != 0))
+    //   round & (odd | (sticky != 0))
     //
     // that tells us whether to round down (0) or up (+1).
 
@@ -194,9 +194,9 @@ impl<
     // Assemble the bits of the (unrounded) result; the lowest determines whether it is odd, and
     // thus we can compute the formula above to decide whether we need to round up.
     let all_bits = sign_and_regime_bits | exponent_and_fraction_bits;  // TODO problematic data dependency
-    let even = all_bits.get_lsb();
+    let odd = all_bits.get_lsb();
 
-    let round_up: bool = round & (even | (sticky != Int::ZERO));
+    let round_up: bool = round & (odd | (sticky != Int::ZERO));
 
     // Assemble the final result, and return
     let bits = all_bits + Int::from(round_up & !regime_overflow);
