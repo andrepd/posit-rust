@@ -61,6 +61,8 @@ pub fn decode_64(arg: Posit<64, 2, i64>) -> Decoded<64, 2, i64> {
   unsafe { arg.decode_regular() }
 }
 
+//
+
 #[unsafe(no_mangle)]
 pub fn encode_8(arg: Decoded<8, 2, i8>, sticky: i8) -> Posit<8, 2, i8> {
   unsafe { arg.encode_regular_round(sticky) }
@@ -80,6 +82,8 @@ pub fn encode_32(arg: Decoded<32, 2, i32>, sticky: i32) -> Posit<32, 2, i32> {
 pub fn encode_64(arg: Decoded<64, 2, i64>, sticky: i64) -> Posit<64, 2, i64> {
   unsafe { arg.encode_regular_round(sticky) }
 }
+
+//
 
 #[unsafe(no_mangle)]
 pub fn add_kernel_8(x: Decoded<8, 2, i8>, y: Decoded<8, 2, i8>) -> (Decoded<8, 2, i8>, i8) {
@@ -141,6 +145,8 @@ pub fn sub_64(x: Posit<64, 2, i64>, y: Posit<64, 2, i64>) -> Posit<64, 2, i64> {
   x.sub(y)
 }
 
+//
+
 #[unsafe(no_mangle)]
 pub fn mul_kernel_8(x: Decoded<8, 2, i8>, y: Decoded<8, 2, i8>) -> (Decoded<8, 2, i8>, i8) {
   unsafe { Posit::<8, 2, i8>::mul_kernel(x, y) }
@@ -180,6 +186,8 @@ pub fn mul_32(x: Posit<32, 2, i32>, y: Posit<32, 2, i32>) -> Posit<32, 2, i32> {
 pub fn mul_64(x: Posit<64, 2, i64>, y: Posit<64, 2, i64>) -> Posit<64, 2, i64> {
   x.mul(y)
 }
+
+//
 
 #[unsafe(no_mangle)]
 pub fn div_kernel_8(x: Decoded<8, 2, i8>, y: Decoded<8, 2, i8>) -> (Decoded<8, 2, i8>, i8) {
@@ -221,6 +229,8 @@ pub fn div_64(x: Posit<64, 2, i64>, y: Posit<64, 2, i64>) -> Posit<64, 2, i64> {
   x.div(y)
 }
 
+//
+
 #[unsafe(no_mangle)]
 pub fn quire_add_8(quire: &mut crate::q8, posit: crate::p8) {
   *quire += posit
@@ -261,6 +271,8 @@ pub fn accumulate_decoded_64(quire: &mut crate::q64, decoded: Decoded<64, 2, i8>
   unsafe { quire.accumulate_decoded(decoded) }
 }
 
+//
+
 #[unsafe(no_mangle)]
 pub fn round_i32_to_p8(num: i32) -> crate::p8 {
   num.round_into()
@@ -276,20 +288,7 @@ pub fn round_i32_to_p64(num: i32) -> crate::p64 {
   num.round_into()
 }
 
-#[unsafe(no_mangle)]
-pub fn round_u32_to_p8(num: u32) -> crate::p8 {
-  num.round_into()
-}
-
-#[unsafe(no_mangle)]
-pub fn round_u32_to_p32(num: u32) -> crate::p32 {
-  num.round_into()
-}
-
-#[unsafe(no_mangle)]
-pub fn round_u32_to_p64(num: u32) -> crate::p64 {
-  num.round_into()
-}
+//
 
 #[unsafe(no_mangle)]
 pub fn round_f32_to_p8(num: f32) -> crate::p8 {
@@ -305,6 +304,8 @@ pub fn round_f32_to_p32(num: f32) -> crate::p32 {
 pub fn round_f32_to_p64(num: f32) -> crate::p64 {
   num.round_into()
 }
+
+//
 
 #[unsafe(no_mangle)]
 pub fn round_p32_to_p16(num: crate::p32) -> crate::p16 {
