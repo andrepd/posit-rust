@@ -288,6 +288,21 @@ pub fn round_i32_to_p64(num: i32) -> crate::p64 {
   num.round_into()
 }
 
+#[unsafe(no_mangle)]
+pub fn round_p32_to_i8(num: crate::p32) -> i8 {
+  num.round_into()
+}
+
+#[unsafe(no_mangle)]
+pub fn round_p32_to_i32(num: crate::p32) -> i32 {
+  num.round_into()
+}
+
+#[unsafe(no_mangle)]
+pub fn round_p32_to_i64(num: crate::p32) -> i64 {
+  num.round_into()
+}
+
 //
 
 #[unsafe(no_mangle)]

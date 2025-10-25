@@ -82,6 +82,7 @@ assert!(p16::MIN_POSITIVE < 1e-15.round_into());
 
 // Convert posits back to ints, IEEE floats, strings, or a raw bit representation.
 assert_eq!(p8::ONE.to_bits(), 0b01000000);
+assert_eq!(p16::round_from(3.5).round_into(), 4_i32);
 
 // Use a quire to calculate sums and dot products _without loss of precision_!
 use fast_posit::{q8, q16, q32, q64};
@@ -173,7 +174,7 @@ standard paths you may need to set `RUSTFLAGS="-L /path/to/lib"`.
   - [ ] Hyperbolics (sinh, cosh, asinh, …)
   - [ ] Exponentiation (sqrt, pow, hypot, …)
 - [ ] Conversions
-  - [ ] To integers
+  - [x] To integers
   - [x] From integers
   - [ ] To floats
   - [x] From floats
