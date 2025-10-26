@@ -314,6 +314,27 @@ mod tests {
               assert!(is_correct_rounded::<$t, 64, 2, i64>(int), "{:?}", int);
             }
           }
+
+          #[test]
+          fn posit_3_0_exhaustive() {
+            for int in $t::MIN ..= $t::MAX {
+              assert!(is_correct_rounded::<$t, 3, 0, i8>(int), "{:?}", int);
+            }
+          }
+
+          #[test]
+          fn posit_4_0_exhaustive() {
+            for int in $t::MIN ..= $t::MAX {
+              assert!(is_correct_rounded::<$t, 4, 0, i8>(int), "{:?}", int);
+            }
+          }
+
+          #[test]
+          fn posit_4_1_exhaustive() {
+            for int in $t::MIN ..= $t::MAX {
+              assert!(is_correct_rounded::<$t, 4, 1, i8>(int), "{:?}", int);
+            }
+          }
         }
       }
     }
@@ -369,6 +390,21 @@ mod tests {
             #[test]
             fn p64_proptest(int in any::<$t>()) {
               assert!(is_correct_rounded::<$t, 64, 2, i64>(int), "{:?}", int);
+            }
+
+            #[test]
+            fn posit_3_0_proptest(int in any::<$t>()) {
+              assert!(is_correct_rounded::<$t, 3, 0, i8>(int), "{:?}", int);
+            }
+
+            #[test]
+            fn posit_4_0_proptest(int in any::<$t>()) {
+              assert!(is_correct_rounded::<$t, 4, 0, i8>(int), "{:?}", int);
+            }
+
+            #[test]
+            fn posit_4_1_proptest(int in any::<$t>()) {
+              assert!(is_correct_rounded::<$t, 4, 1, i8>(int), "{:?}", int);
             }
           }
         }
@@ -510,8 +546,11 @@ mod tests {
     make_exhaustive!{posit_10_3, Posit<10, 3, i16>}
     make_exhaustive!{posit_8_0,  Posit<8,  0, i8 >}
     make_exhaustive!{p8, crate::p8}
-    make_exhaustive!{p16, crate::p8}
+    make_exhaustive!{p16, crate::p16}
     make_proptest!{p32, crate::p32}
     make_proptest!{p64, crate::p64}
+    make_exhaustive!{posit_3_0, Posit::<3, 0, i8>}
+    make_exhaustive!{posit_4_0, Posit::<4, 0, i8>}
+    make_exhaustive!{posit_4_1, Posit::<4, 1, i8>}
   }
 }
