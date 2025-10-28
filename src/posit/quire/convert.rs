@@ -48,7 +48,7 @@ impl<
   /// Round a quire back to a posit. This is the final step to do after a series of calculations in
   /// the quire, and the *only* step that actually rounds.
   ///
-  /// Standard: "**qToP**".
+  /// Standard: "[**qToP**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
   ///
   /// # Example
   ///
@@ -168,7 +168,7 @@ impl<
   /// Round a quire back to a posit. This is the final step to do after a series of calculations in
   /// the quire, and the *only* step that actually rounds.
   ///
-  /// Standard: "**qToP**".
+  /// Standard: "[**qToP**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
   fn round_from(value: Quire<N, ES, SIZE>) -> Self {
     Self::round_from(&value)
   }
@@ -182,7 +182,7 @@ impl<
 > From<Posit<N, ES, Int>> for Quire<N, ES, SIZE> {
   /// Create a quire from a posit value.
   ///
-  /// Standard: "**pToQ**".
+  /// Standard: "[**pToQ**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
   ///
   /// # Example
   ///

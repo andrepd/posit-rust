@@ -13,7 +13,7 @@ impl<
   /// Returns the integer-valued posit nearest to `self`, and the nearest even integer-valued posit
   /// if two integers are equally near.
   ///
-  /// Standard: "**nearestInt**".
+  /// Standard: "[**nearestInt**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.2)".
   ///
   /// # Example
   ///
@@ -103,7 +103,7 @@ impl<
 
   /// Returns the largest integer-valued posit less than or equal to `self`.
   ///
-  /// Standard: "**floor**".
+  /// Standard: "[**floor**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.2)".
   ///
   /// # Example
   ///
@@ -149,7 +149,7 @@ impl<
 
   /// Returns the smallest integer-valued posit greater than or equal to `self`.
   ///
-  /// Standard: "**ceil**".
+  /// Standard: "[**ceil**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.2)".
   ///
   /// # Example
   ///

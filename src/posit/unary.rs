@@ -10,7 +10,7 @@ impl<
   /// Note that, unlike every other function of a posit, `next` and `prior` do not produce a
   /// [NaR](Posit::NAR) output on a [NaR](Posit::NAR) input.
   ///
-  /// Standard: "**next**".
+  /// Standard: "[**next**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.2)".
   ///
   /// # Example
   ///
@@ -31,7 +31,7 @@ impl<
   /// Note that, unlike every other function of a posit, `next` and `prior` do not produce a
   /// [NaR](Posit::NAR) output on a [NaR](Posit::NAR) input.
   ///
-  /// Standard: "**prior**".
+  /// Standard: "[**prior**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.2)".
   ///
   /// # Example
   ///
@@ -52,7 +52,7 @@ impl<const N: u32,const ES: u32,Int: crate::Int>
 core::ops::Neg for Posit<N, ES, Int> {
   type Output = Posit<N, ES, Int>;
 
-  /// Standard: "**negate**".
+  /// Standard: "[**negate**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.2)".
   ///
   /// # Example
   ///
@@ -71,7 +71,7 @@ impl<const N: u32,const ES: u32,Int: crate::Int>
 core::ops::Neg for &Posit<N, ES, Int> {
   type Output = Posit<N, ES, Int>;
 
-  /// Standard: "**negate**".
+  /// Standard: "[**negate**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.2)".
   ///
   /// # Example
   ///
@@ -95,7 +95,7 @@ core::ops::Neg for &Posit<N, ES, Int> {
 impl<const N: u32,const ES: u32,Int: crate::Int> Posit<N, ES, Int> {
   /// Return the absolute value of `self`.
   ///
-  /// Standard: "**abs**".
+  /// Standard: "[**abs**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.2)".
   ///
   /// # Example
   ///
@@ -111,7 +111,7 @@ impl<const N: u32,const ES: u32,Int: crate::Int> Posit<N, ES, Int> {
   /// Return [1](Self::ONE) if `self > 0`, [-1](Self::MINUS_ONE) if `self < 0`, [0](Self::ZERO) if
   /// `self == 0`, and [NaR](Self::NAR) if `self == NaR`.
   ///
-  /// Standard: "**sign**".
+  /// Standard: "[**sign**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.2)".
   ///
   /// # Example
   ///

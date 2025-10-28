@@ -29,7 +29,7 @@ impl<
   Int: crate::Int,
   const SIZE: usize,
 > core::ops::AddAssign<Posit<N, ES, Int>> for Quire<N, ES, SIZE> {
-  /// Standard: "**qAddP**".
+  /// Standard: "[**qAddP**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
   ///
   /// # Example
   ///
@@ -50,7 +50,7 @@ impl<
   Int: crate::Int,
   const SIZE: usize,
 > core::ops::AddAssign<&Posit<N, ES, Int>> for Quire<N, ES, SIZE> {
-  /// Standard: "**qAddP**".
+  /// Standard: "[**qAddP**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
   ///
   /// # Example
   ///
@@ -71,7 +71,7 @@ impl<
   Int: crate::Int,
   const SIZE: usize,
 > core::ops::SubAssign<Posit<N, ES, Int>> for Quire<N, ES, SIZE> {
-  /// Standard: "**qSubP**".
+  /// Standard: "[**qSubP**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
   ///
   /// # Example
   ///
@@ -92,7 +92,7 @@ impl<
   Int: crate::Int,
   const SIZE: usize,
 > core::ops::SubAssign<&Posit<N, ES, Int>> for Quire<N, ES, SIZE> {
-  /// Standard: "**qSubP**".
+  /// Standard: "[**qSubP**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
   ///
   /// # Example
   ///
