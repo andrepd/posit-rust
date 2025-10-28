@@ -167,126 +167,130 @@ impl<
 mod tests {
   use super::*;
 
-  /// Instantiate a suite of tests
-  macro_rules! make_tests {
-    ($float:ty, $posit:ty) => {
-      use super::*;
-      use malachite::rational::Rational;
-      use proptest::prelude::*;
+  mod float_to_posit {
+    use super::*;
 
-      #[test]
-      fn zero() {
-        assert_eq!(<$posit>::round_from(0.0 as $float), <$posit>::ZERO)
-      }
+    /// Instantiate a suite of tests
+    macro_rules! make_tests {
+      ($float:ty, $posit:ty) => {
+        use super::*;
+        use malachite::rational::Rational;
+        use proptest::prelude::*;
 
-      #[test]
-      fn one() {
-        assert_eq!(<$posit>::round_from(1.0 as $float), <$posit>::ONE)
-      }
-
-      #[test]
-      fn minus_one() {
-        assert_eq!(<$posit>::round_from(-1.0 as $float), <$posit>::MINUS_ONE)
-      }
-
-      #[test]
-      fn nan() {
-        assert_eq!(<$posit>::round_from(<$float>::NAN), <$posit>::NAR)
-      }
-
-      #[test]
-      fn min() {
-        if const { <$posit>::MAX_EXP as i64 <= 127 } {
-          assert_eq!(<$posit>::round_from(<$float>::MIN), <$posit>::MIN)
-        }
-      }
-
-      #[test]
-      fn max() {
-        if const { <$posit>::MAX_EXP as i64 <= 127 } {
-          assert_eq!(<$posit>::round_from(<$float>::MAX), <$posit>::MAX)
-        }
-      }
-
-      #[test]
-      fn min_positive() {
-        if const { <$posit>::MAX_EXP as i64 <= 127 } {
-          assert_eq!(<$posit>::round_from(<$float>::MIN_POSITIVE), <$posit>::MIN_POSITIVE)
-        }
-      }
-
-      #[test]
-      fn max_negative() {
-        if const { <$posit>::MAX_EXP as i64 <= 127 } {
-          assert_eq!(<$posit>::round_from(-<$float>::MIN_POSITIVE), <$posit>::MAX_NEGATIVE)
-        }
-      }
-
-      #[test]
-      fn subnormal_positive() {
-        if const { <$posit>::MAX_EXP as i64 <= 127 } {
-          assert_eq!(<$posit>::round_from(<$float>::from_bits(1)), <$posit>::MIN_POSITIVE)
-        }
-      }
-
-      #[test]
-      fn subnormal_negative() {
-        if const { <$posit>::MAX_EXP as i64 <= 127 } {
-          assert_eq!(<$posit>::round_from(-<$float>::from_bits(1)), <$posit>::MAX_NEGATIVE)
-        }
-      }
-
-      proptest!{
-        #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
         #[test]
-        fn proptest(float: $float) {
-          let posit = <$posit>::round_from(float);
-          match Rational::try_from(float) {
-            Ok(exact) => assert!(super::rational::is_correct_rounded(exact, posit)),
-            Err(_) => assert!(posit == <$posit>::NAR),
+        fn zero() {
+          assert_eq!(<$posit>::round_from(0.0 as $float), <$posit>::ZERO)
+        }
+
+        #[test]
+        fn one() {
+          assert_eq!(<$posit>::round_from(1.0 as $float), <$posit>::ONE)
+        }
+
+        #[test]
+        fn minus_one() {
+          assert_eq!(<$posit>::round_from(-1.0 as $float), <$posit>::MINUS_ONE)
+        }
+
+        #[test]
+        fn nan() {
+          assert_eq!(<$posit>::round_from(<$float>::NAN), <$posit>::NAR)
+        }
+
+        #[test]
+        fn min() {
+          if const { <$posit>::MAX_EXP as i64 <= 127 } {
+            assert_eq!(<$posit>::round_from(<$float>::MIN), <$posit>::MIN)
           }
         }
-      }
-    };
-  }
- 
-  mod f64 {
-    use super::*;
 
-    mod p8 { make_tests!{f64, crate::p8} }
-    mod p16 { make_tests!{f64, crate::p16} }
-    mod p32 { make_tests!{f64, crate::p32} }
-    mod p64 { make_tests!{f64, crate::p64} }
+        #[test]
+        fn max() {
+          if const { <$posit>::MAX_EXP as i64 <= 127 } {
+            assert_eq!(<$posit>::round_from(<$float>::MAX), <$posit>::MAX)
+          }
+        }
 
-    mod posit_8_0 { make_tests!{f64, Posit::<8, 0, i8>} }
-    mod posit_10_0 { make_tests!{f64, Posit::<10, 0, i16>} }
-    mod posit_10_1 { make_tests!{f64, Posit::<10, 1, i16>} }
-    mod posit_10_2 { make_tests!{f64, Posit::<10, 2, i16>} }
-    mod posit_10_3 { make_tests!{f64, Posit::<10, 3, i16>} }
-    mod posit_20_4 { make_tests!{f64, Posit::<20, 4, i32>} }
+        #[test]
+        fn min_positive() {
+          if const { <$posit>::MAX_EXP as i64 <= 127 } {
+            assert_eq!(<$posit>::round_from(<$float>::MIN_POSITIVE), <$posit>::MIN_POSITIVE)
+          }
+        }
 
-    mod posit_3_0 { make_tests!{f64, Posit::<3, 0, i8>} }
-    mod posit_4_0 { make_tests!{f64, Posit::<4, 0, i8>} }
-    mod posit_4_1 { make_tests!{f64, Posit::<4, 1, i8>} }
-  }
+        #[test]
+        fn max_negative() {
+          if const { <$posit>::MAX_EXP as i64 <= 127 } {
+            assert_eq!(<$posit>::round_from(-<$float>::MIN_POSITIVE), <$posit>::MAX_NEGATIVE)
+          }
+        }
 
-  mod f32 {
-    use super::*;
+        #[test]
+        fn subnormal_positive() {
+          if const { <$posit>::MAX_EXP as i64 <= 127 } {
+            assert_eq!(<$posit>::round_from(<$float>::from_bits(1)), <$posit>::MIN_POSITIVE)
+          }
+        }
 
-    mod p8 { make_tests!{f32, crate::p8} }
-    mod p16 { make_tests!{f32, crate::p16} }
-    mod p32 { make_tests!{f32, crate::p32} }
-    mod p64 { make_tests!{f32, crate::p64} }
+        #[test]
+        fn subnormal_negative() {
+          if const { <$posit>::MAX_EXP as i64 <= 127 } {
+            assert_eq!(<$posit>::round_from(-<$float>::from_bits(1)), <$posit>::MAX_NEGATIVE)
+          }
+        }
 
-    mod posit_8_0 { make_tests!{f32, Posit::<8, 0, i8>} }
-    mod posit_10_0 { make_tests!{f32, Posit::<10, 0, i16>} }
-    mod posit_10_1 { make_tests!{f32, Posit::<10, 1, i16>} }
-    mod posit_10_2 { make_tests!{f32, Posit::<10, 2, i16>} }
-    mod posit_10_3 { make_tests!{f32, Posit::<10, 3, i16>} }
-    mod posit_20_4 { make_tests!{f32, Posit::<20, 4, i32>} }
+        proptest!{
+          #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
+          #[test]
+          fn proptest(float: $float) {
+            let posit = <$posit>::round_from(float);
+            match Rational::try_from(float) {
+              Ok(exact) => assert!(super::rational::is_correct_rounded(exact, posit)),
+              Err(_) => assert!(posit == <$posit>::NAR),
+            }
+          }
+        }
+      };
+    }
 
-    mod posit_3_0 { make_tests!{f32, Posit::<3, 0, i8>} }
-    mod posit_4_0 { make_tests!{f32, Posit::<4, 0, i8>} }
-    mod posit_4_1 { make_tests!{f32, Posit::<4, 1, i8>} }
+    mod f64 {
+      use super::*;
+
+      mod p8 { make_tests!{f64, crate::p8} }
+      mod p16 { make_tests!{f64, crate::p16} }
+      mod p32 { make_tests!{f64, crate::p32} }
+      mod p64 { make_tests!{f64, crate::p64} }
+
+      mod posit_8_0 { make_tests!{f64, Posit::<8, 0, i8>} }
+      mod posit_10_0 { make_tests!{f64, Posit::<10, 0, i16>} }
+      mod posit_10_1 { make_tests!{f64, Posit::<10, 1, i16>} }
+      mod posit_10_2 { make_tests!{f64, Posit::<10, 2, i16>} }
+      mod posit_10_3 { make_tests!{f64, Posit::<10, 3, i16>} }
+      mod posit_20_4 { make_tests!{f64, Posit::<20, 4, i32>} }
+
+      mod posit_3_0 { make_tests!{f64, Posit::<3, 0, i8>} }
+      mod posit_4_0 { make_tests!{f64, Posit::<4, 0, i8>} }
+      mod posit_4_1 { make_tests!{f64, Posit::<4, 1, i8>} }
+    }
+
+    mod f32 {
+      use super::*;
+
+      mod p8 { make_tests!{f32, crate::p8} }
+      mod p16 { make_tests!{f32, crate::p16} }
+      mod p32 { make_tests!{f32, crate::p32} }
+      mod p64 { make_tests!{f32, crate::p64} }
+
+      mod posit_8_0 { make_tests!{f32, Posit::<8, 0, i8>} }
+      mod posit_10_0 { make_tests!{f32, Posit::<10, 0, i16>} }
+      mod posit_10_1 { make_tests!{f32, Posit::<10, 1, i16>} }
+      mod posit_10_2 { make_tests!{f32, Posit::<10, 2, i16>} }
+      mod posit_10_3 { make_tests!{f32, Posit::<10, 3, i16>} }
+      mod posit_20_4 { make_tests!{f32, Posit::<20, 4, i32>} }
+
+      mod posit_3_0 { make_tests!{f32, Posit::<3, 0, i8>} }
+      mod posit_4_0 { make_tests!{f32, Posit::<4, 0, i8>} }
+      mod posit_4_1 { make_tests!{f32, Posit::<4, 1, i8>} }
+    }
   }
 }
