@@ -222,6 +222,9 @@ mod encode;
 /// Small fns of one posit argument: neg, prior, next, is_positive, etc.
 mod unary;
 
+/// Rounding a posit to integer-valued posit: round_int, floor, ceil.
+mod round_int;
+
 /// The four basic arithmetic operations: +, -, ×, ÷.
 mod ops;
 

@@ -232,6 +232,68 @@ pub fn div_64(x: Posit<64, 2, i64>, y: Posit<64, 2, i64>) -> Posit<64, 2, i64> {
 //
 
 #[unsafe(no_mangle)]
+pub fn nearest_int_8(x: crate::p8) -> crate::p8 {
+  x.nearest_int()
+}
+
+#[unsafe(no_mangle)]
+pub fn nearest_int_16(x: crate::p16) -> crate::p16 {
+  x.nearest_int()
+}
+
+#[unsafe(no_mangle)]
+pub fn nearest_int_32(x: crate::p32) -> crate::p32 {
+  x.nearest_int()
+}
+
+#[unsafe(no_mangle)]
+pub fn nearest_int_64(x: crate::p64) -> crate::p64 {
+  x.nearest_int()
+}
+
+#[unsafe(no_mangle)]
+pub fn floor_8(x: crate::p8) -> crate::p8 {
+  x.floor()
+}
+
+#[unsafe(no_mangle)]
+pub fn floor_16(x: crate::p16) -> crate::p16 {
+  x.floor()
+}
+
+#[unsafe(no_mangle)]
+pub fn floor_32(x: crate::p32) -> crate::p32 {
+  x.floor()
+}
+
+#[unsafe(no_mangle)]
+pub fn floor_64(x: crate::p64) -> crate::p64 {
+  x.floor()
+}
+
+#[unsafe(no_mangle)]
+pub fn ceil_8(x: crate::p8) -> crate::p8 {
+  x.ceil()
+}
+
+#[unsafe(no_mangle)]
+pub fn ceil_16(x: crate::p16) -> crate::p16 {
+  x.ceil()
+}
+
+#[unsafe(no_mangle)]
+pub fn ceil_32(x: crate::p32) -> crate::p32 {
+  x.ceil()
+}
+
+#[unsafe(no_mangle)]
+pub fn ceil_64(x: crate::p64) -> crate::p64 {
+  x.ceil()
+}
+
+//
+
+#[unsafe(no_mangle)]
 pub fn quire_add_8(quire: &mut crate::q8, posit: crate::p8) {
   *quire += posit
 }

@@ -79,6 +79,7 @@ let d = p32::MIN_POSITIVE;
 // Perform basic arithmetic and comparisons using the usual operators.
 assert!(p16::round_from(2.14) + p16::ONE == p16::round_from(3.14));
 assert!(p16::MIN_POSITIVE < 1e-15.round_into());
+assert!(p16::round_from(-3.5).floor() == -p16::round_from(4));
 
 // Convert posits back to ints, IEEE floats, strings, or a raw bit representation.
 assert_eq!(p8::ONE.to_bits(), 0b01000000);
@@ -164,10 +165,10 @@ standard paths you may need to set `RUSTFLAGS="-L /path/to/lib"`.
 ## Features
 
 - [x] Posits with arbitrary size and arbitrary exponent size
-- [ ] Basics
+- [x] Basics
   - [x] Arithmetic (+, -, ×, ÷)
   - [x] Comparisons (>, ==, …)
-  - [ ] Rounding to integer (floor, ceil, …)
+  - [x] Rounding to integer (floor, ceil, …)
 - [ ] Elementary functions
   - [ ] Exponentials and logarithms (exp, log, exp2, logPlus1, …)
   - [ ] Trigonometry (sin, cos, asin, …)
