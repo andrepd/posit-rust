@@ -99,7 +99,7 @@ assert_eq!(result, p16::round_from(0.1))
 let posit = p16::MAX + p16::round_from(0.1) - p16::MAX;
 assert_eq!(posit, p16::ZERO);
 
-// Use a quire per thread to ensure the result is the same regardless of parallelisation!
+// Use a quire per thread to ensure the result is the same _regardless of parallelisation_!
 let mut quires = [q16::ZERO; 8];
 for thread in 0..8 {
   let local_quire = &mut quires[thread];
@@ -114,7 +114,7 @@ for thread in 1..8 {
 let result: p16 = (&quires[0]).round_into();
 
 // Use mixed-precision with no hassle; it's very cheap when the ES is the same.
-let terms = [3, 7, 15, 1].map(p8::round_from);
+let terms = [3, 7, 15, 1].map(p8::round_from);  // https://oeis.org/A001203
 let pi = {
   let mut partial = p64::ZERO;
   for i in terms[1..].iter().rev() {
