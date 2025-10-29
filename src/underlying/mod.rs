@@ -110,12 +110,17 @@ pub trait Sealed:
   /// `Self`.
   fn doubling_mul(self, other: Self) -> Self::Double;
 
-  /// Compute the result of `self << precision / other` and ``self << precision % other` without
-  /// overflow or loss of precision, by using a type that's twice as wide as `Self` for the
-  /// intermediate computation.
+  /// Compute the result of `(self << precision) / other` and `(self << precision) % other`
+  /// *without* overflow or loss of precision (by using a type that's twice as wide as `Self` for
+  /// the intermediate computation), provided that `other` is not `0` nor `-1`.
   ///
   /// Returns a tuple (`quotient`, `remainder`).
-  fn shift_div_rem(self, other: Self, precision: u32) -> (Self, Self);
+  ///
+  /// # Safety
+  ///
+  /// If `other` is `Int::0` or `-Int::ONE`, in which case the quotient would be indeterminate or
+  /// overflow a `Self`, respectively, calling this function is *undefined behaviour*.
+  unsafe fn shift_div_rem(self, other: Self, precision: u32) -> (Self, Self);
 
   /// Compute the result of a multiword left-shift. The return value is `(hi, lo, index)`, such
   /// that, in terms of infinite precision arithmetic:

@@ -139,7 +139,9 @@ macro_rules! impl_common_doubling {
       self as $double * other as $double
     }
 
-    fn shift_div_rem(self, other: Self, precision: u32) -> (Self, Self) {
+    unsafe fn shift_div_rem(self, other: Self, precision: u32) -> (Self, Self) {
+      unsafe { core::hint::assert_unchecked(other != Self::ZERO); }
+      unsafe { core::hint::assert_unchecked(other != -Self::ONE); }
       let a = self as $double << precision;
       let b = other as $double;
       let mut div = a / b;
@@ -160,7 +162,7 @@ impl Sealed for i128 {
     todo!()
   }
 
-  fn shift_div_rem(self, _other: Self, _precision: u32) -> (Self, Self) {
+  unsafe fn shift_div_rem(self, _other: Self, _precision: u32) -> (Self, Self) {
     todo!()
   }
 
