@@ -112,7 +112,8 @@ impl<
   /// Convert a posit into a different one, [rounding according to the standard].
   ///
   /// If the source and target types have the same ES (i.e. `ES == ES2`), such as is the case with
-  /// the standard types, this is especially fast.
+  /// the standard types, this is especially fast. This enables easy and seamless mixed-precision
+  /// arithmetic.
   ///
   /// [rounding according to the standard]: https://posithub.org/docs/posit_standard-2.pdf#subsection.6.1
   ///

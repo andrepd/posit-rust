@@ -86,6 +86,29 @@ impl<
     }
   }
 
+  /// Return the underlying bit representation of `self` as a machine int. Bits higher
+  /// (more significant) than the lowest `N` bits, if any, are set as equal to the `N-1`th bit
+  /// (i.e. sign-extended).
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # #![allow(overflowing_literals)]
+  /// # use fast_posit::*;
+  /// assert_eq!(0b00000000, p8::ZERO.to_bits());
+  /// assert_eq!(0b01000000, p8::ONE.to_bits());
+  /// assert_eq!(0b01111111, p8::MAX.to_bits());
+  /// assert_eq!(0b00000001, p8::MIN_POSITIVE.to_bits());
+  /// assert_eq!(0b11000000, p8::MINUS_ONE.to_bits());
+  /// assert_eq!(0b10000001, p8::MIN.to_bits());
+  /// assert_eq!(0b11111111, p8::MAX_NEGATIVE.to_bits());
+  /// assert_eq!(0b10000000, p8::NAR.to_bits());
+  /// ```
+  #[inline]
+  pub const fn to_bits(self) -> Int {
+    self.0
+  }
+
   /// Construct a posit from its raw bit representation. Bits higher (more significant) than the
   /// lowest `N` bits, if any, are ignored.
   ///
@@ -110,7 +133,7 @@ impl<
   /// # Safety
   ///
   /// `bits` has to be a result of a [`Self::to_bits`] call, i.e. it has to be in the range 
-  /// `-1 << (N-1) .. 1 << (N-1) - 1`, or calling this function is *undefined behaviour*. Note
+  /// `-1 << (N-1) ..= 1 << (N-1) - 1`, or calling this function is *undefined behaviour*. Note
   /// that if `Int::BITS == Self::BITS` this always holds.
   ///
   /// # Example
@@ -135,29 +158,6 @@ impl<
   #[inline]
   pub const unsafe fn from_bits_unchecked(bits: Int) -> Self {
     Self(bits)
-  }
-
-  /// Return the underlying bit representation of `self` as a machine int. Bits higher
-  /// (more significant) than the lowest `N` bits, if any, are set as equal to the `N-1`th bit
-  /// (i.e. sign-extended).
-  ///
-  /// # Example
-  ///
-  /// ```
-  /// # #![allow(overflowing_literals)]
-  /// # use fast_posit::*;
-  /// assert_eq!(0b00000000, p8::ZERO.to_bits());
-  /// assert_eq!(0b01000000, p8::ONE.to_bits());
-  /// assert_eq!(0b01111111, p8::MAX.to_bits());
-  /// assert_eq!(0b00000001, p8::MIN_POSITIVE.to_bits());
-  /// assert_eq!(0b11000000, p8::MINUS_ONE.to_bits());
-  /// assert_eq!(0b10000001, p8::MIN.to_bits());
-  /// assert_eq!(0b11111111, p8::MAX_NEGATIVE.to_bits());
-  /// assert_eq!(0b10000000, p8::NAR.to_bits());
-  /// ```
-  #[inline]
-  pub const fn to_bits(self) -> Int {
-    self.0
   }
 
   /// Checks whether `self` is an exception ([0](Self::ZERO) or [NaR](Self::NAR)), that is, the
