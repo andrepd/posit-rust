@@ -79,12 +79,12 @@ let d = p32::MIN_POSITIVE;
 // Perform basic arithmetic and comparisons using the usual operators.
 assert!(p16::round_from(2.14) + p16::ONE == p16::round_from(3.14));
 assert!(p16::MIN_POSITIVE < 1e-15.round_into());
-assert!(p16::round_from(-3.5).floor() == -p16::round_from(4));
+assert!(p16::round_from(-1.1).floor() == p16::round_from(-2));
 
 // Convert posits back to ints, IEEE floats, strings, or a raw bit representation.
 assert_eq!(p8::ONE.to_bits(), 0b01000000);
 assert_eq!(p16::round_from(3.5).round_into(), 4_i32);
-assert_eq!(p16::MAX.round_into(), 2_f32.powf(56.));
+assert_eq!(p16::MIN.round_into(), -f32::exp2(56.));
 
 // Use a quire to calculate sums and dot products _without loss of precision_!
 use fast_posit::{q8, q16, q32, q64};
@@ -131,7 +131,7 @@ In terms of performance, you can expect for example, as a *very rough estimate*,
 depending on the operation (corresponding to about a 4–20× slowdown relative to native hw FPU
 operations) on an 11th gen Intel x86 core at 3.80GHz.
 
-![Benchmark results for a few operations like addition, multiplication, etc](perf.svg)
+![Benchmark results for a addition, multiplication, and division, comparing this library, cerlane-softposit, and berkeley-softfloat.](perf.svg)
 
 "[fast-posit]" is this crate, "[cerlane-softposit]" is a mature library for posit arithmetic
 written in C, and "[berkeley-softfloat]" is a *very* mature library for IEEE float arithmetic

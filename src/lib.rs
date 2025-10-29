@@ -47,12 +47,12 @@
 //! // Perform basic arithmetic and comparisons using the usual operators.
 //! assert!(p16::round_from(2.14) + p16::ONE == p16::round_from(3.14));
 //! assert!(p16::MIN_POSITIVE < 1e-15.round_into());
-//! assert!(p16::round_from(-3.5).floor() == -p16::round_from(4));
+//! assert!(p16::round_from(-1.1).floor() == p16::round_from(-2));
 //!
 //! // Convert posits back to ints, IEEE floats, strings, or a raw bit representation.
 //! assert_eq!(p8::ONE.to_bits(), 0b01000000);
 //! assert_eq!(4_i32, p16::round_from(3.5).round_into());
-//! assert_eq!(2_f32.powf(56.), p16::MAX.round_into());
+//! assert_eq!(-f32::exp2(56.), p16::MIN.round_into());
 //!
 //! // Use a quire to calculate sums and dot products _without loss of precision_!
 //! use fast_posit::{q8, q16, q32, q64};
@@ -95,10 +95,13 @@
 //!
 //! # Performance
 //!
-//! In terms of performance, you can expect as a *very rough estimate* 50 to 250 Mops/s
+//! In terms of performance, you can expect as a *very rough estimate* 70 to 350 Mops/s
 //! (corresponding to about a 4–20× slowdown relative to native hw FPU operations) on an 11th gen
-//! Intel x86 core at 2.80GHz. This is, as far as we're aware, faster (or at least as fast) than
+//! Intel x86 core at 3.80GHz. This is, as far as we're aware, faster (or at least as fast) than
 //! any freely available software implementation of posit arithmetic.
+//!
+//! ![Benchmark results for a addition, multiplication, and division, comparing this library,
+//! cerlane-softposit, and berkeley-softfloat.](https://raw.githubusercontent.com/andrepd/posit-rust/refs/heads/main/perf.svg)
 //!
 //! Needless to say, both absolute performance and relative performance vs the FPU will vary
 //! depending on your system.
