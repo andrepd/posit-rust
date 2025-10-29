@@ -211,7 +211,7 @@ dependencies = [
 
 [[package]]
 name = "fast-posit"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "criterion",
  "libc",
