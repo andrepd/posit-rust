@@ -385,6 +385,23 @@ pub fn round_f32_to_p64(num: f32) -> crate::p64 {
 //
 
 #[unsafe(no_mangle)]
+pub fn round_p8_to_f32(num: crate::p8) -> f32 {
+  num.round_into()
+}
+
+#[unsafe(no_mangle)]
+pub fn round_p32_to_f32(num: crate::p32) -> f32 {
+  num.round_into()
+}
+
+#[unsafe(no_mangle)]
+pub fn round_p64_to_f32(num: crate::p64) -> f32 {
+  num.round_into()
+}
+
+//
+
+#[unsafe(no_mangle)]
 pub fn round_p32_to_p16(num: crate::p32) -> crate::p16 {
   num.convert()
 }

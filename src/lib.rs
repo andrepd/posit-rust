@@ -52,6 +52,7 @@
 //! // Convert posits back to ints, IEEE floats, strings, or a raw bit representation.
 //! assert_eq!(p8::ONE.to_bits(), 0b01000000);
 //! assert_eq!(4_i32, p16::round_from(3.5).round_into());
+//! assert_eq!(2_f32.powf(56.), p16::MAX.round_into());
 //!
 //! // Use a quire to calculate sums and dot products _without loss of precision_!
 //! use fast_posit::{q8, q16, q32, q64};

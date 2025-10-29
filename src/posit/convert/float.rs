@@ -10,7 +10,7 @@ fn decode_finite_f64<
   Int: crate::Int,
 >(num: f64) -> (Decoded<N, ES, Int>, Int) {  // TODO type for `(Decoded, sticky)`
   debug_assert!(num.is_finite());
-  const MANTISSA_DIGITS_EXPLICIT: u32 = f64::MANTISSA_DIGITS - 1;
+  const MANTISSA_BITS: u32 = f64::MANTISSA_DIGITS - 1;
   const EXP_BIAS: i64 = f64::MIN_EXP as i64 - 1;
   const HIDDEN_BIT: i64 = (i64::MIN as u64 >> 1) as i64;
 
@@ -18,8 +18,8 @@ fn decode_finite_f64<
   use crate::underlying::Sealed;
   let sign = num.is_sign_positive();
   let bits = num.abs().to_bits() as i64;
-  let mantissa = bits.mask_lsb(MANTISSA_DIGITS_EXPLICIT);
-  let mut exponent = bits >> MANTISSA_DIGITS_EXPLICIT;
+  let mantissa = bits.mask_lsb(MANTISSA_BITS);
+  let mut exponent = bits >> MANTISSA_BITS;
 
   // An exponent field of 0 marks a subnormal number. Normals have implicit unit (`1.xxx`) and -1
   // bias in the exponent; subnormals don't.
@@ -32,7 +32,7 @@ fn decode_finite_f64<
   // we need to correct that. Note that, if `frac` is 1.000… (i.e. `mantissa` = 0), it's negation
   // is not -1.000…, but rather -2.000… with -1 in the `exp`!
   let frac: i64 = {
-    const SHIFT_LEFT: u32 = 64 - MANTISSA_DIGITS_EXPLICIT - 2;
+    const SHIFT_LEFT: u32 = 64 - MANTISSA_BITS - 2;
     let unsigned_frac = (mantissa << SHIFT_LEFT) | HIDDEN_BIT;
     if sign {
       unsigned_frac
@@ -163,9 +163,159 @@ impl<
   }
 }
 
+/// Take a [`Decoded`] and encode into an [`f64`] using IEEE 754 rounding rules.
+fn encode_finite_f64<
+  const N: u32,
+  const ES: u32,
+  Int: crate::Int,
+>(decoded: Decoded<N, ES, Int>) -> f64 {
+  // Rust assumes that the "default" IEEE rounding mode "roundTiesToEven" is always in effect
+  // (anything else is UB). This considerably simplifies this implementation.
+  const MANTISSA_BITS: u32 = f64::MANTISSA_DIGITS - 1;
+  const EXPONENT_BITS: u32 = 64 - MANTISSA_BITS - 1;
+
+  // Split `frac` into sign and absolute value (sans hidden bit).
+  let sign = decoded.frac.is_positive();
+  let (frac_abs, exp) =
+    // Small detail: a `frac` of `0b10_000…` (= -2.0) is translated to a float mantissa with
+    // absolute value 1.0, compensated by adding +1 to the exponent.
+    if decoded.frac != Int::MIN {
+      (decoded.frac.wrapping_abs().mask_lsb(Decoded::<N, ES, Int>::FRAC_WIDTH), decoded.exp)
+    } else {
+      (Int::ZERO, decoded.exp + Int::ONE)
+    };
+
+  // There are only `EXPONENT_BITS` bits for the exponent, if we overflow this then we have to
+  // return ±∞.
+  //
+  // The range of *normal* f64 numbers has -m < exponent ≤ +m, where `m` is 2^EXPONENT_BITS - 1.
+  //
+  // However, exponents ≤ -m may still be representable as *subnormal* numbers.
+  //
+  // We can also short circuit this at compile time by simply checking if Posit::MAX_EXP < m, in
+  // which case there's no need to check for overflows or subnormals at all! This is the case,
+  // e.g. when converting p8,p16,p32 to f32, or p8,p16,p32,p64 to f64 (so, a common and important
+  // case to specialise).
+  let max_exponent: i64 = (1 << (EXPONENT_BITS - 1)) - 1;
+  let exponent =
+    // No overflow possible
+    if Int::BITS < EXPONENT_BITS || Posit::<N, ES, Int>::MAX_EXP < const_as(max_exponent) {
+      const_as::<Int, i64>(exp)
+    }
+    // Can overflow
+    else {
+      // Overflow case, go to infinity
+      if exp > const_as(max_exponent) {
+        return if sign {f64::INFINITY} else {f64::NEG_INFINITY}
+      }
+      // Subnormal case, TODO
+      else if exp <= const_as(-max_exponent) {
+        todo!()
+      }
+      // Normal case
+      else {
+        const_as::<Int, i64>(exp)
+      }
+    };
+
+  // There are only `MANTISSA_BITS` bits for the mantissa, any less than that and we have to do
+  // some rounding.
+  let shift_left  = MANTISSA_BITS.saturating_sub(Decoded::<N, ES, Int>::FRAC_WIDTH);
+  let shift_right = Decoded::<N, ES, Int>::FRAC_WIDTH.saturating_sub(MANTISSA_BITS);
+  let mantissa = const_as::<Int, i64>(frac_abs >> shift_right) << shift_left;
+  // Compute also the bits lost due to right shift, and compile them into `round` and `sticky`
+  // bits.
+  //
+  // The formula for whether to round up in "round to nearest, ties to even" is the usual one; for
+  // more information, look at the comments in [`encode_regular_round`]).
+  let lost_bits = if shift_right == 0 {Int::ZERO} else {frac_abs << (Int::BITS - shift_right)};
+  let round = lost_bits < Int::ZERO;
+  let sticky = lost_bits << 1 != Int::ZERO;
+  let odd = mantissa & 1 == 1;
+  let round_up = round & (odd | sticky);
+
+  // One detail: if the mantissa overflows (i.e. we rounded up and the mantissa is all 0s), then we
+  // need to bump the exponent by 1.
+  let mantissa = mantissa + i64::from(round_up);
+  let exponent = if round_up & (mantissa == 0) {exponent + 1} else {exponent};
+
+  // Assemble the three fields of the final result: sign, (biased) exponent, and mantissa.
+  let bits =
+    (u64::from(!sign) << (u64::BITS - 1))
+    | (((exponent + max_exponent) as u64) << MANTISSA_BITS)
+    | (mantissa as u64);
+  f64::from_bits(bits)
+}
+
+/// Take a [`Decoded`] and encode into an [`f32`] using IEEE 754 rounding rules.
+fn encode_finite_f32<
+  const N: u32,
+  const ES: u32,
+  Int: crate::Int,
+>(decoded: Decoded<N, ES, Int>) -> f32 {
+  // Again, I'm lazy so shortcut for now.
+  encode_finite_f64(decoded) as f32
+}
+
+impl<
+  const N: u32,
+  const ES: u32,
+  Int: crate::Int,
+> RoundFrom<Posit<N, ES, Int>> for f32 {
+  /// Convert a `Posit` into an `f32`, [rounding according to the standard]:
+  ///
+  /// - If the value is [0](Posit::ZERO), the result is `+0.0`.
+  /// - If the value is [NaR](Posit::NAR), the result is a [quiet NaN](f32::NAN).
+  /// - Otherwise, the posit value is rounded to a float (if necessary) using the "roundTiesToEven"
+  ///   rule in the IEEE 754 standard (in short: underflow to ±0, overflow to ±∞, otherwise round
+  ///   to nearest, in case of a tie round to nearest even bit pattern).
+  ///
+  /// [rounding according to the standard]: https://posithub.org/docs/posit_standard-2.pdf#subsection.6.5
+  fn round_from(value: Posit<N, ES, Int>) -> Self {
+    if value == Posit::ZERO {
+      0.
+    } else if value == Posit::NAR {
+      f32::NAN
+    } else {
+      // SAFETY: `value` is not 0 nor NaR
+      let decoded = unsafe { value.decode_regular() };
+      encode_finite_f32(decoded)
+    }
+  }
+}
+
+impl<
+  const N: u32,
+  const ES: u32,
+  Int: crate::Int,
+> RoundFrom<Posit<N, ES, Int>> for f64 {
+  /// Convert a `Posit` into an `f64`, [rounding according to the standard]:
+  ///
+  /// - If the value is [0](Posit::ZERO), the result is `+0.0`.
+  /// - If the value is [NaR](Posit::NAR), the result is a [quiet NaN](f64::NAN).
+  /// - Otherwise, the posit value is rounded to a float (if necessary) using the "roundTiesToEven"
+  ///   rule in the IEEE 754 standard (in short: underflow to ±0, overflow to ±∞, otherwise round
+  ///   to nearest, in case of a tie round to nearest even bit pattern).
+  ///
+  /// [rounding according to the standard]: https://posithub.org/docs/posit_standard-2.pdf#subsection.6.5
+  fn round_from(value: Posit<N, ES, Int>) -> Self {
+    if value == Posit::ZERO {
+      0.
+    } else if value == Posit::NAR {
+      f64::NAN
+    } else {
+      // SAFETY: `value` is not 0 nor NaR
+      let decoded = unsafe { value.decode_regular() };
+      encode_finite_f64(decoded)
+    }
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
+  use malachite::rational::Rational;
+  use proptest::prelude::*;
 
   mod float_to_posit {
     use super::*;
@@ -174,8 +324,6 @@ mod tests {
     macro_rules! make_tests {
       ($float:ty, $posit:ty) => {
         use super::*;
-        use malachite::rational::Rational;
-        use proptest::prelude::*;
 
         #[test]
         fn zero() {
@@ -291,6 +439,101 @@ mod tests {
       mod posit_3_0 { make_tests!{f32, Posit::<3, 0, i8>} }
       mod posit_4_0 { make_tests!{f32, Posit::<4, 0, i8>} }
       mod posit_4_1 { make_tests!{f32, Posit::<4, 1, i8>} }
+    }
+  }
+
+  mod posit_to_float {
+    use super::*;
+
+    // TODO Tests are very incomplete! It's limited to testing float ↔ posit roundtrips, which is
+    // not even exact!
+
+    /// Instantiate a suite of tests
+    macro_rules! test_exhaustive {
+      ($float:ty, $posit:ty) => {
+        use super::*;
+
+        #[test]
+        fn posit_roundtrip_exhaustive() {
+          for posit in <$posit>::cases_exhaustive_all() {
+            let float = <$float>::round_from(posit);
+            let reposit = <$posit>::round_from(float);
+            assert_eq!(posit, reposit)
+          }
+        }
+
+        /*#[test]
+        fn float_roundtrip_exhaustive(float: $float) {
+          let posit = <$posit>::round_from(float);
+          let refloat = <$float>::round_from(posit);
+          assert_eq!(float, refloat)
+        }*/
+      };
+    }
+
+    /// Instantiate a suite of tests
+    macro_rules! test_proptest {
+      ($float:ty, $posit:ty) => {
+        use super::*;
+
+        proptest!{
+          #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
+
+          #[test]
+          fn posit_roundtrip_proptest(posit in <$posit>::cases_proptest_all()) {
+            let float = <$float>::round_from(posit);
+            let reposit = <$posit>::round_from(float);
+            assert_eq!(posit, reposit)
+          }
+
+          /*#[test]
+          fn float_roundtrip_proptest(float: $float) {
+            let posit = <$posit>::round_from(float);
+            let refloat = <$float>::round_from(posit);
+            assert_eq!(float, refloat)
+          }*/
+        }
+      };
+    }
+
+    mod f64 {
+      use super::*;
+
+      mod p8 { test_exhaustive!{f64, crate::p8} }
+      mod p16 { test_exhaustive!{f64, crate::p16} }
+      mod p32 { test_proptest!{f64, crate::p32} }
+      // mod p64 { test_proptest!{f64, crate::p64} }
+
+      mod posit_8_0 { test_exhaustive!{f64, Posit::<8, 0, i8>} }
+      mod posit_10_0 { test_exhaustive!{f64, Posit::<10, 0, i16>} }
+      mod posit_10_1 { test_exhaustive!{f64, Posit::<10, 1, i16>} }
+      mod posit_10_2 { test_exhaustive!{f64, Posit::<10, 2, i16>} }
+      mod posit_10_3 { test_exhaustive!{f64, Posit::<10, 3, i16>} }
+      mod posit_20_4 { test_proptest!{f64, Posit::<20, 4, i32>} }
+
+      mod posit_3_0 { test_exhaustive!{f64, Posit::<3, 0, i8>} }
+      mod posit_4_0 { test_exhaustive!{f64, Posit::<4, 0, i8>} }
+      mod posit_4_1 { test_exhaustive!{f64, Posit::<4, 1, i8>} }
+    }
+
+    mod f32 {
+      use super::*;
+
+      mod p8 { test_exhaustive!{f32, crate::p8} }
+      mod p16 { test_exhaustive!{f32, crate::p16} }
+      // mod p32 { test_proptest!{f32, crate::p32} }
+      // mod p64 { test_proptest!{f32, crate::p64} }
+
+      mod posit_8_0 { test_exhaustive!{f32, Posit::<8, 0, i8>} }
+      mod posit_10_0 { test_exhaustive!{f32, Posit::<10, 0, i16>} }
+      mod posit_10_1 { test_exhaustive!{f32, Posit::<10, 1, i16>} }
+      mod posit_10_2 { test_exhaustive!{f32, Posit::<10, 2, i16>} }
+      mod posit_10_3 { test_exhaustive!{f32, Posit::<10, 3, i16>} }
+      // mod posit_20_4 { test_proptest!{f32, Posit::<20, 4, i32>} }
+
+      mod posit_3_0 { test_exhaustive!{f32, Posit::<3, 0, i8>} }
+      mod posit_4_0 { test_exhaustive!{f32, Posit::<4, 0, i8>} }
+      mod posit_4_1 { test_exhaustive!{f32, Posit::<4, 1, i8>} }
     }
   }
 }

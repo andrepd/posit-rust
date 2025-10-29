@@ -84,6 +84,7 @@ assert!(p16::round_from(-3.5).floor() == -p16::round_from(4));
 // Convert posits back to ints, IEEE floats, strings, or a raw bit representation.
 assert_eq!(p8::ONE.to_bits(), 0b01000000);
 assert_eq!(p16::round_from(3.5).round_into(), 4_i32);
+assert_eq!(p16::MAX.round_into(), 2_f32.powf(56.));
 
 // Use a quire to calculate sums and dot products _without loss of precision_!
 use fast_posit::{q8, q16, q32, q64};
@@ -174,10 +175,10 @@ standard paths you may need to set `RUSTFLAGS="-L /path/to/lib"`.
   - [ ] Trigonometry (sin, cos, asin, …)
   - [ ] Hyperbolics (sinh, cosh, asinh, …)
   - [ ] Exponentiation (sqrt, pow, hypot, …)
-- [ ] Conversions
+- [x] Conversions
   - [x] To integers
   - [x] From integers
-  - [ ] To floats
+  - [x] To floats
   - [x] From floats
   - [x] To/from posits
 - [ ] Parsing and printing
