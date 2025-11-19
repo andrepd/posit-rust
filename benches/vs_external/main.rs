@@ -61,6 +61,21 @@ fn bench_2ary<T: Copy, const N: usize, U: From<T>>(
   }));
 }
 
+/// Benchmark a 1-arg function
+fn bench_1ary<T: Copy, const N: usize, U: From<T>>(
+  g: &mut criterion::BenchmarkGroup<'_, criterion::measurement::WallTime>,
+  name: &str,
+  data: &[T; N],
+  mut f: impl FnMut(U) -> U,
+) {
+  g.throughput(Throughput::Elements(N as u64));
+  g.bench_function(name, |b| b.iter(|| {
+    for &x in data {
+      f(black_box(U::from(x)));
+    }
+  }));
+}
+
 //
 
 /// Benchmark this number of operations
@@ -129,6 +144,27 @@ fn div_32(c: &mut Criterion) {
   g.finish();
 }
 
+/// Generate arrays of random floats/posits and benchmark our impl and external impls in
+/// calculating the square roots.
+fn sqrt_32(c: &mut Criterion) {
+  let data_float = arr::<LEN, _>(rand_f32);
+  let data_posit = arr::<LEN, _>(rand_p32);
+  let mut g = c.benchmark_group("sqrt_32");
+
+  #[cfg(feature = "berkeley-softfloat")]
+  let _ = bench_1ary(&mut g, "berkeley-softfloat", &data_float, |x| unsafe { berkeley_softfloat::f32_sqrt(x) });
+
+  #[cfg(feature = "cerlane-softposit")]
+  let _ = bench_1ary(&mut g, "cerlane-softposit", &data_posit, |x| unsafe { cerlane_softposit::p32_sqrt(x) });
+
+  #[cfg(feature = "stillwater-softposit")]
+  let _ = bench_1ary(&mut g, "stillwater-softposit", &data_posit, |x| unsafe { stillwater_softposit::posit32_sqrt(x) });
+
+  let _ = bench_1ary(&mut g, "posit", &data_posit, |x: p32| x.sqrt());
+
+  g.finish();
+}
+
 /// Generate arrays of random floats/posits and benchmark our impl and external impls in adding
 /// pairs of numbers.
 fn add_64(c: &mut Criterion) {
@@ -192,6 +228,27 @@ fn div_64(c: &mut Criterion) {
   g.finish();
 }
 
+/// Generate arrays of random floats/posits and benchmark our impl and external impls in
+/// calculating the square roots.
+fn sqrt_64(c: &mut Criterion) {
+  let data_float = arr::<LEN, _>(rand_f64);
+  let data_posit = arr::<LEN, _>(rand_p64);
+  let mut g = c.benchmark_group("sqrt_64");
+
+  #[cfg(feature = "berkeley-softfloat")]
+  let _ = bench_1ary(&mut g, "berkeley-softfloat", &data_float, |x| unsafe { berkeley_softfloat::f64_sqrt(x) });
+
+  /*#[cfg(feature = "cerlane-softposit")]
+  let _ = bench_1ary(&mut g, "cerlane-softposit", &data_posit, |x| unsafe { cerlane_softposit::p64_sqrt(x) });*/
+
+  #[cfg(feature = "stillwater-softposit")]
+  let _ = bench_1ary(&mut g, "stillwater-softposit", &data_posit, |x| unsafe { stillwater_softposit::posit64_sqrt(x) });
+
+  let _ = bench_1ary(&mut g, "posit", &data_posit, |x: p64| x.sqrt());
+
+  g.finish();
+}
+
 criterion_group!(add,
   add_32,
   add_64,
@@ -207,4 +264,9 @@ criterion_group!(div,
   div_64,
 );
 
-criterion_main!(add, mul, div);
+criterion_group!(sqrt,
+  sqrt_32,
+  sqrt_64,
+);
+
+criterion_main!(add, mul, div, sqrt);

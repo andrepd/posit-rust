@@ -228,6 +228,9 @@ mod round_int;
 /// The four basic arithmetic operations: +, -, ×, ÷.
 mod ops;
 
+/// Other mathematical operations: sqrt, log, exp, sin, etc.
+mod math;
+
 /// Quire (the fixed-point accumulator for error-free sums and dot products)
 pub mod quire;
 

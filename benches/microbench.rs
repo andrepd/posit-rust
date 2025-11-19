@@ -93,6 +93,18 @@ fn div_kernel_p32(c: &mut Criterion) {
   g.finish();
 }
 
+fn sqrt_kernel_p32(c: &mut Criterion) {
+  let mut g = c.benchmark_group("sqrt_kernel_p32");
+  for x in &NUMS_32 {
+    let x_dec = unsafe { x.bench_decode_regular() };
+    g.throughput(Throughput::Elements(1));
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("{}", short(&x))), &(x_dec), |b, &(x)| {
+      b.iter(|| unsafe { p32::bench_sqrt_kernel(black_box(x)) } );
+    });
+  }
+  g.finish();
+}
+
 fn add_p32(c: &mut Criterion) {
   let mut g = c.benchmark_group("add_p32");
   for (&x, &y) in NUMS_32.iter().zip(NUMS_32.iter().skip(1)) {
@@ -132,6 +144,17 @@ fn div_p32(c: &mut Criterion) {
     g.throughput(Throughput::Elements(1));
     g.bench_with_input(BenchmarkId::from_parameter(format_args!("{}/{}", short(&x), short(&y))), &(x, y), |b, &(x, y)| {
       b.iter(|| black_box(x) / black_box(y) );
+    });
+  }
+  g.finish();
+}
+
+fn sqrt_p32(c: &mut Criterion) {
+  let mut g = c.benchmark_group("sqrt_p32");
+  for &x in &NUMS_32 {
+    g.throughput(Throughput::Elements(1));
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("{}", short(&x))), &(x), |b, &(x)| {
+      b.iter(|| black_box(x).sqrt() );
     });
   }
   g.finish();
@@ -241,6 +264,18 @@ fn div_kernel_p64(c: &mut Criterion) {
   g.finish();
 }
 
+fn sqrt_kernel_p64(c: &mut Criterion) {
+  let mut g = c.benchmark_group("sqrt_kernel_p64");
+  for x in &NUMS_64 {
+    let x_dec = unsafe { x.bench_decode_regular() };
+    g.throughput(Throughput::Elements(1));
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("{}", short(&x))), &(x_dec), |b, &(x)| {
+      b.iter(|| unsafe { p64::bench_sqrt_kernel(black_box(x)) } );
+    });
+  }
+  g.finish();
+}
+
 fn add_p64(c: &mut Criterion) {
   let mut g = c.benchmark_group("add_p64");
   for (&x, &y) in NUMS_64.iter().zip(NUMS_64.iter().skip(1)) {
@@ -280,6 +315,17 @@ fn div_p64(c: &mut Criterion) {
     g.throughput(Throughput::Elements(1));
     g.bench_with_input(BenchmarkId::from_parameter(format_args!("{}/{}", short(&x), short(&y))), &(x, y), |b, &(x, y)| {
       b.iter(|| black_box(x) / black_box(y) );
+    });
+  }
+  g.finish();
+}
+
+fn sqrt_p64(c: &mut Criterion) {
+  let mut g = c.benchmark_group("sqrt_p64");
+  for &x in &NUMS_64 {
+    g.throughput(Throughput::Elements(1));
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("{}", short(&x))), &(x), |b, &(x)| {
+      b.iter(|| black_box(x).sqrt() );
     });
   }
   g.finish();
@@ -357,6 +403,13 @@ criterion_group!(div,
   div_p64,
 );
 
+criterion_group!(sqrt,
+  sqrt_kernel_p32,
+  sqrt_kernel_p64,
+  sqrt_p32,
+  sqrt_p64,
+);
+
 criterion_group!(quire,
   quire_add_p32,
   quire_add_p64,
@@ -366,4 +419,4 @@ criterion_group!(quire,
   quire_into_p64,
 );
 
-criterion_main!(baseline_fpu, decode, encode, add, mul, div, quire);
+criterion_main!(baseline_fpu, decode, encode, add, mul, div, sqrt, quire);

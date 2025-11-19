@@ -23,6 +23,10 @@ impl<
   pub unsafe fn bench_div_kernel(a: Decoded<N, ES, Int>, b: Decoded<N, ES, Int>) -> (Decoded<N, ES, Int>, Int) {
     unsafe { Self::div_kernel(a, b) }
   }
+
+  pub unsafe fn bench_sqrt_kernel(a: Decoded<N, ES, Int>) -> (Decoded<N, ES, Int>, Int) {
+    unsafe { Self::sqrt_kernel(a) }
+  }
 }
 
 impl<
@@ -227,6 +231,48 @@ pub fn div_32(x: Posit<32, 2, i32>, y: Posit<32, 2, i32>) -> Posit<32, 2, i32> {
 #[unsafe(no_mangle)]
 pub fn div_64(x: Posit<64, 2, i64>, y: Posit<64, 2, i64>) -> Posit<64, 2, i64> {
   x.div(y)
+}
+
+//
+
+#[unsafe(no_mangle)]
+pub fn sqrt_kernel_8(x: Decoded<8, 2, i8>) -> (Decoded<8, 2, i8>, i8) {
+  unsafe { Posit::<8, 2, i8>::sqrt_kernel(x) }
+}
+
+#[unsafe(no_mangle)]
+pub fn sqrt_kernel_16(x: Decoded<16, 2, i16>) -> (Decoded<16, 2, i16>, i16) {
+  unsafe { Posit::<16, 2, i16>::sqrt_kernel(x) }
+}
+
+#[unsafe(no_mangle)]
+pub fn sqrt_kernel_32(x: Decoded<32, 2, i32>) -> (Decoded<32, 2, i32>, i32) {
+  unsafe { Posit::<32, 2, i32>::sqrt_kernel(x) }
+}
+
+#[unsafe(no_mangle)]
+pub fn sqrt_kernel_64(x: Decoded<64, 2, i64>) -> (Decoded<64, 2, i64>, i64) {
+  unsafe { Posit::<64, 2, i64>::sqrt_kernel(x) }
+}
+
+#[unsafe(no_mangle)]
+pub fn sqrt_8(x: Posit<8, 2, i8>) -> Posit<8, 2, i8> {
+  x.sqrt()
+}
+
+#[unsafe(no_mangle)]
+pub fn sqrt_16(x: Posit<16, 2, i16>) -> Posit<16, 2, i16> {
+  x.sqrt()
+}
+
+#[unsafe(no_mangle)]
+pub fn sqrt_32(x: Posit<32, 2, i32>) -> Posit<32, 2, i32> {
+  x.sqrt()
+}
+
+#[unsafe(no_mangle)]
+pub fn sqrt_64(x: Posit<64, 2, i64>) -> Posit<64, 2, i64> {
+  x.sqrt()
 }
 
 //

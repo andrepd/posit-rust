@@ -22,6 +22,9 @@ unsafe extern "C" {
 
   pub fn posit32_divp32(x: posit32_t, y: posit32_t) -> posit32_t;
   pub fn posit64_divp64(x: posit64_t, y: posit64_t) -> posit64_t;
+
+  pub fn posit32_sqrt(x: posit32_t) -> posit32_t;
+  pub fn posit64_sqrt(x: posit64_t) -> posit64_t;
 }
 
 impl From<p32> for posit32_t { fn from(x: p32) -> Self { posit32_t { v: x.to_bits() as u32 } } }

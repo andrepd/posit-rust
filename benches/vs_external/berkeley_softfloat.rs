@@ -20,6 +20,9 @@ unsafe extern "C" {
 
   pub fn f32_div(x: float32_t, y: float32_t) -> float32_t;
   pub fn f64_div(x: float64_t, y: float64_t) -> float64_t;
+
+  pub fn f32_sqrt(x: float32_t) -> float32_t;
+  pub fn f64_sqrt(x: float64_t) -> float64_t;
 }
 
 impl From<f32> for float32_t { fn from(x: f32) -> Self { float32_t { v: x.to_bits() } } }

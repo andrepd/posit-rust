@@ -147,6 +147,18 @@ pub trait Unsigned:
   fn to_be(self) -> Self;
 
   fn overflowing_add(self, other: Self) -> (Self, bool);
+
+  /// Compute the result of `(self << precision).isqrt()`, *without* overflow or loss of precision
+  /// (by using a type that's twice as wide as `Self` for the intermediate computation).
+  ///
+  /// Returns a tuple (`result`, `inexact`), where `inexact` is nonzero iff `self << precision` was
+  /// not a perfect square.
+  ///
+  /// # Safety
+  ///
+  /// If `other` is `Int::ZERO` or `-Int::ONE`, in which case the quotient would be indeterminate or
+  /// overflow a `Self`, respectively, calling this function is *undefined behaviour*.
+  fn shift_sqrt(self, precision: u32) -> (Self, bool);
 }
 
 /// This trait models the type that is an `Int` with twice the precision (e.g. `i32::Double` =
