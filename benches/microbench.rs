@@ -21,6 +21,18 @@ fn baseline_fpu_add_f64(c: &mut Criterion) {
   });
 }
 
+fn baseline_fpu_mul_f32(c: &mut Criterion) {
+  c.bench_function("baseline_fpu_mul_f32", |b| {
+    b.iter(|| black_box(3.14) * black_box(69.420));
+  });
+}
+
+fn baseline_fpu_mul_f64(c: &mut Criterion) {
+  c.bench_function("baseline_fpu_mul_f64", |b| {
+    b.iter(|| black_box(3.14) * black_box(69.420));
+  });
+}
+
 // Time decoding 1 posit
 
 const NUMS_32: [p32; 4] = [
@@ -368,6 +380,8 @@ fn quire_into_p64(c: &mut Criterion) {
 criterion_group!(baseline_fpu,
   baseline_fpu_add_f32,
   baseline_fpu_add_f64,
+  baseline_fpu_mul_f32,
+  baseline_fpu_mul_f64,
 );
 
 criterion_group!(decode,
