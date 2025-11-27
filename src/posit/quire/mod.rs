@@ -60,7 +60,7 @@ mod basics;
 
 /// Here is the core algorithm of the quire: adding the product of two posits, as a fixed-point
 /// number, to the quire.
-mod add;
+mod accumulate;
 
 /// The user-facing functions live here: `+=`, `-=`, `add_prod`, `sub_prod`.
 mod ops;
