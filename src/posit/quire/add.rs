@@ -1,13 +1,32 @@
 use super::*;
 
+use crate::fallthrough;
+use crate::underlying::const_as;
+
+/// Aux function: adapter for `Int::multiword_shl<64>`.
+///
+/// Compute the result of a multiword left-shift. The return value is `(hi, lo, shift_words)`, such
+/// that, in terms of infinite precision arithmetic:
+///
+/// ```ignore
+/// self << n = (hi << Self::BITS + lo) << (shift_words * 64)
+/// ```
+fn multiword_shl_64<Int: crate::Int>(x: Int, n: u32) -> (u64, u64, usize) {
+  use crate::underlying::Sealed;
+  let x = const_as::<Int, i64>(x);
+  let (hi, lo, offset_bits) = x.multiword_shl::<64>(n);
+  let offset_bytes = offset_bits as usize / 64;
+  (hi as u64, lo as u64, offset_bytes)
+}
+
 impl<
   const N: u32,
   const ES: u32,
   const SIZE: usize,
 > Quire<N, ES, SIZE> {
   /// The core algorithm of the quire: adding a fixed-point number, represented as an array of
-  /// `limbs` in big-endian order, shifted `offset` bytes from the right, and sign-extended to the
-  /// size of the quire, to `self`.
+  /// `limbs` in little-endian order, shifted `offset` bytes from the right, and sign-extended to
+  /// the size of the quire, to `self`.
   ///
   /// In other words, the "logical" number to add to the quire is `limbs`, padded with `offset`
   /// bits on the right equal to 0, and infinite bits on the left equal to the msb of bytes.
@@ -22,58 +41,77 @@ impl<
   ///
   /// # Safety
   ///
-  /// `limbs.len() * size_of::<Int>() + offset < SIZE` must hold, or calling this function
+  /// `limbs.len() * size_of::<Int>() + offset ≤ SIZE` must hold, or calling this function
   /// is *undefined behaviour*.
-  pub(crate) unsafe fn accumulate<const L: usize, Int: crate::Int>(
+  ///
+  /// # Visual example:
+  ///
+  /// ```text
+  /// self   = [self[0], self[1], self[2], self[3], self[4], self[6], self[6], self[7]]
+  /// limbs  =                           [limbs[0], limbs[1]]
+  /// offset = 3
+  /// ```
+  ///
+  /// then the result is the result of adding the little-endian bignums
+  ///
+  /// ```text
+  /// [self[0], self[1], self[2], self[3] , self[4] , self[5] , self[6] , self[7] ]
+  /// [0      , 0      , 0      , limbs[0], limbs[1], implicit, implicit, implicit]
+  /// ```
+  ///
+  /// where `implicit = if limbs[1] ≥ 0 {0} else {-1}`.
+  /*#[inline(always)]*/  // TODO Unclear: benefits round_from(posit) by 30% but worsens += posit by 70%
+  pub(crate) unsafe fn accumulate<const L: usize>(
     &mut self,
-    limbs: [Int; L],
+    limbs: &[u64; L],
     offset: usize,
   ) {
-    // The `accumulate` function has three parts:
-    //
-    //   - We need to add (with carry) the `limbs` to the quire.
-    //   - Then we need to propagate any carry that might exist, up until the end of the quire.
-    //   - Then we need to check if we overflow the quire sum limit (highly unlikely), in which
-    //     case the result should be NaR.
-    debug_assert!(core::mem::size_of_val(&limbs) + offset < SIZE);
+    let quire: &mut [u64] = self.as_u64_array_mut();
+    let len_u64 = quire.len();
 
-    // Add the `limbs` with carry.
-    //
-    // SAFETY: As a precondition, `offset < SIZE`, so `ptr` is in bounds of the array. But more
-    // strongly, `offset + L * size_of::<Int>() < SIZE`, so `ptr` will _remain_ in bounds
-    // throughout this loop. Finally, the `offset` is guaranteed to be aligned to `Int`, and so is
-    // the quire itself (which is aligned to 128 bits). Therefore: the `src` and `dst` pointers
-    // are always in bounds and aligned to `Int`.
-    //
-    // The following snippet seems to have great codegen: the fixed-size loop of `carrying_add`s is
-    // actually compiled to a sequence of `adc` instructions on x86!
-    let base_dst = unsafe { self.0.as_mut_ptr_range().end.byte_sub(offset) } as *mut Int;
-    let base_src = limbs.as_ptr_range().end as *mut Int;
+    if cfg!(debug_assertions) {
+      debug_assert!(offset + limbs.len() <= quire.len())
+    } else {
+      // SAFETY: Precondition.
+      unsafe { core::hint::assert_unchecked(offset + limbs.len() <= quire.len()) }
+    }
+
+    // Part 1: Add `limbs[..]` to `quire[offset .. offset + L]`.
     let mut carry = false;
-    for i in 0..L {
-      let dst = unsafe { base_dst.sub(1 + i) };
-      let src = unsafe { base_src.sub(1 + i) };
-      let (result, overflow) = unsafe { Int::carrying_add((*dst).from_be(), (*src), carry)};
-      unsafe { *dst = result.to_be() };
-      carry = overflow;
+    for i in 0 .. limbs.len() {
+        // SAFETY: This follows from the above precondition, but we re-assert it to help the
+        // compiler.
+        unsafe { core::hint::assert_unchecked(offset + i < quire.len()) }
+        let (r, o) = u64::carrying_add(quire[offset + i], limbs[i], carry);
+        quire[offset + i] = r;
+        carry = o;
     }
 
-    // We're done with the limbs. Now the only value that needs to be "added" is an eventual carry
-    // and/or sign bit, i.e. a value of +1, 0, or -1. This needs to be propagated until the end.
-    let upper_padding = limbs[0] >> (Int::BITS - 1);
-    let mut dst = unsafe { base_dst.sub(1 + L) };
-    while dst as *const u8 >= self.0.as_ptr() {
-      /*if !carry { return }*/
-      let (result, overflow) = unsafe { (*dst).from_be().carrying_add(upper_padding, carry) };
-      unsafe { *dst = result.to_be() }
-      carry = overflow;
-      dst = unsafe { dst.sub(1) }
-    }
+    // In principle the compiler is able to optimise this, but just in case...
+    if const { L == Self::SIZE / 8 } { return }
 
-    /*// If we reach this, then would still be a carry beyond the limits of the quire. In this
-    // (very unlikely) case, we set the quire to NaR.
-    if carry == Int::ZERO { return }
-    *self = Self::NAR*/
+    // Part 2: Add `implicit` to `quire[offset + L ..]`.
+    let implicit = (limbs[L-1] as i64 >> 63) as u64;
+
+    fallthrough!(offset + limbs.len(),
+               0 => if  0 < len_u64 { let (r,o) = u64::carrying_add(quire[ 0], implicit, carry); quire[ 0] = r; carry = o; },
+        'l1:   1 => if  1 < len_u64 { let (r,o) = u64::carrying_add(quire[ 1], implicit, carry); quire[ 1] = r; carry = o; },
+        'l2:   2 => if  2 < len_u64 { let (r,o) = u64::carrying_add(quire[ 2], implicit, carry); quire[ 2] = r; carry = o; },
+        'l3:   3 => if  3 < len_u64 { let (r,o) = u64::carrying_add(quire[ 3], implicit, carry); quire[ 3] = r; carry = o; },
+        'l4:   4 => if  4 < len_u64 { let (r,o) = u64::carrying_add(quire[ 4], implicit, carry); quire[ 4] = r; carry = o; },
+        'l5:   5 => if  5 < len_u64 { let (r,o) = u64::carrying_add(quire[ 5], implicit, carry); quire[ 5] = r; carry = o; },
+        'l6:   6 => if  6 < len_u64 { let (r,o) = u64::carrying_add(quire[ 6], implicit, carry); quire[ 6] = r; carry = o; },
+        'l7:   7 => if  7 < len_u64 { let (r,o) = u64::carrying_add(quire[ 7], implicit, carry); quire[ 7] = r; carry = o; },
+        'l8:   8 => if  8 < len_u64 { let (r,o) = u64::carrying_add(quire[ 8], implicit, carry); quire[ 8] = r; carry = o; },
+        'l9:   9 => if  9 < len_u64 { let (r,o) = u64::carrying_add(quire[ 9], implicit, carry); quire[ 9] = r; carry = o; },
+        'l10: 10 => if 10 < len_u64 { let (r,o) = u64::carrying_add(quire[10], implicit, carry); quire[10] = r; carry = o; },
+        'l11: 11 => if 11 < len_u64 { let (r,o) = u64::carrying_add(quire[11], implicit, carry); quire[11] = r; carry = o; },
+        'l12: 12 => if 12 < len_u64 { let (r,o) = u64::carrying_add(quire[12], implicit, carry); quire[12] = r; carry = o; },
+        'l13: 13 => if 13 < len_u64 { let (r,o) = u64::carrying_add(quire[13], implicit, carry); quire[13] = r; carry = o; },
+        'l14: 14 => if 14 < len_u64 { let (r,o) = u64::carrying_add(quire[14], implicit, carry); quire[14] = r; carry = o; },
+        'l15: 15 => if 15 < len_u64 { let (r,o) = u64::carrying_add(quire[15], implicit, carry); quire[15] = r; carry = o; },
+        'z: _ => return,
+    );
 
     // TODO: overflows of the quire sum limit should go to NaR!
   }
@@ -85,6 +123,7 @@ impl<
   /// `x` must be the result of a [`Posit::decode_regular`] call, or calling this function
   /// is *undefined behaviour*.
   pub(crate) unsafe fn accumulate_decoded<Int: crate::Int>(&mut self, x: Decoded<N, ES, Int>) {
+    const { assert!(Int::BITS <= 64, "Quire operations are currently not supported for N > 64") };
     debug_assert!(x.exp.abs() <= Posit::<N, ES, Int>::MAX_EXP + Int::ONE);
 
     // The quire is a fixed-point accumulator wide enough to accomodate the product of any two
@@ -108,18 +147,41 @@ impl<
     // `if const` (well, not quite because of limitations in Rust, but yes, `base_shift` is a
     // constant and will be folded out). We simply check if `base_shift - MAX_EXP` can ever be
     // negative (a right-shift). If not, this branch is not even included in the binary.
-    if base_shift <= Posit::<N, ES, Int>::MAX_EXP && shift < Int::ZERO {
+    if base_shift <= Posit::<N, ES, Int>::MAX_EXP
+    && shift < Int::ZERO {
       // Note: no bits of `frac` are actually lost in the right-shift; this is just because `Int`
       // itself is wide enough relative to `N` and `ES`.
       let shift_right = (-shift).as_u32();
       debug_assert_eq!(x.frac.mask_lsb(shift_right), Int::ZERO);
       // SAFETY: `limbs` is only one `Int`, and `offset` is `0`.
-      unsafe { self.accumulate([x.frac >> shift_right], 0) }
-    } else {
+      let lo = const_as::<Int, i64>(x.frac) >> shift_right;
+      unsafe { self.accumulate(&[lo as u64], 0) }
+    }
+
+    // Normal case: we multiword-shift left by `shift_left` bits.
+    else {
       let shift_left = shift.as_u32();
-      let (hi, lo, offset) = x.frac.multiword_shl(shift_left);
-      // SAFETY: `x.exp` is between `MIN_EXP` and `MAX_EXP`, so the `offset` is always `< SIZE / 2`.
-      unsafe { self.accumulate([hi, lo], offset) }
+      let (hi, lo, offset) = multiword_shl_64(x.frac, shift_left);
+
+      // Another edge case: we check in `Self::MIN_SIZE` that we have enough bits. But if we have
+      // less than 64 to spare, then the `hi` word might be pushed out of the quire. In this case,
+      // we must be careful to **not** add `&[lo, hi]`, but just `&[lo]`, or we would write out of
+      // bounds.
+      //
+      // Note that again, like the previous edge case above, this only happens on a small portion
+      // of types (e.g. among the standard types only on p8 and q8), and for types where it cannot
+      // happen the branch is not even included in the binary.
+      if Self::WIDTH + 2 + Posit::<N, ES, Int>::MAX_EXP.as_u32() > Self::BITS - 64 
+      && offset == Self::SIZE / 8 - 1 {
+        debug_assert!((lo as i64) >= 0 && hi as i64 == 0 || (lo as i64) < 0 && hi as i64 == -1 );
+        unsafe { self.accumulate(&[lo], offset) }
+      }
+
+      // Otherwise, business as usual
+      else {
+        // SAFETY: `x.exp` is between `MIN_EXP` and `MAX_EXP`, so the `offset` is always `< SIZE / 2`.
+        unsafe { self.accumulate(&[lo, hi], offset) }
+      }
     }
   }
 }

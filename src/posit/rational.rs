@@ -167,7 +167,7 @@ impl<
       Err(IsNaR)
     } else {
       // The quire is just big fix-point number with denominator 2 ^ WIDTH.
-      let mut bytes = value.0.iter();
+      let mut bytes = value.0.iter().rev();
 
       let first = bytes.next().unwrap();  // First (most significant) byte is signed i8
       let mut numerator = Integer::from(*first as i8);

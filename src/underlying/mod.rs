@@ -122,16 +122,20 @@ pub trait Sealed:
   /// overflow a `Self`, respectively, calling this function is *undefined behaviour*.
   unsafe fn shift_div_rem(self, other: Self, precision: u32) -> (Self, Self);
 
-  /// Compute the result of a multiword left-shift. The return value is `(hi, lo, index)`, such
+  /// Compute the result of a multiword left-shift. The return value is `(hi, lo, shift)`, such
   /// that, in terms of infinite precision arithmetic:
   ///
   /// ```ignore
-  /// self << n = (hi << Self::BITS + lo) << (8 * index)
+  /// self << n = (hi << Self::BITS + lo) << shift
   /// ```
   ///
-  /// That is, `hi, lo` are the high and low words of the shifted result, and `index` is the offset
-  /// in _bytes_, useful if we're representing the multiword number in an array.
-  fn multiword_shl(self, n: u32) -> (Self, Self, usize);  // TODO return (Self::Double, usize)
+  /// with `shift` being a multiple of `WORD_SIZE`.
+  ///
+  /// That is, `hi, lo` are the high and low words of the shifted result, and `shift / WORD_SIZE`
+  /// is the offset in words.
+  ///
+  /// This function is useful if we're representing the multiword number in an array.
+  fn multiword_shl<const WORD_SIZE: u32>(self, n: u32) -> (Self, Self, u32);
 }
 
 // TODO pub trait IntBigEndian

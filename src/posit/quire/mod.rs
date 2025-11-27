@@ -41,15 +41,11 @@ use super::*;
 /// assert_eq!(posit, p16::ZERO);
 /// ```
 //
-// The quire is represented as an array of bytes in big-endian order. This is because (we theorise
-// at the moment, with no data) since most operations need to start by checking if the most
-// significant byte is NaR (= 0b10000000), placing that byte first is the best layout for cache.
-//
-// On the other hand, adding with carry is more natural to do in little-endian order, and also
-// avoids the work of shuffling bits from little-endian to big-endian in little-endian
-// architectures... Need to try and profile.
+// The quire is represented as an array of bytes in little-endian order.
 //
 // It is also aligned to 128 bits, and we restrict `SIZE` to be a multiple of 64-bits (8 bytes).
+// This allows many operations to be done in fixed-size increments of 64 bits. For small quires
+// especially, this is extremely good for performance!
 #[derive(Clone, Hash)]
 #[repr(align(16))]
 pub struct Quire<

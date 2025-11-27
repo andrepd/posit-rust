@@ -121,13 +121,13 @@ macro_rules! impl_common {
       (c as $int, b | d)
     }
 
-    fn multiword_shl(self, n: u32) -> (Self, Self, usize) {
+    fn multiword_shl<const WORD_SIZE: u32>(self, n: u32) -> (Self, Self, u32) {
       // Codegen seems pretty great when looking in godbolt!
-      let bytes = n / Self::BITS * Self::BITS / 8;
-      let bits = n % Self::BITS;
-      let lo = self.unbounded_shl(bits);
-      let hi = self.unbounded_shr(Self::BITS - bits);
-      (hi, lo, bytes as usize)
+      let bits_outer = n / WORD_SIZE * WORD_SIZE;
+      let bits_inner = n % WORD_SIZE;
+      let lo = self.unbounded_shl(bits_inner);
+      let hi = self.unbounded_shr(Self::BITS - bits_inner);
+      (hi, lo, bits_outer)
     }
   }
 }
@@ -314,11 +314,11 @@ mod tests {
   #[test]
   fn multiword_shl_small() {
     assert_eq!(
-      (0x1234abcd_i32).multiword_shl(4),
+      (0x1234abcd_i32).multiword_shl::<32>(4),
       (0x00000001, 0x234abcd0, 0),
     );
     assert_eq!(
-      (0xa234abcd_i32).multiword_shl(4),
+      (0xa234abcd_i32).multiword_shl::<32>(4),
       (0xfffffffa, 0x234abcd0, 0),
     );
   }
@@ -326,42 +326,42 @@ mod tests {
   #[test]
   fn multiword_shl_exact() {
     assert_eq!(
-      (0x1234abcd_i32).multiword_shl(32 + 4),
-      (0x00000001, 0x234abcd0, 4),
+      (0x1234abcd_i32).multiword_shl::<32>(32 + 4),
+      (0x00000001, 0x234abcd0, 32),
     );
     assert_eq!(
-      (0xa234abcd_i32).multiword_shl(32 + 4),
-      (0xfffffffa, 0x234abcd0, 4),
+      (0xa234abcd_i32).multiword_shl::<32>(32 + 4),
+      (0xfffffffa, 0x234abcd0, 32),
     );
 
     assert_eq!(
-      (0x1234abcd_i32).multiword_shl(64 + 4),
-      (0x00000001, 0x234abcd0, 8),
+      (0x1234abcd_i32).multiword_shl::<32>(64 + 4),
+      (0x00000001, 0x234abcd0, 64),
     );
     assert_eq!(
-      (0xa234abcd_i32).multiword_shl(64 + 4),
-      (0xfffffffa, 0x234abcd0, 8),
+      (0xa234abcd_i32).multiword_shl::<32>(64 + 4),
+      (0xfffffffa, 0x234abcd0, 64),
     );
   }
 
   #[test]
   fn multiword_shl_inexact() {
     assert_eq!(
-      (0x1234abcd_i32).multiword_shl(16 + 4),
+      (0x1234abcd_i32).multiword_shl::<32>(16 + 4),
       (0x0001234a, 0xbcd00000, 0),
     );
     assert_eq!(
-      (0xa234abcd_i32).multiword_shl(16 + 4),
+      (0xa234abcd_i32).multiword_shl::<32>(16 + 4),
       (0xfffa234a, 0xbcd00000, 0),
     );
 
     assert_eq!(
-      (0x1234abcd_i32).multiword_shl(48 + 4),
-      (0x0001234a, 0xbcd00000, 4),
+      (0x1234abcd_i32).multiword_shl::<32>(48 + 4),
+      (0x0001234a, 0xbcd00000, 32),
     );
     assert_eq!(
-      (0xa234abcd_i32).multiword_shl(48 + 4),
-      (0xfffa234a, 0xbcd00000, 4),
+      (0xa234abcd_i32).multiword_shl::<32>(48 + 4),
+      (0xfffa234a, 0xbcd00000, 32),
     );
   }
 }
