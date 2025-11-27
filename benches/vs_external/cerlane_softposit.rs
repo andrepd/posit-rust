@@ -12,6 +12,11 @@ pub struct posit32_t { v: u32 }
 #[derive(Clone, Copy)]
 pub struct posit64_t { v: u64 }
 
+#[repr(C)]
+#[derive(Clone, Copy)]
+#[derive(Default)]
+pub struct quire32_t { v: [u64; 8] }
+
 #[link(name = "softposit")]
 unsafe extern "C" {
   pub fn p32_add(x: posit32_t, y: posit32_t) -> posit32_t;
@@ -25,6 +30,14 @@ unsafe extern "C" {
 
   pub fn p32_sqrt(x: posit32_t) -> posit32_t;
   // pub fn p64_sqrt(x: posit64_t) -> posit64_t;
+
+  fn q32_fdp_add(q: quire32_t, x: posit32_t, y: posit32_t) -> quire32_t;
+}
+
+#[inline]
+pub unsafe fn q32_add(q: quire32_t, x: posit32_t) -> quire32_t {
+  let unit = posit32_t::from(p32::ONE);
+  unsafe { q32_fdp_add(q, x, unit) }
 }
 
 impl From<p32> for posit32_t { fn from(x: p32) -> Self { posit32_t { v: x.to_bits() as u32 } } }

@@ -10,7 +10,7 @@
 //!   - https://github.com/stillwater-sc/universal/
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
-use fast_posit::{p32, p64};
+use fast_posit::{p32, p64, q32};
 
 //
 
@@ -70,6 +70,23 @@ fn bench_1ary<T: Copy, U: From<T>>(
   g.bench_function(name, |b| b.iter(|| {
     for &x in data {
       let _ = black_box(f(black_box(U::from(x))));
+    }
+  }));
+}
+
+/// Benchmark a 1-arg function that accumulates into another type.
+fn bench_1ary_accumulate<T: Copy, A: Clone, U: From<T>>(
+  g: &mut criterion::BenchmarkGroup<'_, criterion::measurement::WallTime>,
+  name: &str,
+  initial: A,
+  data: &[T],
+  mut f: impl FnMut(&mut A, U),
+) {
+  g.throughput(Throughput::Elements(data.len() as u64));
+  g.bench_function(name, |b| b.iter(|| {
+    let mut accum = black_box(initial.clone());
+    for &x in data {
+      let _ = black_box(f(&mut accum, black_box(U::from(x))));
     }
   }));
 }
@@ -169,7 +186,7 @@ fn add_64(c: &mut Criterion) {
   bench_2ary(&mut g, "berkeley-softfloat", &data_float, |x, y| unsafe { berkeley_softfloat::f64_add(x, y) });
 
   /*#[cfg(feature = "cerlane-softposit")]
-  let _ = bench_2ary(&mut g, "cerlane-softposit", &data_posit, |x, y| unsafe { cerlane_softposit::p64_add(x, y) };*/
+  bench_2ary(&mut g, "cerlane-softposit", &data_posit, |x, y| unsafe { cerlane_softposit::p64_add(x, y) };*/
 
   #[cfg(feature = "stillwater-softposit")]
   bench_2ary(&mut g, "stillwater-softposit", &data_posit, |x, y| unsafe { stillwater_softposit::posit64_addp64(x, y) });
@@ -189,7 +206,7 @@ fn mul_64(c: &mut Criterion) {
   bench_2ary(&mut g, "berkeley-softfloat", &data_float, |x, y| unsafe { berkeley_softfloat::f64_mul(x, y) });
 
   /*#[cfg(feature = "cerlane-softposit")]
-  let _ = bench_2ary(&mut g, "cerlane-softposit", &data_posit, |x, y| unsafe { cerlane_softposit::p64_mul(x, y) };*/
+  bench_2ary(&mut g, "cerlane-softposit", &data_posit, |x, y| unsafe { cerlane_softposit::p64_mul(x, y) };*/
 
   #[cfg(feature = "stillwater-softposit")]
   bench_2ary(&mut g, "stillwater-softposit", &data_posit, |x, y| unsafe { stillwater_softposit::posit64_mulp64(x, y) });
@@ -209,7 +226,7 @@ fn div_64(c: &mut Criterion) {
   bench_2ary(&mut g, "berkeley-softfloat", &data_float, |x, y| unsafe { berkeley_softfloat::f64_div(x, y) });
 
   /*#[cfg(feature = "cerlane-softposit")]
-  let _ = bench_2ary(&mut g, "cerlane-softposit", &data_posit, |x, y| unsafe { cerlane_softposit::p64_div(x, y) };*/
+  bench_2ary(&mut g, "cerlane-softposit", &data_posit, |x, y| unsafe { cerlane_softposit::p64_div(x, y) };*/
 
   #[cfg(feature = "stillwater-softposit")]
   bench_2ary(&mut g, "stillwater-softposit", &data_posit, |x, y| unsafe { stillwater_softposit::posit64_divp64(x, y) });
@@ -229,12 +246,38 @@ fn sqrt_64(c: &mut Criterion) {
   bench_1ary(&mut g, "berkeley-softfloat", &data_float, |x| unsafe { berkeley_softfloat::f64_sqrt(x) });
 
   /*#[cfg(feature = "cerlane-softposit")]
-  let _ = bench_1ary(&mut g, "cerlane-softposit", &data_posit, |x| unsafe { cerlane_softposit::p64_sqrt(x) });*/
+  bench_1ary(&mut g, "cerlane-softposit", &data_posit, |x| unsafe { cerlane_softposit::p64_sqrt(x) });*/
 
   #[cfg(feature = "stillwater-softposit")]
   bench_1ary(&mut g, "stillwater-softposit", &data_posit, |x| unsafe { stillwater_softposit::posit64_sqrt(x) });
 
   bench_1ary(&mut g, "posit", &data_posit, |x: p64| x.sqrt());
+
+  g.finish();
+}
+
+/// Generate arrays of random posits and benchmark our impl and external impls in summing them all
+/// into a quire.
+fn quire_add_32(c: &mut Criterion) {
+  let (data_posit, _) = make_data_32(LEN);
+  let mut g = c.benchmark_group("quire_add_32");
+
+  #[cfg(feature = "cerlane-softposit")]
+  bench_1ary_accumulate(
+    &mut g,
+    "cerlane-softposit",
+    cerlane_softposit::quire32_t::default(),
+    &data_posit,
+    |q, x| unsafe { *q = cerlane_softposit::q32_add(*q, x) },
+  );
+
+  bench_1ary_accumulate(
+    &mut g,
+    "posit",
+    q32::ZERO,
+    &data_posit,
+    |q: &mut q32, x: p32| *q += x,
+  );
 
   g.finish();
 }
@@ -259,4 +302,8 @@ criterion_group!(sqrt,
   sqrt_64,
 );
 
-criterion_main!(add, mul, div, sqrt);
+criterion_group!(quire,
+  quire_add_32,
+);
+
+criterion_main!(add, mul, div, sqrt, quire);
