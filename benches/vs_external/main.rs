@@ -10,7 +10,7 @@
 //!   - https://github.com/stillwater-sc/universal/
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
-use fast_posit::{p32, p64, q32};
+use fast_posit::*;
 
 //
 
@@ -22,6 +22,22 @@ mod berkeley_softfloat;
 
 #[cfg(feature = "stillwater-softposit")]
 mod stillwater_softposit;
+
+/// Create an array of `n` [`p8`]s.
+fn make_data_8(n: usize) -> Box<[p8]> {
+  use fast_posit::RoundFrom;
+  let rand = || p8::from_bits(rand::random_range(i8::MIN + 1 ..= i8::MAX));
+  let posits: Vec<_> = (0..n).map(|_| rand()).collect();
+  posits.into_boxed_slice()
+}
+
+/// Create an array of `n` [`p16`]s.
+fn make_data_16(n: usize) -> Box<[p16]> {
+  use fast_posit::RoundFrom;
+  let rand = || p16::from_bits(rand::random_range(i16::MIN + 1 ..= i16::MAX));
+  let posits: Vec<_> = (0..n).map(|_| rand()).collect();
+  posits.into_boxed_slice()
+}
 
 /// Create an array of `n` [`p32`]s and an array of `n` [`f32`]s. The values of the float array
 /// are the values of the posit array, rounded.
@@ -258,6 +274,40 @@ fn sqrt_64(c: &mut Criterion) {
 
 /// Generate arrays of random posits and benchmark our impl and external impls in summing them all
 /// into a quire.
+fn quire_add_8(c: &mut Criterion) {
+  let data_posit = make_data_8(LEN);
+  let mut g = c.benchmark_group("quire_add_8");
+
+  bench_1ary_accumulate(
+    &mut g,
+    "posit",
+    q8::ZERO,
+    &data_posit,
+    |q: &mut q8, x: p8| *q += x,
+  );
+
+  g.finish();
+}
+
+/// Generate arrays of random posits and benchmark our impl and external impls in summing them all
+/// into a quire.
+fn quire_add_16(c: &mut Criterion) {
+  let data_posit = make_data_16(LEN);
+  let mut g = c.benchmark_group("quire_add_16");
+
+  bench_1ary_accumulate(
+    &mut g,
+    "posit",
+    q16::ZERO,
+    &data_posit,
+    |q: &mut q16, x: p16| *q += x,
+  );
+
+  g.finish();
+}
+
+/// Generate arrays of random posits and benchmark our impl and external impls in summing them all
+/// into a quire.
 fn quire_add_32(c: &mut Criterion) {
   let (data_posit, _) = make_data_32(LEN);
   let mut g = c.benchmark_group("quire_add_32");
@@ -277,6 +327,23 @@ fn quire_add_32(c: &mut Criterion) {
     q32::ZERO,
     &data_posit,
     |q: &mut q32, x: p32| *q += x,
+  );
+
+  g.finish();
+}
+
+/// Generate arrays of random posits and benchmark our impl and external impls in summing them all
+/// into a quire.
+fn quire_add_64(c: &mut Criterion) {
+  let (data_posit, _) = make_data_64(LEN);
+  let mut g = c.benchmark_group("quire_add_64");
+
+  bench_1ary_accumulate(
+    &mut g,
+    "posit",
+    q64::ZERO,
+    &data_posit,
+    |q: &mut q64, x: p64| *q += x,
   );
 
   g.finish();
@@ -303,7 +370,10 @@ criterion_group!(sqrt,
 );
 
 criterion_group!(quire,
+  quire_add_8,
+  quire_add_16,
   quire_add_32,
+  quire_add_64,
 );
 
 criterion_main!(add, mul, div, sqrt, quire);
