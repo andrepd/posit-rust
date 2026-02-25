@@ -70,6 +70,16 @@ impl<
     unsafe { core::slice::from_raw_parts_mut(ptr, Self::LEN_U64) }
   }
 
+  #[inline(always)]
+  pub(crate) const fn as_int_array<Int: crate::Int>(&self) -> &[Int] {
+    const { assert!(Self::BITS % Int::BITS == 0, "Quire BITS must be a multiple of Int bits"); }
+    const { assert!(cfg!(target_endian = "little"), "Big-endian targets are not currently supported") }
+    let ptr = self.0.as_ptr() as *const Int;
+    // SAFETY: ptr and len form a valid slice; the size and alignment is correct, and any bit
+    // pattern is a valid Int value.
+    unsafe { core::slice::from_raw_parts(ptr, Self::BITS as usize / Int::BITS as usize) }
+  }
+
   /// Auxiliary const: the maximum (positive) exponent of a `Posit<N, ES, Int>`. The size of the
   /// quire is directly related to this (see [`Self::MIN_SIZE`] and [`Self::WIDTH`] below).
   const MAX_EXP: u32 = {
