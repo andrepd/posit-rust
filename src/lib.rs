@@ -157,3 +157,5 @@ mod bench;
 /// This number strikes a balance between coverage and practicality.
 #[cfg(test)]
 const PROPTEST_CASES: u32 = if cfg!(debug_assertions) {0x1_0000} else {0x80_0000};
+
+mod utl;
