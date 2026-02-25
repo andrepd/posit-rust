@@ -151,8 +151,7 @@ impl<
   }
 }
 
-// TODO should we have this alias? :\
-/*impl<
+impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
@@ -162,10 +161,22 @@ impl<
   /// the quire, and the *only* step that actually rounds.
   ///
   /// Standard: "[**qToP**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// let mut quire = q16::from(p16::MAX);
+  /// quire += p16::round_from(0.1);
+  /// quire -= p16::MAX;
+  /// let result: p16 = quire.round_into();
+  /// assert_eq!(result, p16::round_from(0.1))
+  /// ```
+  #[inline]
   fn round_from(value: Quire<N, ES, SIZE>) -> Self {
     Self::round_from(&value)
   }
-}*/
+}
 
 impl<
   const N: u32,
