@@ -29,7 +29,7 @@ impl<
     SIZE
   };
 
-  /// Construct a quire from its raw bit representation, in big endian order.
+  /// Construct a quire from its raw bit representation, in little endian order.
   ///
   /// # Example
   ///
@@ -42,29 +42,32 @@ impl<
     Self(bytes)
   }
 
-  /// Access the storage as an array of `u64`s.
+  /// The quire size in u64s (= [`BITS`](Self::BITS) / 64).
+  pub(crate) const LEN_U64: usize = Self::BITS as usize / 64;
+
+  /// Access the storage as an array of `u64`s, in little endian order.
   ///
   /// Limitation: even though the return size is known, we cannot return an `&[u64; N]` due to
   /// limitations in the Rust type system. We have to hope that the compiler will inline and fold
   /// the slice len :)
-  #[inline]
+  #[inline(always)]
   pub(crate) const fn as_u64_array(&self) -> &[u64] {
     const { assert!(SIZE % 8 == 0, "Quire SIZE must be a multiple of 64 bits (8 bytes)"); }
+    const { assert!(cfg!(target_endian = "little"), "Big-endian targets are not currently supported") }
     let ptr = self.0.as_ptr() as *const u64;
-    let len = SIZE / (64 / 8);
     // SAFETY: ptr and len form a valid slice; the size and alignment is correct, and any bit
     // pattern is a valid u64 value.
-    unsafe { core::slice::from_raw_parts(ptr, len) }
+    unsafe { core::slice::from_raw_parts(ptr, Self::LEN_U64) }
   }
 
-  #[inline]
+  #[inline(always)]
   pub(crate) const fn as_u64_array_mut(&mut self) -> &mut [u64] {
     const { assert!(SIZE % 8 == 0, "Quire SIZE must be a multiple of 64 bits (8 bytes)"); }
+    const { assert!(cfg!(target_endian = "little"), "Big-endian targets are not currently supported") }
     let ptr = self.0.as_mut_ptr() as *mut u64;
-    let len = SIZE / (64 / 8);
     // SAFETY: ptr and len form a valid slice; the size and alignment is correct, and any bit
     // pattern is a valid u64 value.
-    unsafe { core::slice::from_raw_parts_mut(ptr, len) }
+    unsafe { core::slice::from_raw_parts_mut(ptr, Self::LEN_U64) }
   }
 
   /// Auxiliary const: the maximum (positive) exponent of a `Posit<N, ES, Int>`. The size of the
@@ -75,7 +78,7 @@ impl<
     max_regime << ES
   };
 
-  /// The minimum size of a quire for `Posit<N, ES, Int>`.
+  /// The minimum [`SIZE`](Self::SIZE) of a quire for `Posit<N, ES, Int>`, in bytes.
   ///
   /// # Example
   ///
@@ -102,12 +105,11 @@ impl<
   /// assert_eq!(q32::PROD_LIMIT, 31);  // Can do at least 2^31 - 1 products without overflow
   /// ```
   pub const PROD_LIMIT: u32 = {
-    let _ = Self::SIZE;
     // The biggest possible product (Posit::MAX * Posit::MAX) takes `4 * MAX_EXP` bits. It can be
     // accumulated `2 ^ M` times, where `M` is the difference between that and this quire's
     // `SIZE`, before it overflows.
     let min_size_bits = 4 * Self::MAX_EXP + 1;
-    8 * SIZE as u32 - min_size_bits
+    Self::BITS as u32 - min_size_bits
   };
 
   /// The minimum number of additions of posits that can lead to overflow is
@@ -121,12 +123,11 @@ impl<
   /// assert_eq!(q32::SUM_LIMIT, 151);  // Can sum at least 2^151 - 1 terms without overflow
   /// ```
   pub const SUM_LIMIT: u32 = {
-    let _ = Self::SIZE;
     // The biggest possible posit value (Posit::MAX) takes `3 * MAX_EXP` bits. It can be
     // accumulated `2 ^ M` times, where `M` is the difference between that and this quire's
     // `SIZE`, before it overflows.
     let min_size_bits = 3 * Self::MAX_EXP + 1;
-    8 * SIZE as u32 - min_size_bits
+    Self::BITS as u32 - min_size_bits
   };
 
   /// The position of the fixed point, that is: "1.0" is represented in the quire as `1 << WIDTH`.
