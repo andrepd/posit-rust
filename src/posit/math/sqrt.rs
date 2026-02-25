@@ -40,10 +40,10 @@ impl<
     let frac_adjusted = (x.frac).as_unsigned() << exp_odd.as_u32();
     let exp_adjusted = x.exp - exp_odd;
 
-    let result = frac_adjusted.shift_sqrt(Decoded::<N, ES, Int>::FRAC_WIDTH);
-    let frac = Int::of_unsigned(result.0);
+    let (result, _) = frac_adjusted.shift_sqrt(Decoded::<N, ES, Int>::FRAC_WIDTH);
+    let frac = Int::of_unsigned(result);
     let exp = exp_adjusted >> 1;
-    let sticky = Int::from(result.1) | (exp_adjusted & Int::ONE);
+    let sticky = Int::ONE;
 
     (Decoded{frac, exp}, sticky)
   }
