@@ -29,17 +29,31 @@ impl<
     SIZE
   };
 
-  /// Construct a quire from its raw bit representation, in little endian order.
+  /// Construct a quire from its raw bit representation, as a byte array in little-endian order.
   ///
   /// # Example
   ///
   /// ```
   /// # use fast_posit::*;
-  /// let quire = q8::from_bits([0,0,0,0, 0,0,0,0,0,1, 0,0,0,0,0,0]);
+  /// let quire = q8::from_le_bytes([0,0,0,0,0,0, 1,0,0,0,0,0, 0,0,0,0]);
   /// assert_eq!(p8::round_from(&quire), p8::ONE);
   /// ```
-  pub const fn from_bits(bytes: [u8; SIZE]) -> Self {
+  pub const fn from_le_bytes(bytes: [u8; SIZE]) -> Self {
     Self(bytes)
+  }
+
+  /// Construct a quire from its raw bit representation, as a byte array in big-endian order.
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// let quire = q8::from_be_bytes([0,0,0,0, 0,0,0,0,0,1, 0,0,0,0,0,0]);
+  /// assert_eq!(p8::round_from(&quire), p8::ONE);
+  /// ```
+  pub const fn from_be_bytes(mut bytes: [u8; SIZE]) -> Self {
+    bytes.as_mut_slice().reverse();
+    Self::from_le_bytes(bytes)
   }
 
   /// The quire size in u64s (= [`BITS`](Self::BITS) / 64).
@@ -271,17 +285,17 @@ mod tests {
   #[test]
   fn is_nar_manual() {
     let bits = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x80];
-    assert!(crate::q8::from_bits(bits).is_nar());
+    assert!(crate::q8::from_le_bytes(bits).is_nar());
     let bits = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x81];
-    assert!(!crate::q8::from_bits(bits).is_nar());
+    assert!(!crate::q8::from_le_bytes(bits).is_nar());
     let bits = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x42, 0, 0x80];
-    assert!(!crate::q8::from_bits(bits).is_nar());
+    assert!(!crate::q8::from_le_bytes(bits).is_nar());
     let bits = [0, 0, 0, 0x42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x80];
-    assert!(!crate::q8::from_bits(bits).is_nar());
+    assert!(!crate::q8::from_le_bytes(bits).is_nar());
     let bits = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f];
-    assert!(!crate::q8::from_bits(bits).is_nar());
+    assert!(!crate::q8::from_le_bytes(bits).is_nar());
     let bits = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
-    assert!(!crate::q8::from_bits(bits).is_nar());
+    assert!(!crate::q8::from_le_bytes(bits).is_nar());
   }
 }
 

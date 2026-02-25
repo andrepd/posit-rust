@@ -376,48 +376,48 @@ mod tests {
 
   #[test]
   fn quire() {
-    let bits = [
+    let bytes_be = [
       0x00, 0x00, 0x00, 0x00,
       0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     ];
-    assert_eq!(Rational::try_from(crate::q8::from_bits(bits)), Ok(Rational::from(1)));
-    let bits = [
+    assert_eq!(Rational::try_from(crate::q8::from_be_bytes(bytes_be)), Ok(Rational::from(1)));
+    let bytes_be = [
       0x00, 0x00, 0x00, 0x00,
       0x00, 0x00, 0x00, 0x00, 0x00, 123,
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     ];
-    assert_eq!(Rational::try_from(crate::q8::from_bits(bits)), Ok(Rational::from(123)));
-    let bits = [
+    assert_eq!(Rational::try_from(crate::q8::from_be_bytes(bytes_be)), Ok(Rational::from(123)));
+    let bytes_be = [
       0x00, 0x00, 0x00, 0x00,
       0x00, 0x00, 0x00, 0x00, 234, 0x00,
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     ];
-    assert_eq!(Rational::try_from(crate::q8::from_bits(bits)), Ok(Rational::from(234 << 8)));
-    let bits = [
+    assert_eq!(Rational::try_from(crate::q8::from_be_bytes(bytes_be)), Ok(Rational::from(234 << 8)));
+    let bytes_be = [
       0x00, 0x00, 0x00, 0x00,
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       0x00, 123, 0x00, 0x00, 0x00, 0x00,
     ];
-    assert_eq!(Rational::try_from(crate::q8::from_bits(bits)), Ok(Rational::from_signeds(123, 1 << 16)));
-    let bits = [
+    assert_eq!(Rational::try_from(crate::q8::from_be_bytes(bytes_be)), Ok(Rational::from_signeds(123, 1 << 16)));
+    let bytes_be = [
       0xff, 0xff, 0xff, 0xff,
       0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     ];
-    assert_eq!(Rational::try_from(crate::q8::from_bits(bits)), Ok(Rational::from(-1)));
-    let bits = [
+    assert_eq!(Rational::try_from(crate::q8::from_be_bytes(bytes_be)), Ok(Rational::from(-1)));
+    let bytes_be = [
       0xff, 0xff, 0xff, 0xff,
       0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
       0xff, 0xf0, 0x00, 0x00, 0x00, 0x00,
     ];
-    assert_eq!(Rational::try_from(crate::q8::from_bits(bits)), Ok(Rational::from_signeds(-1, 1 << 12)));
-    let bits = [
+    assert_eq!(Rational::try_from(crate::q8::from_be_bytes(bytes_be)), Ok(Rational::from_signeds(-1, 1 << 12)));
+    let bytes_be = [
       0x00, 0x00, 0x00, 0x10,
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     ];
-    assert_eq!(Rational::try_from(crate::q8::from_bits(bits)), Ok(Rational::power_of_2(8 * 6 + 4_i64)));
+    assert_eq!(Rational::try_from(crate::q8::from_be_bytes(bytes_be)), Ok(Rational::power_of_2(8 * 6 + 4_i64)));
 
     assert_eq!(Rational::try_from(crate::q32::NAR), Err(IsNaR))
   }
