@@ -173,6 +173,36 @@ mod tests {
   mod quire_posit {
     use super::*;
 
+    /// Manual test for overflowing the quire sum limit on the positive side
+    #[test]
+    fn q8_overflow_positive() {
+      use crate::{p8, q8};
+      let bytes_be = [0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
+      let mut quire = q8::from_be_bytes(bytes_be);
+      assert!(!quire.is_nar());
+      quire -= p8::ONE;
+      assert!(!quire.is_nar());
+      quire += p8::ONE;
+      assert!(!quire.is_nar());
+      quire += p8::ONE;
+      assert!(quire.is_nar());
+    }
+
+    /// Manual test for overflowing the quire sum limit on the negative side
+    #[test]
+    fn q8_overflow_negative() {
+      use crate::{p8, q8};
+      let bytes_be = [0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01];
+      let mut quire = q8::from_be_bytes(bytes_be);
+      assert!(!quire.is_nar());
+      quire += p8::ONE;
+      assert!(!quire.is_nar());
+      quire -= p8::ONE;
+      assert!(!quire.is_nar());
+      quire -= p8::ONE;
+      assert!(quire.is_nar());
+    }
+
     macro_rules! test_proptest {
       ($name:ident, $posit:ty, $quire:ty) => {
         proptest!{
@@ -182,11 +212,11 @@ mod tests {
             q in <$quire>::cases_proptest_all(),
             p in <$posit>::cases_proptest_all(),
           ) {
-            let mut quire = q.clone();
-            quire += p;
+            let mut sum = q.clone();
+            sum += p;
             match (Rational::try_from(q), Rational::try_from(p)) {
-              (Ok(q), Ok(p)) => assert_eq!(Rational::try_from(quire), Ok(q + p)),
-              _ => assert!(quire.is_nar()),
+              (Ok(q), Ok(p)) => assert!(super::rational::quire_is_correct_rounded(q + p, sum)),
+              _ => assert!(sum.is_nar()),
             }
           }
         }

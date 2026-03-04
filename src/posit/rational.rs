@@ -285,6 +285,27 @@ where
   }
 }
 
+/// Check whether the rational number `exact` is representable as `quire`.
+///
+///   - If `exact` exceeds in absolute value the maximum representable value in the quire, then
+///     `quire` must be NaR.
+///   - Otherwise `quire` must be exactly equal to `exact`.
+pub fn quire_is_correct_rounded<const N: u32, const ES: u32, const SIZE: usize>(
+  exact: Rational,
+  quire: Quire<N, ES, SIZE>,
+) -> bool {
+  let max_exponent = Quire::<N, ES, SIZE>::BITS as u64 - 1;
+  let numerator = Integer::power_of_2(max_exponent) - Integer::from(1);
+  let denominator = Integer::power_of_2(Quire::<N, ES, SIZE>::WIDTH as u64);
+  let max = Rational::from_integers(numerator, denominator);
+  // dbg!(&exact, &quire);
+  if exact.clone().abs() > max {
+    quire.is_nar()
+  } else {
+    Rational::try_from(quire) == Ok(exact)
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;

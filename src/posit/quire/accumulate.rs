@@ -68,6 +68,7 @@ impl<
   ) {
     let quire: &mut [u64] = self.as_u64_array_mut();
     let len_u64 = quire.len();
+    let original_sign = quire[len_u64 - 1];
 
     if cfg!(debug_assertions) {
       debug_assert!(offset + limbs.len() <= quire.len())
@@ -86,9 +87,6 @@ impl<
         quire[offset + i] = r;
         carry = o;
     }
-
-    // In principle the compiler is able to optimise this, but just in case...
-    if const { L == Self::SIZE / 8 } { return }
 
     // Part 2: Add `implicit` to `quire[offset + L ..]`.
     let implicit = (limbs[L-1] as i64 >> 63) as u64;
@@ -124,7 +122,12 @@ impl<
         'z: _ => (),
     );
 
-    // TODO: overflows of the quire sum limit should go to NaR!
+    // Part 3: If the quire originally had the same sign as `limbs`, but now has a different sign,
+    // there was overflow.
+    if ((original_sign ^ implicit) as i64) > 0
+    && ((quire[len_u64 - 1] ^ implicit) as i64) < 0 {
+      *self = Self::NAR
+    }
   }
 
   /// Adding a [`Decoded`] to an existing [`Quire`].
