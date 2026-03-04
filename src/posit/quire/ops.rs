@@ -5,7 +5,7 @@ impl<
   const ES: u32,
   const SIZE: usize,
 > Quire<N, ES, SIZE> {
-  pub(crate) fn add<Int: crate::Int>(&mut self, posit: Posit<N, ES, Int>) {
+  fn add<Int: crate::Int>(&mut self, posit: Posit<N, ES, Int>) {
     if posit == Posit::ZERO {
       ()
     } else if posit == Posit::NAR || self.is_nar() {
@@ -16,10 +16,6 @@ impl<
       // SAFETY: `decoded` comes from `Posit::decode_regular`, therefore its `exp` is in bounds
       unsafe { self.accumulate_decoded(decoded) }
     }
-  }
-
-  pub(crate) fn sub<Int: crate::Int>(&mut self, posit: Posit<N, ES, Int>) {
-    self.add(-posit)
   }
 }
 
@@ -82,7 +78,7 @@ impl<
   /// assert_eq!(p16::round_from(0.58), (&quire).round_into())
   /// ```
   fn sub_assign(&mut self, rhs: Posit<N, ES, Int>) {
-    self.sub(rhs)
+    self.add(-rhs)
   }
 }
 
@@ -103,7 +99,7 @@ impl<
   /// assert_eq!(p16::round_from(0.58), (&quire).round_into())
   /// ```
   fn sub_assign(&mut self, rhs: &Posit<N, ES, Int>) {
-    self.sub(*rhs)
+    self.add(-*rhs)
   }
 }
 
