@@ -17,6 +17,19 @@ impl<
       unsafe { self.accumulate_decoded(decoded) }
     }
   }
+
+  fn add_quire(&mut self, quire: &Quire<N, ES, SIZE>) {
+    if self.is_nar() {
+      ()
+    } else if crate::utl::unlikely(quire.is_nar()) {
+      *self = Self::NAR
+    } else {
+      // TODO replace `accumulate_slice` with `accumulate` if ever `min_generic_const_args` is
+      // stabilised!
+      // SAFETY: `Self::SIZE` == `quire::SIZE`.
+      unsafe { self.accumulate_slice(quire.as_u64_array(), 0) }
+    }
+  }
 }
 
 impl<
@@ -102,6 +115,28 @@ impl<
     self.add(-*rhs)
   }
 }
+
+impl<
+  const N: u32,
+  const ES: u32,
+  const SIZE: usize,
+> core::ops::AddAssign<&Quire<N, ES, SIZE>> for Quire<N, ES, SIZE> {
+  /// Standard: "[**qAddQ**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
+  fn add_assign(&mut self, rhs: &Quire<N, ES, SIZE>) {
+    self.add_quire(rhs)
+  }
+}
+
+/*impl<
+  const N: u32,
+  const ES: u32,
+  const SIZE: usize,
+> core::ops::SubAssign<&Quire<N, ES, SIZE>> for Quire<N, ES, SIZE> {
+  /// Standard: "[**qSubQ**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
+  fn sub_assign(&mut self, rhs: &Quire<N, ES, SIZE>) {
+    self.add_quire(todo!())
+  }
+}*/
 
 #[cfg(test)]
 mod tests {
@@ -231,5 +266,63 @@ mod tests {
     test_proptest!{posit_3_0_proptest, Posit<3, 0, i8>, Quire<3, 0, 128>}
     test_proptest!{posit_4_0_proptest, Posit<4, 0, i8>, Quire<4, 0, 128>}
     test_proptest!{posit_4_1_proptest, Posit<4, 1, i8>, Quire<4, 1, 128>}
+  }
+
+  /// `quire += quire`
+  mod quire_quire {
+    use super::*;
+
+    #[test]
+    fn q32_overflow_positive() {
+      use crate::RoundFrom;
+      let mut quire = crate::q32::MAX;
+      assert!(!quire.is_nar());
+      quire += &crate::q32::from(crate::p32::round_from(1e-9));
+      assert!(quire.is_nar())
+    }
+
+    #[test]
+    fn q32_overflow_negative() {
+      use crate::RoundFrom;
+      let mut quire = crate::q32::MIN;
+      assert!(!quire.is_nar());
+      quire += &crate::q32::from(crate::p32::round_from(-1e-9));
+      assert!(quire.is_nar())
+    }
+
+    macro_rules! test_proptest {
+      ($name:ident, $quire:ty) => {
+        proptest!{
+          #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
+          #[test]
+          fn $name(
+            a in <$quire>::cases_proptest_all(),
+            b in <$quire>::cases_proptest_all(),
+          ) {
+            let mut sum = a.clone();
+            sum += &b;
+            match (Rational::try_from(a), Rational::try_from(b)) {
+              (Ok(a), Ok(b)) => assert!(super::rational::quire_is_correct_rounded(a + b, sum)),
+              _ => assert!(sum.is_nar()),
+            }
+          }
+        }
+      };
+    }
+
+    test_proptest!{posit_10_0_proptest, Quire<10, 0, 128>}
+    test_proptest!{posit_10_1_proptest, Quire<10, 1, 128>}
+    test_proptest!{posit_10_2_proptest, Quire<10, 2, 128>}
+    test_proptest!{posit_10_3_proptest, Quire<10, 3, 128>}
+    test_proptest!{posit_8_0_proptest, Quire<8, 0, 128>}
+
+    test_proptest!{p8_proptest, crate::q8}
+    test_proptest!{p16_proptest, crate::q16}
+    test_proptest!{p32_proptest, crate::q32}
+    test_proptest!{p64_proptest, crate::q64}
+
+    test_proptest!{posit_3_0_proptest, Quire<3, 0, 128>}
+    test_proptest!{posit_4_0_proptest, Quire<4, 0, 128>}
+    test_proptest!{posit_4_1_proptest, Quire<4, 1, 128>}
   }
 }

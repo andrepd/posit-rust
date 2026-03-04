@@ -92,7 +92,7 @@ let mut quire = q16::ZERO;
 quire += p16::MAX;
 quire += p16::round_from(0.1);
 quire -= p16::MAX;
-let result: p16 = (&quire).round_into();
+let result: p16 = quire.round_into();
 // Correct result with the quire, no issues with rounding errors.
 assert_eq!(result, p16::round_from(0.1))
 // The same sum without the quire would give a wrong result, due to double rounding.
@@ -108,10 +108,12 @@ for thread in 0..8 {
   // ...
 }
 // Assemble the final result by summing the thread-local quires first, then converting to posit.
-for thread in 1..8 {
-  quires[0] += quire[thread]
+let [mut first, rest @ ..] = quires;
+for i in rest {
+  first += &i
 }
-let result: p16 = (&quires[0]).round_into();
+let result: p16 = first.round_into();
+assert_eq!(result, p16::round_from(8 * (123 + 456)));
 
 // Use mixed-precision with no hassle; it's very cheap when the ES is the same.
 let terms = [3, 7, 15, 1].map(p8::round_from);  // https://oeis.org/A001203
@@ -186,7 +188,7 @@ standard paths you may need to set `RUSTFLAGS="-L /path/to/lib"`.
   - [x] Loading/storing
   - [x] Adding posits
   - [ ] Adding products of posits
-  - [ ] Adding quires
+  - [x] Adding quires
 
 ## Dependencies
 

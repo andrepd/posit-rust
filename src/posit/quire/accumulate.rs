@@ -60,10 +60,19 @@ impl<
   /// ```
   ///
   /// where `implicit = if limbs[1] ≥ 0 {0} else {-1}`.
-  /*#[inline(always)]*/  // TODO Unclear: benefits round_from(posit) by 30% but worsens += posit by 70%
+  /*#[inline(always)]*/  // TODO Unclear: improves microbench round_from(posit) by ~30% but worsens += posit by ~70%...
   pub(crate) unsafe fn accumulate<const L: usize>(
     &mut self,
     limbs: &[u64; L],
+    offset: usize,
+  ) {
+    unsafe { self.accumulate_slice(limbs.as_slice(), offset) }
+  }
+
+  /*#[inline(always)]*/
+  pub(crate) unsafe fn accumulate_slice(
+    &mut self,
+    limbs: &[u64],
     offset: usize,
   ) {
     let quire: &mut [u64] = self.as_u64_array_mut();
@@ -89,7 +98,7 @@ impl<
     }
 
     // Part 2: Add `implicit` to `quire[offset + L ..]`.
-    let implicit = (limbs[L-1] as i64 >> 63) as u64;
+    let implicit = (limbs[limbs.len()-1] as i64 >> 63) as u64;
 
     // One line of the jump table below
     macro_rules! jump_table_line {
