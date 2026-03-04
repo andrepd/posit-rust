@@ -93,24 +93,35 @@ impl<
     // Part 2: Add `implicit` to `quire[offset + L ..]`.
     let implicit = (limbs[L-1] as i64 >> 63) as u64;
 
+    // One line of the jump table below
+    macro_rules! jump_table_line {
+      ($n:literal) => {
+        if $n < len_u64 {
+          let (r,o) = u64::carrying_add(quire[$n], implicit, carry);
+          quire[$n] = r;
+          carry = o;
+        }
+      };
+    }
+
     fallthrough!(offset + limbs.len(),
-               0 => if  0 < len_u64 { let (r,o) = u64::carrying_add(quire[ 0], implicit, carry); quire[ 0] = r; carry = o; },
-        'l1:   1 => if  1 < len_u64 { let (r,o) = u64::carrying_add(quire[ 1], implicit, carry); quire[ 1] = r; carry = o; },
-        'l2:   2 => if  2 < len_u64 { let (r,o) = u64::carrying_add(quire[ 2], implicit, carry); quire[ 2] = r; carry = o; },
-        'l3:   3 => if  3 < len_u64 { let (r,o) = u64::carrying_add(quire[ 3], implicit, carry); quire[ 3] = r; carry = o; },
-        'l4:   4 => if  4 < len_u64 { let (r,o) = u64::carrying_add(quire[ 4], implicit, carry); quire[ 4] = r; carry = o; },
-        'l5:   5 => if  5 < len_u64 { let (r,o) = u64::carrying_add(quire[ 5], implicit, carry); quire[ 5] = r; carry = o; },
-        'l6:   6 => if  6 < len_u64 { let (r,o) = u64::carrying_add(quire[ 6], implicit, carry); quire[ 6] = r; carry = o; },
-        'l7:   7 => if  7 < len_u64 { let (r,o) = u64::carrying_add(quire[ 7], implicit, carry); quire[ 7] = r; carry = o; },
-        'l8:   8 => if  8 < len_u64 { let (r,o) = u64::carrying_add(quire[ 8], implicit, carry); quire[ 8] = r; carry = o; },
-        'l9:   9 => if  9 < len_u64 { let (r,o) = u64::carrying_add(quire[ 9], implicit, carry); quire[ 9] = r; carry = o; },
-        'l10: 10 => if 10 < len_u64 { let (r,o) = u64::carrying_add(quire[10], implicit, carry); quire[10] = r; carry = o; },
-        'l11: 11 => if 11 < len_u64 { let (r,o) = u64::carrying_add(quire[11], implicit, carry); quire[11] = r; carry = o; },
-        'l12: 12 => if 12 < len_u64 { let (r,o) = u64::carrying_add(quire[12], implicit, carry); quire[12] = r; carry = o; },
-        'l13: 13 => if 13 < len_u64 { let (r,o) = u64::carrying_add(quire[13], implicit, carry); quire[13] = r; carry = o; },
-        'l14: 14 => if 14 < len_u64 { let (r,o) = u64::carrying_add(quire[14], implicit, carry); quire[14] = r; carry = o; },
-        'l15: 15 => if 15 < len_u64 { let (r,o) = u64::carrying_add(quire[15], implicit, carry); quire[15] = r; carry = o; },
-        'z: _ => return,
+               0 => jump_table_line!( 0),
+        'l1:   1 => jump_table_line!( 1),
+        'l2:   2 => jump_table_line!( 2),
+        'l3:   3 => jump_table_line!( 3),
+        'l4:   4 => jump_table_line!( 4),
+        'l5:   5 => jump_table_line!( 5),
+        'l6:   6 => jump_table_line!( 6),
+        'l7:   7 => jump_table_line!( 7),
+        'l8:   8 => jump_table_line!( 8),
+        'l9:   9 => jump_table_line!( 9),
+        'l10: 10 => jump_table_line!(10),
+        'l11: 11 => jump_table_line!(11),
+        'l12: 12 => jump_table_line!(12),
+        'l13: 13 => jump_table_line!(13),
+        'l14: 14 => jump_table_line!(14),
+        'l15: 15 => jump_table_line!(15),
+        'z: _ => (),
     );
 
     // TODO: overflows of the quire sum limit should go to NaR!
