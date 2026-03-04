@@ -57,7 +57,8 @@ impl<
     (Decoded{frac, exp}, sticky)
   }
 
-  pub(crate) fn div(self, other: Self) -> Self {
+  #[inline(always)]
+  pub(super) fn div(self, other: Self) -> Self {
     if self == Self::NAR || other == Self::NAR || other == Self::ZERO {
       Self::NAR
     } else if self == Self::ZERO {

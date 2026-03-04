@@ -111,42 +111,42 @@ pub fn add_kernel_64(x: Decoded<64, 2, i64>, y: Decoded<64, 2, i64>) -> (Decoded
 
 #[unsafe(no_mangle)]
 pub fn add_8(x: Posit<8, 2, i8>, y: Posit<8, 2, i8>) -> Posit<8, 2, i8> {
-  x.add(y)
+  x + y
 }
 
 #[unsafe(no_mangle)]
 pub fn add_16(x: Posit<16, 2, i16>, y: Posit<16, 2, i16>) -> Posit<16, 2, i16> {
-  x.add(y)
+  x + y
 }
 
 #[unsafe(no_mangle)]
 pub fn add_32(x: Posit<32, 2, i32>, y: Posit<32, 2, i32>) -> Posit<32, 2, i32> {
-  x.add(y)
+  x + y
 }
 
 #[unsafe(no_mangle)]
 pub fn add_64(x: Posit<64, 2, i64>, y: Posit<64, 2, i64>) -> Posit<64, 2, i64> {
-  x.add(y)
+  x + y
 }
 
 #[unsafe(no_mangle)]
 pub fn sub_8(x: Posit<8, 2, i8>, y: Posit<8, 2, i8>) -> Posit<8, 2, i8> {
-  x.sub(y)
+  x - y
 }
 
 #[unsafe(no_mangle)]
 pub fn sub_16(x: Posit<16, 2, i16>, y: Posit<16, 2, i16>) -> Posit<16, 2, i16> {
-  x.sub(y)
+  x - y
 }
 
 #[unsafe(no_mangle)]
 pub fn sub_32(x: Posit<32, 2, i32>, y: Posit<32, 2, i32>) -> Posit<32, 2, i32> {
-  x.sub(y)
+  x - y
 }
 
 #[unsafe(no_mangle)]
 pub fn sub_64(x: Posit<64, 2, i64>, y: Posit<64, 2, i64>) -> Posit<64, 2, i64> {
-  x.sub(y)
+  x - y
 }
 
 //
@@ -173,22 +173,22 @@ pub fn mul_kernel_64(x: Decoded<64, 2, i64>, y: Decoded<64, 2, i64>) -> (Decoded
 
 #[unsafe(no_mangle)]
 pub fn mul_8(x: Posit<8, 2, i8>, y: Posit<8, 2, i8>) -> Posit<8, 2, i8> {
-  x.mul(y)
+  x * y
 }
 
 #[unsafe(no_mangle)]
 pub fn mul_16(x: Posit<16, 2, i16>, y: Posit<16, 2, i16>) -> Posit<16, 2, i16> {
-  x.mul(y)
+  x * y
 }
 
 #[unsafe(no_mangle)]
 pub fn mul_32(x: Posit<32, 2, i32>, y: Posit<32, 2, i32>) -> Posit<32, 2, i32> {
-  x.mul(y)
+  x * y
 }
 
 #[unsafe(no_mangle)]
 pub fn mul_64(x: Posit<64, 2, i64>, y: Posit<64, 2, i64>) -> Posit<64, 2, i64> {
-  x.mul(y)
+  x * y
 }
 
 //
@@ -215,22 +215,22 @@ pub fn div_kernel_64(x: Decoded<64, 2, i64>, y: Decoded<64, 2, i64>) -> (Decoded
 
 #[unsafe(no_mangle)]
 pub fn div_8(x: Posit<8, 2, i8>, y: Posit<8, 2, i8>) -> Posit<8, 2, i8> {
-  x.div(y)
+  x / y
 }
 
 #[unsafe(no_mangle)]
 pub fn div_16(x: Posit<16, 2, i16>, y: Posit<16, 2, i16>) -> Posit<16, 2, i16> {
-  x.div(y)
+  x / y
 }
 
 #[unsafe(no_mangle)]
 pub fn div_32(x: Posit<32, 2, i32>, y: Posit<32, 2, i32>) -> Posit<32, 2, i32> {
-  x.div(y)
+  x / y
 }
 
 #[unsafe(no_mangle)]
 pub fn div_64(x: Posit<64, 2, i64>, y: Posit<64, 2, i64>) -> Posit<64, 2, i64> {
-  x.div(y)
+  x / y
 }
 
 //

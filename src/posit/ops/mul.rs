@@ -59,7 +59,8 @@ impl<
     (Decoded{frac, exp}, sticky)
   }
 
-  pub(crate) fn mul(self, other: Self) -> Self {
+  #[inline(always)]
+  pub(super) fn mul(self, other: Self) -> Self {
     if self == Self::NAR || other == Self::NAR {
       Self::NAR
     } else if self == Self::ZERO || other == Self::ZERO {
