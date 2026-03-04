@@ -28,7 +28,7 @@ impl<
   // Represented by the bit pattern `0b1100...0`.
   pub const MINUS_ONE: Self = Self(const_as(Self::NAR_I128 >> 1));
 
-  /// Largest representable value, equal to `-MIN`.
+  /// Greatest representable value, equal to `-MIN`.
   //
   // Represented by the bit pattern `0b0111...1`.
   pub const MAX: Self = Self(const_as(!Self::NAR_I128));

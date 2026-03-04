@@ -177,8 +177,7 @@ mod tests {
     #[test]
     fn q8_overflow_positive() {
       use crate::{p8, q8};
-      let bytes_be = [0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
-      let mut quire = q8::from_be_bytes(bytes_be);
+      let mut quire = q8::MAX;
       assert!(!quire.is_nar());
       quire -= p8::ONE;
       assert!(!quire.is_nar());
@@ -192,8 +191,7 @@ mod tests {
     #[test]
     fn q8_overflow_negative() {
       use crate::{p8, q8};
-      let bytes_be = [0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01];
-      let mut quire = q8::from_be_bytes(bytes_be);
+      let mut quire = q8::MIN;
       assert!(!quire.is_nar());
       quire += p8::ONE;
       assert!(!quire.is_nar());

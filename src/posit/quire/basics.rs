@@ -164,14 +164,53 @@ impl<
   // account the posit's underlying Int):
   // assert!(SIZE % N == 0, "The size of the quire type is not a multiple of the posit size");
 
-  /// A quire that represents the posit number 0.
+  /// The quire that represents the posit number [0](Posit::ZERO).
   pub const ZERO: Self = Self([0; SIZE]);
 
-  /// A quire that represents the posit value `NaR`.
+  /// The quire that represents the posit value [`NaR`](Posit::NAR).
   pub const NAR: Self = {
     let mut nar = Self::ZERO;
     nar.0[Self::SIZE - 1] = i8::MIN as u8;
     nar
+  };
+
+  /// The quire with the greatest value, equal to `-Self::MIN`.
+  ///
+  /// Any sum of a positive value (be it posit, product of posits, or quire) onto
+  /// [`MAX`](Self::MAX) will result in overflow, making the result [`NaR`][Self::NAR].
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// let mut quire = q32::MAX;
+  /// quire += p32::MIN_POSITIVE;
+  /// assert!(quire.is_nar())
+  /// ```
+  pub const MAX: Self = {
+    let mut bytes_le = [0xff; SIZE];
+    bytes_le[SIZE - 1] = 0x7f;
+    Self::from_le_bytes(bytes_le)
+  };
+
+  /// The quire with the smallest value, equal to `-Self::MAX`.
+  ///
+  /// Any sum of a negative value (be it posit, product of posits, or quire) onto
+  /// [`MIN`](Self::MIN) will result in overflow, making the result [`NaR`][Self::NAR].
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// let mut quire = q32::MIN;
+  /// quire -= p32::MIN_POSITIVE;
+  /// assert!(quire.is_nar())
+  /// ```
+  pub const MIN: Self = {
+    let mut bytes_le = [0x00; SIZE];
+    bytes_le[SIZE - 1] = 0x80;
+    bytes_le[0] |= 0x01;
+    Self::from_le_bytes(bytes_le)
   };
 
   /// Checks whether `self` represents a NaR value.

@@ -285,6 +285,14 @@ where
   }
 }
 
+/// The maximum `Rational` value of a `Quire<N, ES, SIZE>`.
+fn quire_max_abs<const N: u32, const ES: u32, const SIZE: usize>() -> Rational {
+  let max_exponent = Quire::<N, ES, SIZE>::BITS as u64 - 1;
+  let numerator = Integer::power_of_2(max_exponent) - Integer::from(1);
+  let denominator = Integer::power_of_2(Quire::<N, ES, SIZE>::WIDTH as u64);
+  Rational::from_integers(numerator, denominator)  
+}
+
 /// Check whether the rational number `exact` is representable as `quire`.
 ///
 ///   - If `exact` exceeds in absolute value the maximum representable value in the quire, then
@@ -294,13 +302,8 @@ pub fn quire_is_correct_rounded<const N: u32, const ES: u32, const SIZE: usize>(
   exact: Rational,
   quire: Quire<N, ES, SIZE>,
 ) -> bool {
-  let max_exponent = Quire::<N, ES, SIZE>::BITS as u64 - 1;
-  let numerator = Integer::power_of_2(max_exponent) - Integer::from(1);
-  let denominator = Integer::power_of_2(Quire::<N, ES, SIZE>::WIDTH as u64);
-  let max = Rational::from_integers(numerator, denominator);
-  // dbg!(&exact, &quire);
-  if exact.clone().abs() > max {
-    quire.is_nar()
+  if exact.clone().abs() > quire_max_abs::<N, ES, SIZE>() {
+    Rational::try_from(quire) == Err(IsNaR)
   } else {
     Rational::try_from(quire) == Ok(exact)
   }
@@ -441,5 +444,17 @@ mod tests {
     assert_eq!(Rational::try_from(crate::q8::from_be_bytes(bytes_be)), Ok(Rational::power_of_2(8 * 6 + 4_i64)));
 
     assert_eq!(Rational::try_from(crate::q32::NAR), Err(IsNaR))
+  }
+
+  #[test]
+  fn quire_max_abs() {
+    assert_eq!(Ok(super::quire_max_abs::<8,  2, 16 >()), Rational::try_from(crate::q8::MAX ));
+    assert_eq!(Ok(super::quire_max_abs::<16, 2, 32 >()), Rational::try_from(crate::q16::MAX));
+    assert_eq!(Ok(super::quire_max_abs::<32, 2, 64 >()), Rational::try_from(crate::q32::MAX));
+    assert_eq!(Ok(super::quire_max_abs::<64, 2, 128>()), Rational::try_from(crate::q64::MAX));
+    assert_eq!(Ok(-super::quire_max_abs::<8,  2, 16 >()), Rational::try_from(crate::q8::MIN ));
+    assert_eq!(Ok(-super::quire_max_abs::<16, 2, 32 >()), Rational::try_from(crate::q16::MIN));
+    assert_eq!(Ok(-super::quire_max_abs::<32, 2, 64 >()), Rational::try_from(crate::q32::MIN));
+    assert_eq!(Ok(-super::quire_max_abs::<64, 2, 128>()), Rational::try_from(crate::q64::MIN));
   }
 }
