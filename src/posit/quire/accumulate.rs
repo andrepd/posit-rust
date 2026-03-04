@@ -41,7 +41,7 @@ impl<
   ///
   /// # Safety
   ///
-  /// `limbs.len() * size_of::<Int>() + offset ≤ SIZE` must hold, or calling this function
+  /// `size_of::<[u64; L]>() + offset ≤ SIZE` must hold, or calling this function
   /// is *undefined behaviour*.
   ///
   /// # Visual example:
@@ -71,10 +71,10 @@ impl<
     let original_sign = quire[len_u64 - 1];
 
     if cfg!(debug_assertions) {
-      debug_assert!(offset + limbs.len() <= quire.len())
+      debug_assert!(offset + limbs.len() <= len_u64)
     } else {
       // SAFETY: Precondition.
-      unsafe { core::hint::assert_unchecked(offset + limbs.len() <= quire.len()) }
+      unsafe { core::hint::assert_unchecked(offset + limbs.len() <= len_u64) }
     }
 
     // Part 1: Add `limbs[..]` to `quire[offset .. offset + L]`.
@@ -82,7 +82,7 @@ impl<
     for i in 0 .. limbs.len() {
         // SAFETY: This follows from the above precondition, but we re-assert it to help the
         // compiler.
-        unsafe { core::hint::assert_unchecked(offset + i < quire.len()) }
+        unsafe { core::hint::assert_unchecked(offset + i < len_u64) }
         let (r, o) = u64::carrying_add(quire[offset + i], limbs[i], carry);
         quire[offset + i] = r;
         carry = o;
