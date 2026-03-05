@@ -96,7 +96,7 @@ impl<
 
   /// Auxiliary const: the maximum (positive) exponent of a `Posit<N, ES, Int>`. The size of the
   /// quire is directly related to this (see [`Self::MIN_SIZE`] and [`Self::WIDTH`] below).
-  const MAX_EXP: u32 = {
+  pub(crate) const MAX_EXP: u32 = {
     assert!(ES < 20, "Cannot use the quire with very high ES (≥ 20)");
     let max_regime = N - 2;
     max_regime << ES

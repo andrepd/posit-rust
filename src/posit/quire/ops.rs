@@ -100,6 +100,37 @@ impl<
   const N: u32,
   const ES: u32,
   const SIZE: usize,
+> Quire<N, ES, SIZE> {
+  /// Add the product of two posits to the quire, exactly, without rounding.
+  ///
+  /// Standard: "[**qMulAdd**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
+  pub fn add_prod<Int: crate::Int>(&mut self, a: Posit<N, ES, Int>, b: Posit<N, ES, Int>) {
+    if a == Posit::NAR || b == Posit::NAR {
+      *self = Quire::NAR
+    } else if a == Posit::ZERO || b == Posit::ZERO || self.is_nar() {
+      ()
+    } else {
+      // SAFETY: neither `a` nor `b` are 0 or NaR
+      let a = unsafe { a.decode_regular() };
+      let b = unsafe { b.decode_regular() };
+      // SAFETY: `a` and `b` come from `Posit::decode_regular`
+      unsafe { self.add_posit_prod_kernel(a, b) }
+    }
+  }
+
+  /// Subtract the product of two posits from the quire, exactly, without rounding.
+  ///
+  /// Standard: "[**qMulSub**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
+  #[inline]
+  pub fn sub_prod<Int: crate::Int>(&mut self, a: Posit<N, ES, Int>, b: Posit<N, ES, Int>) {
+    self.add_prod(-a, b)
+  }
+}
+
+impl<
+  const N: u32,
+  const ES: u32,
+  const SIZE: usize,
 > core::ops::AddAssign<&Quire<N, ES, SIZE>> for Quire<N, ES, SIZE> {
   /// Standard: "[**qAddQ**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
   fn add_assign(&mut self, rhs: &Quire<N, ES, SIZE>) {
@@ -313,5 +344,89 @@ mod tests {
     test_proptest!{posit_3_0_proptest, Quire<3, 0, 128>}
     test_proptest!{posit_4_0_proptest, Quire<4, 0, 128>}
     test_proptest!{posit_4_1_proptest, Quire<4, 1, 128>}
+  }
+
+  /// `quire += posit * posit`
+  mod quire_posit_posit {
+    use super::*;
+
+    macro_rules! test_proptest {
+      ($name:ident, $posit:ty, $quire:ty) => {
+        proptest!{
+          #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
+          #[test]
+          fn $name(
+            q in <$quire>::cases_proptest_all(),
+            a in <$posit>::cases_proptest_all(),
+            b in <$posit>::cases_proptest_all(),
+          ) {
+            let mut result = q.clone();
+            result.add_prod(a, b);
+            match (Rational::try_from(q), Rational::try_from(a), Rational::try_from(b)) {
+              (Ok(q), Ok(a), Ok(b)) => assert!(super::rational::quire_is_correct_rounded(q + a * b, result)),
+              _ => assert!(result.is_nar()),
+            }
+          }
+        }
+      };
+    }
+
+    test_proptest!{posit_10_0_proptest, Posit<10, 0, i16>, Quire<10, 0, 128>}
+    test_proptest!{posit_10_1_proptest, Posit<10, 1, i16>, Quire<10, 1, 128>}
+    test_proptest!{posit_10_2_proptest, Posit<10, 2, i16>, Quire<10, 2, 128>}
+    test_proptest!{posit_10_3_proptest, Posit<10, 3, i16>, Quire<10, 3, 128>}
+    test_proptest!{posit_8_0_proptest, Posit<8, 0, i8>, Quire<8, 0, 128>}
+
+    test_proptest!{p8_proptest, crate::p8, crate::q8}
+    test_proptest!{p16_proptest, crate::p16, crate::q16}
+    test_proptest!{p32_proptest, crate::p32, crate::q32}
+    // test_proptest!{p64_proptest, crate::p64, crate::q64}
+
+    test_proptest!{posit_3_0_proptest, Posit<3, 0, i8>, Quire<3, 0, 128>}
+    test_proptest!{posit_4_0_proptest, Posit<4, 0, i8>, Quire<4, 0, 128>}
+    test_proptest!{posit_4_1_proptest, Posit<4, 1, i8>, Quire<4, 1, 128>}
+  }
+
+  /// Dot products
+  mod quire_dot_product {
+    use super::*;
+
+    macro_rules! test_proptest {
+      ($name:ident, $posit:ty, $quire:ty) => {
+        proptest!{
+          #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES / 50_000))]
+          #[test]
+          fn $name(
+            pairs in proptest::collection::vec(
+              (<$posit>::cases_proptest(), <$posit>::cases_proptest()),
+              50_000,
+            ),
+          ) {
+            let mut quire = <$quire>::ZERO;
+            let mut exact = Rational::from(0);
+            for (a, b) in pairs {
+              quire.add_prod(a, b);
+              exact += Rational::try_from(a).unwrap() * Rational::try_from(b).unwrap();
+              assert_eq!(Rational::try_from(quire.clone()), Ok(exact.clone()))
+            }
+          }
+        }
+      };
+    }
+
+    test_proptest!{posit_10_0_proptest, Posit<10, 0, i16>, Quire<10, 0, 128>}
+    test_proptest!{posit_10_1_proptest, Posit<10, 1, i16>, Quire<10, 1, 128>}
+    test_proptest!{posit_10_2_proptest, Posit<10, 2, i16>, Quire<10, 2, 128>}
+    test_proptest!{posit_10_3_proptest, Posit<10, 3, i16>, Quire<10, 3, 128>}
+    test_proptest!{posit_8_0_proptest, Posit<8, 0, i8>, Quire<8, 0, 128>}
+
+    test_proptest!{p8_proptest, crate::p8, crate::q8}
+    test_proptest!{p16_proptest, crate::p16, crate::q16}
+    test_proptest!{p32_proptest, crate::p32, crate::q32}
+    // test_proptest!{p64_proptest, crate::p64, crate::q64}
+
+    test_proptest!{posit_3_0_proptest, Posit<3, 0, i8>, Quire<3, 0, 128>}
+    test_proptest!{posit_4_0_proptest, Posit<4, 0, i8>, Quire<4, 0, 128>}
+    test_proptest!{posit_4_1_proptest, Posit<4, 1, i8>, Quire<4, 1, 128>}
   }
 }

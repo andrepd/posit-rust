@@ -99,6 +99,22 @@ assert_eq!(result, p16::round_from(0.1))
 let posit = p16::MAX + p16::round_from(0.1) - p16::MAX;
 assert_eq!(posit, p16::ZERO);
 
+// Exact dot products give correct results even when IEEE floats fail.
+let a = [3.2e7, 1., -1.,  8.0e7];
+let b = [4.0e8, 1., -1., -1.6e8];
+// Calculating the dot product with 64-bit IEEE floats yields an incorrect result.
+let float: f64 = a.iter().zip(b.iter()).map(|(x,y)| x * y).sum();
+assert_eq!(float, 0.);
+// Calculating the dot product with 32-bit posits and a quire yields the correct result.
+let posit: p32 = {
+  let mut quire = q32::ZERO;
+  for (&x, &y) in a.iter().zip(b.iter()) {
+    quire.add_prod(p32::round_from(x), p32::round_from(y))
+  }
+  quire.round_into()
+};
+assert_eq!(posit, 2.round_into());
+
 // Use a quire per thread to ensure the result is the same _regardless of parallelisation_!
 let mut quires = [q16::ZERO; 8];
 for thread in 0..8 {
@@ -184,10 +200,10 @@ standard paths you may need to set `RUSTFLAGS="-L /path/to/lib"`.
   - [x] From floats
   - [x] To/from posits
 - [ ] Parsing and printing
-- [ ] Quire
+- [x] Quire
   - [x] Loading/storing
   - [x] Adding posits
-  - [ ] Adding products of posits
+  - [x] Adding products of posits
   - [x] Adding quires
 
 ## Dependencies

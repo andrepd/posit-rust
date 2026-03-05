@@ -15,6 +15,9 @@ macro_rules! impl_common {
     unsafe fn leading_run_minus_one(self) -> u32 {
       unsafe { <Self as Sealed>::leading_run_minus_one(self) }
     }
+
+    #[inline]
+    fn as_int(self) -> impl super::Int { self }
   };
 }
 
@@ -49,6 +52,11 @@ impl Double for Pair<i128> {
 
   unsafe fn leading_run_minus_one(self) -> u32 {
     todo!()
+  }
+
+  fn as_int(self) -> impl super::Int {
+    unimplemented!("`i128::Double` is not representable as an `Int`.");
+    0
   }
 }
 

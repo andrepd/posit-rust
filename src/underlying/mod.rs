@@ -185,6 +185,9 @@ pub trait Double:
 
   /// See [Sealed::leading_run_minus_one].
   unsafe fn leading_run_minus_one(self) -> u32;
+
+  /// Cast `Double` as `Int`, if it can.
+  fn as_int(self) -> impl Int;
 }
 
 mod int;
