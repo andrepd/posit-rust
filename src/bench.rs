@@ -360,23 +360,23 @@ pub fn quire_add_64(quire: &mut crate::q64, posit: crate::p64) {
 }
 
 #[unsafe(no_mangle)]
-pub fn accumulate_decoded_8(quire: &mut crate::q8, decoded: Decoded<8, 2, i8>) {
-  unsafe { quire.accumulate_decoded(decoded) }
+pub fn quire_add_kernel_8(quire: &mut crate::q8, decoded: Decoded<8, 2, i8>) {
+  unsafe { quire.add_posit_kernel(decoded) }
 }
 
 #[unsafe(no_mangle)]
-pub fn accumulate_decoded_16(quire: &mut crate::q16, decoded: Decoded<16, 2, i8>) {
-  unsafe { quire.accumulate_decoded(decoded) }
+pub fn quire_add_kernel_16(quire: &mut crate::q16, decoded: Decoded<16, 2, i8>) {
+  unsafe { quire.add_posit_kernel(decoded) }
 }
 
 #[unsafe(no_mangle)]
-pub fn accumulate_decoded_32(quire: &mut crate::q32, decoded: Decoded<32, 2, i8>) {
-  unsafe { quire.accumulate_decoded(decoded) }
+pub fn quire_add_kernel_32(quire: &mut crate::q32, decoded: Decoded<32, 2, i8>) {
+  unsafe { quire.add_posit_kernel(decoded) }
 }
 
 #[unsafe(no_mangle)]
-pub fn accumulate_decoded_64(quire: &mut crate::q64, decoded: Decoded<64, 2, i8>) {
-  unsafe { quire.accumulate_decoded(decoded) }
+pub fn quire_add_kernel_64(quire: &mut crate::q64, decoded: Decoded<64, 2, i8>) {
+  unsafe { quire.add_posit_kernel(decoded) }
 }
 
 //

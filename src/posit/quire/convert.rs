@@ -204,8 +204,8 @@ impl<
       let mut quire = Self::ZERO;
       // SAFETY: `value` is not 0 or NaR
       let decoded = unsafe { value.decode_regular() };
-      // SAFETY: `decoded` comes from `Posit::decode_regular`, therefore its `exp` is in bounds
-      unsafe { quire.accumulate_decoded(decoded) };
+      // SAFETY: `decoded` comes from `Posit::decode_regular`
+      unsafe { quire.add_posit_kernel(decoded) };
       quire
     }
   }

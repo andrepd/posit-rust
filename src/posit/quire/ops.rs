@@ -24,8 +24,8 @@ impl<
     } else {
       // SAFETY: `rhs` is not 0 or NaR
       let decoded = unsafe { rhs.decode_regular() };
-      // SAFETY: `decoded` comes from `Posit::decode_regular`, therefore its `exp` is in bounds
-      unsafe { self.accumulate_decoded(decoded) }
+      // SAFETY: `decoded` comes from `Posit::decode_regular`
+      unsafe { self.add_posit_kernel(decoded) }
     }
   }
 }

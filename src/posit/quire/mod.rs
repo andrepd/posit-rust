@@ -54,13 +54,19 @@ pub struct Quire<
   const SIZE: usize,
 > (pub(crate) [u8; SIZE]);
 
-/// Basic constants and functions, such as the position of the fixed point, compile-time checks
-/// that `SIZE` is ≥ the minimum size, etc.
+/// Basic constants and functions, such as the position of the fixed point, the sum and product
+/// limits, compile-time checks that `SIZE` is ≥ the minimum size, etc.
 mod basics;
 
-/// Here is the core algorithm of the quire: adding the product of two posits, as a fixed-point
-/// number, to the quire.
+/// The core algorithm of the quire: accumulating a fixed-point number with an arbitrary number of
+/// bits, optionally shifted right by a constant amount, to the quire (which is also a fixed-point
+/// number with a constant number of bits).
 mod accumulate;
+
+/// The kernels for adding a [`Decoded`] to a quire (`add_posit_kernel`), the product of two
+/// [`Decoded`]s to the quire (`add_posit_prod_kernel`), and a quire to another quire
+/// (`add_quire_kernel`).
+mod add;
 
 /// The user-facing functions live here: `+=`, `-=`, `add_prod`, `sub_prod`.
 mod ops;
