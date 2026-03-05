@@ -3,38 +3,6 @@ use super::*;
 impl<
   const N: u32,
   const ES: u32,
-  const SIZE: usize,
-> Quire<N, ES, SIZE> {
-  fn add<Int: crate::Int>(&mut self, posit: Posit<N, ES, Int>) {
-    if posit == Posit::ZERO {
-      ()
-    } else if posit == Posit::NAR || self.is_nar() {
-      *self = Quire::NAR
-    } else {
-      // SAFETY: `posit` is not 0 or NaR
-      let decoded = unsafe { posit.decode_regular() };
-      // SAFETY: `decoded` comes from `Posit::decode_regular`, therefore its `exp` is in bounds
-      unsafe { self.accumulate_decoded(decoded) }
-    }
-  }
-
-  fn add_quire(&mut self, quire: &Quire<N, ES, SIZE>) {
-    if self.is_nar() {
-      ()
-    } else if crate::utl::unlikely(quire.is_nar()) {
-      *self = Self::NAR
-    } else {
-      // TODO replace `accumulate_slice` with `accumulate` if ever `min_generic_const_args` is
-      // stabilised!
-      // SAFETY: `Self::SIZE` == `quire::SIZE`.
-      unsafe { self.accumulate_slice(quire.as_u64_array(), 0) }
-    }
-  }
-}
-
-impl<
-  const N: u32,
-  const ES: u32,
   Int: crate::Int,
   const SIZE: usize,
 > core::ops::AddAssign<Posit<N, ES, Int>> for Quire<N, ES, SIZE> {
@@ -49,7 +17,16 @@ impl<
   /// assert_eq!(p16::round_from(1.42), (&quire).round_into())
   /// ```
   fn add_assign(&mut self, rhs: Posit<N, ES, Int>) {
-    self.add(rhs)
+    if rhs == Posit::ZERO {
+      ()
+    } else if rhs == Posit::NAR || self.is_nar() {
+      *self = Quire::NAR
+    } else {
+      // SAFETY: `rhs` is not 0 or NaR
+      let decoded = unsafe { rhs.decode_regular() };
+      // SAFETY: `decoded` comes from `Posit::decode_regular`, therefore its `exp` is in bounds
+      unsafe { self.accumulate_decoded(decoded) }
+    }
   }
 }
 
@@ -69,8 +46,9 @@ impl<
   /// quire += p16::round_from(0.42);
   /// assert_eq!(p16::round_from(1.42), (&quire).round_into())
   /// ```
+  #[inline]
   fn add_assign(&mut self, rhs: &Posit<N, ES, Int>) {
-    self.add(*rhs)
+    *self += *rhs
   }
 }
 
@@ -90,8 +68,9 @@ impl<
   /// quire -= p16::round_from(0.42);
   /// assert_eq!(p16::round_from(0.58), (&quire).round_into())
   /// ```
+  #[inline]
   fn sub_assign(&mut self, rhs: Posit<N, ES, Int>) {
-    self.add(-rhs)
+    *self += -rhs
   }
 }
 
@@ -111,8 +90,9 @@ impl<
   /// quire -= p16::round_from(0.42);
   /// assert_eq!(p16::round_from(0.58), (&quire).round_into())
   /// ```
+  #[inline]
   fn sub_assign(&mut self, rhs: &Posit<N, ES, Int>) {
-    self.add(-*rhs)
+    *self += -*rhs
   }
 }
 
@@ -123,7 +103,16 @@ impl<
 > core::ops::AddAssign<&Quire<N, ES, SIZE>> for Quire<N, ES, SIZE> {
   /// Standard: "[**qAddQ**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
   fn add_assign(&mut self, rhs: &Quire<N, ES, SIZE>) {
-    self.add_quire(rhs)
+    if self.is_nar() {
+      ()
+    } else if rhs.is_nar() {
+      *self = Quire::NAR
+    } else {
+      // TODO replace `accumulate_slice` with `accumulate` if ever `min_generic_const_args` is
+      // stabilised!
+      // SAFETY: `Self::SIZE` == `quire::SIZE`.
+      unsafe { self.accumulate_slice(rhs.as_u64_array(), 0) }
+    }
   }
 }
 
@@ -134,7 +123,7 @@ impl<
 > core::ops::SubAssign<&Quire<N, ES, SIZE>> for Quire<N, ES, SIZE> {
   /// Standard: "[**qSubQ**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
   fn sub_assign(&mut self, rhs: &Quire<N, ES, SIZE>) {
-    self.add_quire(todo!())
+    todo!()
   }
 }*/
 
