@@ -90,6 +90,24 @@ fn bench_1ary<T: Copy, U: From<T>>(
   }));
 }
 
+/// Benchmark a 2-arg function that accumulates into another type.
+fn bench_2ary_accumulate<T: Copy, A: Clone, U: From<T>>(
+  g: &mut criterion::BenchmarkGroup<'_, criterion::measurement::WallTime>,
+  name: &str,
+  initial: A,
+  data: &[T],
+  mut f: impl FnMut(&mut A, U, U),
+) {
+  assert!(data.len() % 2 == 0, "Cannot benchmark 2-ary function with odd number of elements");
+  g.throughput(Throughput::Elements(data.len() as u64 / 2));
+  g.bench_function(name, |b| b.iter(|| {
+    let mut accum = black_box(initial.clone());
+    for &[x, y] in data.as_chunks().0 {
+      let _ = black_box(f(&mut accum, black_box(U::from(x)), black_box(U::from(y))));
+    }
+  }));
+}
+
 /// Benchmark a 1-arg function that accumulates into another type.
 fn bench_1ary_accumulate<T: Copy, A: Clone, U: From<T>>(
   g: &mut criterion::BenchmarkGroup<'_, criterion::measurement::WallTime>,
@@ -349,6 +367,32 @@ fn quire_add_64(c: &mut Criterion) {
   g.finish();
 }
 
+/// Generate arrays of random posits and benchmark our impl and external impls in calculating dot
+/// products (summing the product of pairs of posits).
+fn quire_add_prod_32(c: &mut Criterion) {
+  let (data_posit, _) = make_data_32(LEN * 2);
+  let mut g = c.benchmark_group("quire_add_prod_32");
+
+  #[cfg(feature = "cerlane-softposit")]
+  bench_2ary_accumulate(
+    &mut g,
+    "cerlane-softposit",
+    cerlane_softposit::quire32_t::default(),
+    &data_posit,
+    |q, x, y| unsafe { *q = cerlane_softposit::q32_fdp_add(*q, x, y) },
+  );
+
+  bench_2ary_accumulate(
+    &mut g,
+    "posit",
+    q32::ZERO,
+    &data_posit,
+    |q: &mut q32, x: p32, y: p32| q.add_prod(x, y),
+  );
+
+  g.finish();
+}
+
 criterion_group!(add,
   add_32,
   add_64,
@@ -374,6 +418,7 @@ criterion_group!(quire,
   quire_add_16,
   quire_add_32,
   quire_add_64,
+  quire_add_prod_32,
 );
 
 criterion_main!(add, mul, div, sqrt, quire);

@@ -31,7 +31,7 @@ unsafe extern "C" {
   pub fn p32_sqrt(x: posit32_t) -> posit32_t;
   // pub fn p64_sqrt(x: posit64_t) -> posit64_t;
 
-  fn q32_fdp_add(q: quire32_t, x: posit32_t, y: posit32_t) -> quire32_t;
+  pub fn q32_fdp_add(q: quire32_t, x: posit32_t, y: posit32_t) -> quire32_t;
 }
 
 #[inline]

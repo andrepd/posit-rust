@@ -379,6 +379,46 @@ pub fn quire_add_kernel_64(quire: &mut crate::q64, decoded: Decoded<64, 2, i8>) 
   unsafe { quire.add_posit_kernel(decoded) }
 }
 
+#[unsafe(no_mangle)]
+pub fn quire_add_prod_8(quire: &mut crate::q8, a: crate::p8, b: crate::p8) {
+  quire.add_prod(a, b)
+}
+
+#[unsafe(no_mangle)]
+pub fn quire_add_prod_16(quire: &mut crate::q16, a: crate::p16, b: crate::p16) {
+  quire.add_prod(a, b)
+}
+
+#[unsafe(no_mangle)]
+pub fn quire_add_prod_32(quire: &mut crate::q32, a: crate::p32, b: crate::p32) {
+  quire.add_prod(a, b)
+}
+
+#[unsafe(no_mangle)]
+pub fn quire_add_prod_64(quire: &mut crate::q64, a: crate::p64, b: crate::p64) {
+  quire.add_prod(a, b)
+}
+
+#[unsafe(no_mangle)]
+pub fn quire_add_prod_kernel_8(quire: &mut crate::q8, a: Decoded<8, 2, i8>, b: Decoded<8, 2, i8>) {
+  unsafe { quire.add_posit_prod_kernel(a, b) }
+}
+
+#[unsafe(no_mangle)]
+pub fn quire_add_prod_kernel_16(quire: &mut crate::q16, a: Decoded<16, 2, i16>, b: Decoded<16, 2, i16>) {
+  unsafe { quire.add_posit_prod_kernel(a, b) }
+}
+
+#[unsafe(no_mangle)]
+pub fn quire_add_prod_kernel_32(quire: &mut crate::q32, a: Decoded<32, 2, i32>, b: Decoded<32, 2, i32>) {
+  unsafe { quire.add_posit_prod_kernel(a, b) }
+}
+
+#[unsafe(no_mangle)]
+pub fn quire_add_prod_kernel_64(quire: &mut crate::q64, a: Decoded<64, 2, i64>, b: Decoded<64, 2, i64>) {
+  unsafe { quire.add_posit_prod_kernel(a, b) }
+}
+
 //
 
 #[unsafe(no_mangle)]

@@ -183,6 +183,17 @@ fn quire_add_p32(c: &mut Criterion) {
   g.finish();
 }
 
+fn quire_add_prod_p32(c: &mut Criterion) {
+  let mut g = c.benchmark_group("quire_add_prod_p32");
+  for (&x, &y) in NUMS_32.iter().zip(NUMS_32.iter().skip(1)) {
+    g.throughput(Throughput::Elements(1));
+    g.bench_with_input(BenchmarkId::from_parameter(format_args!("{}/{}", short(&x), short(&y))), &(x, y), |b, &(x, y)| {
+      b.iter(|| { let mut q = q32::ZERO; q.add_prod(black_box(x), black_box(y)) });
+    });
+  }
+  g.finish();
+}
+
 fn quire_from_p32(c: &mut Criterion) {
   let mut g = c.benchmark_group("quire_from_p32");
   for num in NUMS_32 {
@@ -427,6 +438,7 @@ criterion_group!(sqrt,
 criterion_group!(quire,
   quire_add_p32,
   quire_add_p64,
+  quire_add_prod_p32,
   quire_from_p32,
   quire_from_p64,
   quire_into_p32,
