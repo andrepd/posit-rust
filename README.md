@@ -2,8 +2,6 @@
 [<img alt="Github CI status" src="https://img.shields.io/github/actions/workflow/status/andrepd/posit-rust/ci.yml">](https://github.com/andrepd/posit-rust)
 [<img alt="docs.rs" src="https://img.shields.io/docsrs/fast-posit">](https://docs.rs/fast-posit/latest/fast_posit/)
 
-**🚧 Work in progress! 🚧**
-
 # fast-posit
 
 Software implementation of [Posit arithmetic](https://posithub.org/docs/Posits4.pdf) in Rust.
@@ -57,7 +55,7 @@ This crate has the following objectives, in order of importance:
 
 This crate aims to implement the entire posit standard and beyond, including features such as
 arbitrary posit and quire sizes beyond those prescribed by the standard. Versions prior to 1.0.0,
-however, may be incomplete.
+however, may be incomplete; see the [feature list](#features) below.
 
 ## Usage
 
