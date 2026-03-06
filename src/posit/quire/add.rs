@@ -29,10 +29,10 @@ impl<
   ///
   /// `x` must be the result of a [`Posit::decode_regular`] call, or calling this function
   /// is *undefined behaviour*.
-  /*#[inline(always)]*/
+  #[inline(always)]
   pub(crate) unsafe fn add_posit_kernel<Int: crate::Int>(&mut self, x: Decoded<N, ES, Int>) {
     if const { Int::BITS > 64 } {
-      unimplemented!("Quire operations are currently not supported for N > 64") }
+      unimplemented!("Quire operations are currently not supported for N > 64")
     }
     debug_assert!(x.exp.abs() <= Posit::<N, ES, Int>::MAX_EXP + Int::ONE);
 
@@ -73,6 +73,7 @@ impl<
       let shift_left = shift.as_u32();
       // dbg!(x.frac, shift_left);
       let (hi, lo, offset) = multiword_shl_64(x.frac, shift_left);
+      unsafe { core::hint::assert_unchecked(offset < Self::LEN_U64) };
 
       // Another edge case: we check in `Self::MIN_SIZE` that we have enough bits. But if we have
       // less than 64 to spare, then the `hi` word might be pushed out of the quire. In this case,
@@ -102,6 +103,7 @@ impl<
   ///
   /// `x` and `y` must be the result of a [`Posit::decode_regular`] call, or calling this function
   /// is *undefined behaviour*.
+  #[inline(always)]
   pub(crate) unsafe fn add_posit_prod_kernel<Int: crate::Int>(
     &mut self,
     x: Decoded<N, ES, Int>,
@@ -145,6 +147,7 @@ impl<
     else {
       let shift_left = shift.as_u32();
       let (hi, lo, offset) = multiword_shl_64(frac, shift_left);
+      unsafe { core::hint::assert_unchecked(offset < Self::LEN_U64) };
 
       // Again, if the product is big enough in magnitude, `offset` might be such that we are
       // adding the `lo` limb onto the most significant limb of the quire, and then the `hi` limb
