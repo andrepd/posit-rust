@@ -419,6 +419,30 @@ pub fn quire_add_prod_kernel_64(quire: &mut crate::q64, a: Decoded<64, 2, i64>, 
   unsafe { quire.add_posit_prod_kernel(a, b) }
 }
 
+#[unsafe(no_mangle)]
+pub fn quire_neg_8(quire: &mut crate::q8) {
+  let q = core::mem::replace(quire, crate::q8::ZERO);
+  core::mem::replace(quire, -q);
+}
+
+#[unsafe(no_mangle)]
+pub fn quire_neg_16(quire: &mut crate::q16) {
+  let q = core::mem::replace(quire, crate::q16::ZERO);
+  core::mem::replace(quire, -q);
+}
+
+#[unsafe(no_mangle)]
+pub fn quire_neg_32(quire: &mut crate::q32) {
+  let q = core::mem::replace(quire, crate::q32::ZERO);
+  core::mem::replace(quire, -q);
+}
+
+#[unsafe(no_mangle)]
+pub fn quire_neg_64(quire: &mut crate::q64) {
+  let q = core::mem::replace(quire, crate::q64::ZERO);
+  core::mem::replace(quire, -q);
+}
+
 //
 
 #[unsafe(no_mangle)]

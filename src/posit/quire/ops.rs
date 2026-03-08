@@ -158,6 +158,41 @@ impl<
   }
 }*/
 
+impl<
+  const N: u32,
+  const ES: u32,
+  const SIZE: usize,
+> core::ops::Neg for Quire<N, ES, SIZE> {
+  type Output = Self;
+
+  /// Return a quire with value -`self`.
+  ///
+  /// Standard: "[**qNegate**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
+  fn neg(mut self) -> Self::Output {
+    // Two's complement negation is bitwise negating and adding 1.
+    let mut carry = true;
+    for i in self.as_u64_array_mut() {
+      *i = (!*i).wrapping_add(u64::from(carry));
+      carry &= *i == 0;
+    }
+    self
+  }
+}
+
+impl<
+  const N: u32,
+  const ES: u32,
+  const SIZE: usize,
+> Quire<N, ES, SIZE> {
+  /// Return `-self` if the quire value is negative, and `self` otherwise.
+  ///
+  /// Standard: "[**qAbs**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
+  pub fn abs(self) -> Self {
+    let is_negative = (self.as_u64_array()[Self::LEN_U64 - 1] as i64) < 0;
+    if is_negative {-self} else {self}
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -424,6 +459,46 @@ mod tests {
     test_proptest!{p16_proptest, crate::p16, crate::q16}
     test_proptest!{p32_proptest, crate::p32, crate::q32}
     // test_proptest!{p64_proptest, crate::p64, crate::q64}
+
+    test_proptest!{posit_3_0_proptest, Posit<3, 0, i8>, Quire<3, 0, 128>}
+    test_proptest!{posit_4_0_proptest, Posit<4, 0, i8>, Quire<4, 0, 128>}
+    test_proptest!{posit_4_1_proptest, Posit<4, 1, i8>, Quire<4, 1, 128>}
+  }
+
+  /// -quire, quire.abs()
+  mod quire_neg {
+    use super::*;
+
+    macro_rules! test_proptest {
+      ($name:ident, $posit:ty, $quire:ty) => {
+        proptest!{
+          #![proptest_config(ProptestConfig::with_cases(crate::PROPTEST_CASES))]
+          #[test]
+          fn $name(quire in <$quire>::cases_proptest_all()) {
+            use malachite::base::num::arithmetic::traits::Abs;
+            assert_eq!(
+              Rational::try_from(-quire.clone()),
+              Rational::try_from(quire.clone()).map(|x| -x),
+            );
+            assert_eq!(
+              Rational::try_from(quire.clone().abs()),
+              Rational::try_from(quire.clone()).map(|x| x.abs()),
+            );
+          }
+        }
+      };
+    }
+
+    test_proptest!{posit_10_0_proptest, Posit<10, 0, i16>, Quire<10, 0, 128>}
+    test_proptest!{posit_10_1_proptest, Posit<10, 1, i16>, Quire<10, 1, 128>}
+    test_proptest!{posit_10_2_proptest, Posit<10, 2, i16>, Quire<10, 2, 128>}
+    test_proptest!{posit_10_3_proptest, Posit<10, 3, i16>, Quire<10, 3, 128>}
+    test_proptest!{posit_8_0_proptest, Posit<8, 0, i8>, Quire<8, 0, 128>}
+
+    test_proptest!{p8_proptest, crate::p8, crate::q8}
+    test_proptest!{p16_proptest, crate::p16, crate::q16}
+    test_proptest!{p32_proptest, crate::p32, crate::q32}
+    test_proptest!{p64_proptest, crate::p64, crate::q64}
 
     test_proptest!{posit_3_0_proptest, Posit<3, 0, i8>, Quire<3, 0, 128>}
     test_proptest!{posit_4_0_proptest, Posit<4, 0, i8>, Quire<4, 0, 128>}
