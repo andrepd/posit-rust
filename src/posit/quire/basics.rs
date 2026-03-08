@@ -38,6 +38,7 @@ impl<
   /// let quire = q8::from_le_bytes([0,0,0,0,0,0, 1,0,0,0,0,0, 0,0,0,0]);
   /// assert_eq!(p8::round_from(&quire), p8::ONE);
   /// ```
+  #[inline]
   pub const fn from_le_bytes(bytes: [u8; SIZE]) -> Self {
     Self(bytes)
   }
@@ -51,9 +52,24 @@ impl<
   /// let quire = q8::from_be_bytes([0,0,0,0, 0,0,0,0,0,1, 0,0,0,0,0,0]);
   /// assert_eq!(p8::round_from(&quire), p8::ONE);
   /// ```
+  #[inline]
   pub const fn from_be_bytes(mut bytes: [u8; SIZE]) -> Self {
     bytes.as_mut_slice().reverse();
     Self::from_le_bytes(bytes)
+  }
+
+  /// Return the raw bit representation of a quire, as a byte array in little-endian order.
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// let bytes = q8::NAR.to_le_bytes();
+  /// assert_eq!(bytes, [0,0,0,0,0,0, 0,0,0,0,0,0, 0,0,0,0x80]);
+  /// ```
+  #[inline]
+  pub const fn to_le_bytes(self) -> [u8; SIZE] {
+    self.0
   }
 
   /// The quire size in u64s (= [`BITS`](Self::BITS) / 64).
