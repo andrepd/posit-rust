@@ -51,8 +51,11 @@ impl<
     //   x_xor << 1 = 0b0001....
     //   regime_raw = 3
     let x_xor = x ^ (x << 1);
+    // SAFETY: `x << 1` is not 0, therefore it starts with a run of 1s terminated by a 0 or be a
+    // run of 0s terminated by a 1, therefore `(x ^ (x << 1)) << 1` will start with a run of 0s
+    // terminated by a 1 which is, at the rightmost, in the 2nd least significant bit.
     let regime_raw = unsafe { (x_xor << 1).leading_zeros_nonzero() };
-    debug_assert!(regime_raw <= Self::BITS - 2);
+    unsafe { core::hint::assert_unchecked(regime_raw <= Self::BITS - 2) };
 
     // Now, the regime bits are supposed to encode a regime
     //
@@ -82,7 +85,7 @@ impl<
 
     // Shift out sign and regime bits (1 sign bit, regime_raw + 1 run of 0s or 1s, 1 terminating 0
     // or 1).
-    let y = (x << regime_raw) << 3;
+    let y = (x << 3) << regime_raw;
 
     // The rightmost `ES` bits of `y` are the exponent. However, we still need to negate them if
     // the Posit is negative (remember, we are supposed to interpret the fields from the two's
