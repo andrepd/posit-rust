@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::fallthrough;
+use crate::utl::fallthrough;
 
 impl<
   const N: u32,

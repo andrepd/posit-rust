@@ -24,20 +24,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#[macro_export]
 macro_rules! fallthrough {
     ($scrutinee:expr $(,)?) => {
         match $scrutinee {}
     };
     ($scrutinee:expr, $first_pat:pat $(if $first_guard:expr)? => $first_body:expr $(, $label:lifetime $(: $pat:pat $(if $guard:expr)? => $body:expr)?)* $(,)?) => {
-        $crate::fallthrough_rec!{ (match $scrutinee {
+        $crate::utl::fallthrough_rec!{ (match $scrutinee {
             $first_pat $(if $first_guard)? => $first_body,
             $($($pat $(if $guard)? => break $label,)?)*
         }), $($label $(: ($body))?),* }
     };
 }
 
-#[macro_export]
 #[doc(hidden)]
 macro_rules! fallthrough_rec {
     (($($acc:tt)*),) => {$($acc)*};
@@ -48,13 +46,15 @@ macro_rules! fallthrough_rec {
     };
     (($($acc:tt)*), $label:lifetime: ($($body:tt)*) $(,$($follow:tt)*)? ) => {
 
-        $crate::fallthrough_rec!{($label: {
+        $crate::utl::fallthrough_rec!{($label: {
                 $($acc)*
             }
             $($body)*
         ), $($($follow)*)?}
     };
 }
+
+pub(crate) use {fallthrough, fallthrough_rec};
 
 //
 
