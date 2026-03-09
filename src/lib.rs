@@ -6,7 +6,7 @@
 //! # Introduction
 //!
 //! Posits are an alternative floating point format proposed by John Gustafson in 2017, with the
-//! first published standard in 2022. They have several interesting features that make them an
+//! first standard published in 2022. They have several interesting features that make them an
 //! excellent replacement for traditional IEEE754 floats, in domains such as neural networks or
 //! HPC.
 //!
@@ -27,34 +27,42 @@
 //! style of "learn X in Y minutes". For more information, refer to the documentation of specific
 //! types and functions.
 //!
-//! Wherever a function corresponds to a function in
-//! [the standard](https://posithub.org/docs/posit_standard-2.pdf), it will be marked accordingly
-//! in its documentation.
-//!
+//! Use standard posit types, or define your own.
 //! ```
-//! // Use standard posit types, or define your own.
 //! # use fast_posit::Posit;
 //! use fast_posit::{p8, p16, p32, p64};  // Standard: n bits, 2 exponent bits
 //! type MyPosit = Posit<24, 3, i32>;  // Non-standard: 24 bits, 3 exponent bits
+//! ```
 //!
-//! // Create posits from ints, IEEE floats, strings, constants, or a raw bit representation.
+//! Create posits from ints, IEEE floats, strings, constants, or a raw bit representation.
+//! ```
+//! # use fast_posit::*;
 //! use fast_posit::{RoundFrom, RoundInto};
 //! let a = p32::round_from(2.71_f64);
 //! let b = p32::round_from(42_i32);
 //! let c = p32::from_bits(0x7f001337);
 //! let d = p32::MIN_POSITIVE;
+//! ```
 //!
-//! // Perform basic arithmetic and comparisons using the usual operators.
+//! Perform basic arithmetic and comparisons using the usual operators.
+//! ```
+//! # use fast_posit::*;
 //! assert!(p16::round_from(2.14) + p16::ONE == p16::round_from(3.14));
 //! assert!(p16::MIN_POSITIVE < 1e-15.round_into());
 //! assert!(p16::round_from(-1.1).floor() == p16::round_from(-2));
+//! ```
 //!
-//! // Convert posits back to ints, IEEE floats, strings, or a raw bit representation.
+//! Convert posits back to ints, IEEE floats, strings, or a raw bit representation.
+//! ```
+//! # use fast_posit::*;
 //! assert_eq!(p8::ONE.to_bits(), 0b01000000);
 //! assert_eq!(4_i32, p16::round_from(3.5).round_into());
 //! assert_eq!(-f32::exp2(56.), p16::MIN.round_into());
+//! ```
 //!
-//! // Use a quire to calculate sums and dot products _without loss of precision_!
+//! Use a quire to calculate sums and dot products _without loss of precision_!
+//! ```
+//! # use fast_posit::*;
 //! use fast_posit::{q8, q16, q32, q64};
 //! let mut quire = q16::ZERO;
 //! quire += p16::MAX;
@@ -66,24 +74,30 @@
 //! // The same sum without the quire would give a wrong result, due to double rounding.
 //! let posit = p16::MAX + p16::round_from(0.1) - p16::MAX;
 //! assert_eq!(posit, p16::ZERO);
+//! ```
 //!
-//! // Exact dot products give correct results even when IEEE floats fail.
+//! Dot products in the quire can give correct results with 32 bits even where IEEE floats fail
+//! with 64 bits.
+//! ```
+//! # use fast_posit::*;
 //! let a = [3.2e7, 1., -1.,  8.0e7];
 //! let b = [4.0e8, 1., -1., -1.6e8];
 //! // Calculating the dot product with 64-bit IEEE floats yields an incorrect result.
-//! let float: f64 = a.iter().zip(b.iter()).map(|(x,y)| x * y).sum();
+//! let float: f64 = a.iter().zip(b.iter())
+//!   .map(|(x, y)| x * y)
+//!   .sum();
 //! assert_eq!(float, 0.);
 //! // Calculating the dot product with 32-bit posits and a quire yields the correct result.
-//! let posit: p32 = {
-//!   let mut quire = q32::ZERO;
-//!   for (&x, &y) in a.iter().zip(b.iter()) {
-//!     quire.add_prod(p32::round_from(x), p32::round_from(y))
-//!   }
-//!   quire.round_into()
-//! };
+//! let posit: p32 = a.iter().zip(b.iter())
+//!   .map(|(x, y)| (p32::round_from(*x), p32::round_from(*y)))
+//!   .fold(q32::ZERO, |mut q, (x, y)| { q.add_prod(x, y); q })
+//!   .round_into();
 //! assert_eq!(posit, 2.round_into());
+//! ```
 //!
-//! // Use a quire per thread to ensure the result is the same _regardless of parallelisation_!
+//! Use a quire per thread to ensure the result is the same _regardless of parallelisation_!
+//! ```
+//! # use fast_posit::*;
 //! let mut quires = [q16::ZERO; 8];
 //! for thread in 0..8 {
 //!   let local_quire = &mut quires[thread];
@@ -98,18 +112,26 @@
 //! }
 //! let result: p16 = first.round_into();
 //! assert_eq!(result, p16::round_from(8 * (123 + 456)));
+//! ```
 //!
-//! // Use mixed-precision with no hassle; it's very cheap when the ES is the same.
+//! Use mixed-precision with no hassle; it's especially cheap when the ES is the same, such as
+//! among the standard types.
+//! ```
+//! # use fast_posit::*;
 //! let terms = [3, 7, 15, 1].map(p8::round_from);  // https://oeis.org/A001203
 //! let pi = {
 //!   let mut partial = p64::ZERO;
 //!   for i in terms[1..].iter().rev() {
-//!     partial = p64::ONE / (i.convert() + partial)
+//!     partial = p64::ONE / (i.convert() + partial)  // `i` upcasted p8→p64 essentially for free
 //!   }
 //!   terms[0].convert() + partial
 //! };
 //! assert!((3.141592.round_into() .. 3.141593.round_into()).contains(&pi));
 //! ```
+//!
+//! Please refer to the documentation for each specific item for more details. Wherever a function
+//! corresponds to a function in [the standard](https://posithub.org/docs/posit_standard-2.pdf),
+//! this will be noted.
 //!
 //! # Performance
 //!
