@@ -19,7 +19,7 @@ impl<
   fn add_assign(&mut self, rhs: Posit<N, ES, Int>) {
     if rhs == Posit::ZERO {
       ()
-    } else if rhs == Posit::NAR || self.is_nar() {
+    } else if crate::utl::unlikely(rhs == Posit::NAR) || crate::utl::unlikely(self.is_nar()) {
       *self = Quire::NAR
     } else {
       // SAFETY: `rhs` is not 0 or NaR
@@ -105,9 +105,9 @@ impl<
   ///
   /// Standard: "[**qMulAdd**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
   pub fn add_prod<Int: crate::Int>(&mut self, a: Posit<N, ES, Int>, b: Posit<N, ES, Int>) {
-    if a == Posit::NAR || b == Posit::NAR {
+    if crate::utl::unlikely(a == Posit::NAR) || crate::utl::unlikely(b == Posit::NAR) {
       *self = Quire::NAR
-    } else if a == Posit::ZERO || b == Posit::ZERO || self.is_nar() {
+    } else if a == Posit::ZERO || b == Posit::ZERO || crate::utl::unlikely(self.is_nar()) {
       ()
     } else {
       // SAFETY: neither `a` nor `b` are 0 or NaR
@@ -134,9 +134,9 @@ impl<
 > core::ops::AddAssign<&Quire<N, ES, SIZE>> for Quire<N, ES, SIZE> {
   /// Standard: "[**qAddQ**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
   fn add_assign(&mut self, rhs: &Quire<N, ES, SIZE>) {
-    if self.is_nar() {
+    if crate::utl::unlikely(self.is_nar()) {
       ()
-    } else if rhs.is_nar() {
+    } else if crate::utl::unlikely(rhs.is_nar()) {
       *self = Quire::NAR
     } else {
       // TODO replace `accumulate_slice` with `accumulate` if ever `min_generic_const_args` is
