@@ -11,13 +11,13 @@ env:
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        toolchain: [stable, beta, nightly]
+        arch: [ubuntu-latest, ubuntu-24.04-arm]
+        toolchain: [stable, nightly]
         profile: [test, release]
+
+    runs-on: ${{ matrix.arch }}
 
     steps:
     - uses: actions/checkout@v4
