@@ -119,8 +119,11 @@ impl<
     // A note about the hidden bits: the fraction bits always have an implicit `1.0` factor
     // (meaning the `fffff` fraction bits encode a value `1.fffff`). For negative numbers this a
     // factor of `-1`. TODO ELABORATE
-    let frac = Int::MIN.lshr(x.is_positive() as u32) | fraction;
-    let exp = (regime << Self::ES) | exponent;
+    //
+    // We also use `disjoint_bitor` instead of just bitwise-or, in to give the compiler freedom to
+    // emit either a `|` or a `+`.
+    let frac = unsafe { Int::disjoint_bitor(Int::MIN.lshr(u32::from(x.is_positive())), fraction) };
+    let exp = unsafe { Int::disjoint_bitor(regime << Self::ES, exponent) };
     Decoded{frac, exp}
   }
 
