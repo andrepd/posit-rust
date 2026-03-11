@@ -118,7 +118,7 @@ impl<
     // there was overflow.
     if ((original_sign ^ implicit) as i64) > 0
     && ((quire[len_u64 - 1] ^ implicit) as i64) < 0 {
-      *self = Self::NAR
+      self.set_nar()
     }
   }
 }

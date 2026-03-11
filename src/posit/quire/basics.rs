@@ -270,6 +270,19 @@ impl<
     }
     acc == 0
   }
+
+  /// Equivalent to `*self = Self::NAR`, but on a cold branch to ensure it does NOT get inlined and
+  /// pollute the i-cache.
+  #[cold]
+  #[inline(never)]
+  pub(crate) fn set_nar(&mut self) {
+    let q = self.as_u64_array_mut();
+    let n = q.len();
+    for i in &mut q[..n-1] {
+      *i = 0;
+    }
+    q[n - 1] = i64::MIN as u64
+  }
 }
 
 #[cfg(test)]
@@ -362,6 +375,14 @@ mod tests {
     assert!(!crate::q8::from_le_bytes(bits).is_nar());
     let bits = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
     assert!(!crate::q8::from_le_bytes(bits).is_nar());
+  }
+
+  #[test]
+  fn set_nar() {
+    let mut q = crate::q8::from_le_bytes([0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf]);
+    assert!(!q.is_nar());
+    q.set_nar();
+    assert!(q.is_nar());
   }
 }
 

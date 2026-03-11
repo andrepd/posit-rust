@@ -20,7 +20,7 @@ impl<
     if rhs == Posit::ZERO {
       ()
     } else if crate::utl::unlikely(rhs == Posit::NAR) || crate::utl::unlikely(self.is_nar()) {
-      *self = Quire::NAR
+      self.set_nar()
     } else {
       // SAFETY: `rhs` is not 0 or NaR
       let decoded = unsafe { rhs.decode_regular() };
@@ -106,7 +106,7 @@ impl<
   /// Standard: "[**qMulAdd**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
   pub fn add_prod<Int: crate::Int>(&mut self, a: Posit<N, ES, Int>, b: Posit<N, ES, Int>) {
     if crate::utl::unlikely(a == Posit::NAR) || crate::utl::unlikely(b == Posit::NAR) {
-      *self = Quire::NAR
+      self.set_nar()
     } else if a == Posit::ZERO || b == Posit::ZERO || crate::utl::unlikely(self.is_nar()) {
       ()
     } else {
@@ -137,7 +137,7 @@ impl<
     if crate::utl::unlikely(self.is_nar()) {
       ()
     } else if crate::utl::unlikely(rhs.is_nar()) {
-      *self = Quire::NAR
+      self.set_nar()
     } else {
       // TODO replace `accumulate_slice` with `accumulate` if ever `min_generic_const_args` is
       // stabilised!
