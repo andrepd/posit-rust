@@ -250,14 +250,25 @@ impl<
     // branch. Only on when the quire is NaR, or in the rare cases where it's not NaR but still
     // starts with `0b1000…`, will we need to scan through the whole thing.
     let quire: &[u64] = self.as_u64_array();
-    if quire[quire.len() - 1] != i64::MIN as u64 { return false }  // TODO mark likely?
+    if crate::utl::likely(quire[quire.len() - 1] != i64::MIN as u64) {
+      false
+    } else {
+      self.is_nar_slow()
+    }
+  }
+
+  // #[cold]
+  // #[inline(never)]
+  const fn is_nar_slow(&self) -> bool {
     // Written in this awkward way because it's a `const fn`...
+    let quire: &[u64] = self.as_u64_array();
     let mut i = 0;
+    let mut acc = 0;
     while i < quire.len() - 1 {
-      if quire[i] != 0 { return false }
+      acc |= quire[i];
       i += 1
     }
-    true
+    acc == 0
   }
 }
 
