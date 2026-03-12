@@ -49,6 +49,24 @@ impl<
     limbs: &[u64; L],
     offset: usize,
   ) {
+    // llvm codegen for this is very unsatisfactory on x86. There is literally a >2× speedup when
+    // calling the hand-written functions below. Hopefully in the future, if the necessary
+    // intrinsics are available, we can remove them.
+    #[cfg(target_arch = "x86_64")] {
+      if const { L == 2 && Self::LEN_U64 == 16} {
+        return unsafe { self.x86_accumulate_2_16(limbs, offset) }
+      }
+      if const { L == 2 && Self::LEN_U64 == 8} {
+        return unsafe { self.x86_accumulate_2_8(limbs, offset) }
+      }
+      if const { L == 2 && Self::LEN_U64 == 4} {
+        return unsafe { self.x86_accumulate_2_4(limbs, offset) }
+      }
+      if const { L == 2 && Self::LEN_U64 == 2} {
+        return unsafe { self.x86_accumulate_2_2(limbs, offset) }
+      }
+    }
+
     unsafe { self.accumulate_slice(limbs.as_slice(), offset) }
   }
 
@@ -62,12 +80,8 @@ impl<
     let len_u64 = quire.len();
     let original_sign = quire[len_u64 - 1];
 
-    if cfg!(debug_assertions) {
-      debug_assert!(offset + limbs.len() <= len_u64)
-    } else {
-      // SAFETY: Precondition.
-      unsafe { core::hint::assert_unchecked(offset + limbs.len() <= len_u64) }
-    }
+    // SAFETY: Precondition
+    unsafe { core::hint::assert_unchecked(offset + limbs.len() <= len_u64) }
 
     // Part 1: Add `limbs[..]` to `quire[offset .. offset + L]`.
     let mut carry = false;
@@ -116,9 +130,162 @@ impl<
 
     // Part 3: If the quire originally had the same sign as `limbs`, but now has a different sign,
     // there was overflow.
-    if ((original_sign ^ implicit) as i64) > 0
-    && ((quire[len_u64 - 1] ^ implicit) as i64) < 0 {
+    let overflow = (
+      ((original_sign ^ implicit) as i64) > 0 
+      && ((quire[len_u64 - 1] ^ implicit) as i64) < 0
+    );
+    if crate::utl::unlikely(overflow) {
       self.set_nar()
+    }
+  }
+}
+
+/// Asm implementations for x86_64 arch.
+#[cfg(target_arch = "x86_64")]
+mod x86 {
+  use super::*;
+
+  impl<
+    const N: u32,
+    const ES: u32,
+    const SIZE: usize,
+  > Quire<N, ES, SIZE> {
+    /// As [Self::accumulate] with `L == 2` and `Self::LEN_64 == 16`.
+    #[inline(always)]
+    pub(crate) unsafe fn x86_accumulate_2_16<const L: usize>(
+      &mut self,
+      limbs: &[u64; L],
+      offset: usize,
+    ) {
+      if const { L != 2 } { unreachable!("Invalid call to x86_accumulate") }
+      if const { Self::LEN_U64 != 16 } { unreachable!("Invalid call to x86_accumulate") }
+
+      unsafe { core::arch::asm!(
+        // Add the two limbs.
+        "add qword ptr [{quire_ptr} + 8 * {offset}], {lo}",                    // 4 bytes
+        "adc qword ptr [{quire_ptr} + 8 * {offset} + 8], {hi}",                // 5 bytes
+        // Re-use the `lo` register to calculate the jump destination.
+        "lea {lo}, [rip + 6]",
+        "lea {lo}, [{lo} + 4 * {offset}]",                                     // 4 bytes
+        // Jump into the correct point in the chain of adc till the end.
+        "jmp {lo}",                                                            // 2 bytes
+        "adc qword ptr [{quire_ptr} + 16], {implicit}",                        // 4 bytes
+        "adc qword ptr [{quire_ptr} + 24], {implicit}",                        // same
+        "adc qword ptr [{quire_ptr} + 32], {implicit}",                        // same
+        "adc qword ptr [{quire_ptr} + 40], {implicit}",                        // same
+        "adc qword ptr [{quire_ptr} + 48], {implicit}",                        // same
+        "adc qword ptr [{quire_ptr} + 56], {implicit}",                        // same
+        "adc qword ptr [{quire_ptr} + 64], {implicit}",                        // same
+        "adc qword ptr [{quire_ptr} + 72], {implicit}",                        // same
+        "adc qword ptr [{quire_ptr} + 80], {implicit}",                        // same
+        "adc qword ptr [{quire_ptr} + 88], {implicit}",                        // same
+        "adc qword ptr [{quire_ptr} + 96], {implicit}",                        // same
+        "adc qword ptr [{quire_ptr} + 104], {implicit}",                       // same
+        "adc qword ptr [{quire_ptr} + 112], {implicit}",                       // same
+        "adc qword ptr [{quire_ptr} + 120], {implicit}",                       // same
+        "jo {set_nar}",
+        lo = in(reg_abcd) limbs[0],
+        hi = in(reg)      limbs[1],
+        quire_ptr = in(reg) self.0.as_ptr(),
+        offset = in(reg) offset,
+        implicit = in(reg) limbs[1].cast_signed() >> 63,
+        // jmp_target = out(reg_abcd) _,
+        set_nar = label { self.set_nar() },
+        options(nostack)
+      ) }
+    }
+
+    /// As [Self::accumulate] with `L == 2` and `Self::LEN_64 == 8`.
+    #[inline(always)]
+    pub(crate) unsafe fn x86_accumulate_2_8<const L: usize>(
+      &mut self,
+      limbs: &[u64; L],
+      offset: usize,
+    ) {
+      if const { L != 2 } { unreachable!("Invalid call to x86_accumulate") }
+      if const { Self::LEN_U64 != 8 } { unreachable!("Invalid call to x86_accumulate") }
+
+      unsafe { core::arch::asm!(
+        // Add the two limbs.
+        "add qword ptr [{quire_ptr} + 8 * {offset}], {lo}",                    // 4 bytes
+        "adc qword ptr [{quire_ptr} + 8 * {offset} + 8], {hi}",                // 5 bytes
+        // Re-use the `lo` register to calculate the jump destination.
+        "lea {lo}, [rip + 6]",
+        "lea {lo}, [{lo} + 4 * {offset}]",                                     // 4 bytes
+        // Jump into the correct chain of adc till the end.
+        "jmp {lo}",                                                            // 2 bytes
+        "adc qword ptr [{quire_ptr} + 16], {implicit}",                        // 4 bytes
+        "adc qword ptr [{quire_ptr} + 24], {implicit}",                       // same
+        "adc qword ptr [{quire_ptr} + 32], {implicit}",                       // same
+        "adc qword ptr [{quire_ptr} + 40], {implicit}",                       // same
+        "adc qword ptr [{quire_ptr} + 48], {implicit}",                       // same
+        "adc qword ptr [{quire_ptr} + 56], {implicit}",                       // same
+        "jo {set_nar}",
+        lo = in(reg_abcd) limbs[0],
+        hi = in(reg)      limbs[1],
+        quire_ptr = in(reg) self.0.as_ptr(),
+        offset = in(reg) offset,
+        implicit = in(reg) limbs[1].cast_signed() >> 63,
+        // jmp_target = out(reg_abcd) _,
+        set_nar = label { self.set_nar() },
+        options(nostack)
+      ) }
+    }
+
+    /// As [Self::accumulate] with `L == 2` and `Self::LEN_64 == 4`.
+    #[inline(always)]
+    pub(crate) unsafe fn x86_accumulate_2_4<const L: usize>(
+      &mut self,
+      limbs: &[u64; L],
+      offset: usize,
+    ) {
+      if const { L != 2 } { unreachable!("Invalid call to x86_accumulate") }
+      if const { Self::LEN_U64 != 4 } { unreachable!("Invalid call to x86_accumulate") }
+
+      unsafe { core::arch::asm!(
+        // Add the two limbs.
+        "add qword ptr [{quire_ptr} + 8 * {offset}], {lo}",                    // 4 bytes
+        "adc qword ptr [{quire_ptr} + 8 * {offset} + 8], {hi}",                // 5 bytes
+        // Re-use the `lo` register to calculate the jump destination.
+        "lea {lo}, [rip + 6]",
+        "lea {lo}, [{lo} + 4 * {offset}]",                                     // 4 bytes
+        // Jump into the correct chain of adc till the end.
+        "jmp {lo}",                                                            // 2 bytes
+        "adc qword ptr [{quire_ptr} + 16], {implicit}",                        // 4 bytes
+        "adc qword ptr [{quire_ptr} + 24], {implicit}",                       // same
+        "jo {set_nar}",
+        lo = in(reg_abcd) limbs[0],
+        hi = in(reg)      limbs[1],
+        quire_ptr = in(reg) self.0.as_ptr(),
+        offset = in(reg) offset,
+        implicit = in(reg) limbs[1].cast_signed() >> 63,
+        // jmp_target = out(reg_abcd) _,
+        set_nar = label { self.set_nar() },
+        options(nostack)
+      ) }
+    }
+
+    /// As [Self::accumulate] with `L == 2` and `Self::LEN_64 == 2`.
+    #[inline(always)]
+    pub(crate) unsafe fn x86_accumulate_2_2<const L: usize>(
+      &mut self,
+      limbs: &[u64; L],
+      offset: usize,
+    ) {
+      if const { L != 2 } { unreachable!("Invalid call to x86_accumulate") }
+      if const { Self::LEN_U64 != 2 } { unreachable!("Invalid call to x86_accumulate") }
+
+      unsafe { core::arch::asm!(
+        "add qword ptr [{quire_ptr} + 8 * {offset}], {lo}",
+        "adc qword ptr [{quire_ptr} + 8 * {offset} + 8], {hi}",
+        "jo {set_nar}",
+        lo = in(reg) limbs[0],
+        hi = in(reg) limbs[1],
+        quire_ptr = in(reg) self.0.as_ptr(),
+        offset = in(reg) offset,
+        set_nar = label { self.set_nar() },
+        options(nostack)
+      ) }
     }
   }
 }
