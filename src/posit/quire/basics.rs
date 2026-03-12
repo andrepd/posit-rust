@@ -15,7 +15,7 @@ impl<
   /// ```
   pub const BITS: u32 = Self::SIZE as u32 * 8;
 
-  /// The quire size in bytes.
+  /// The quire size in bytes (i.e. parameter `SIZE`).
   ///
   /// # Example
   ///
@@ -118,7 +118,7 @@ impl<
     max_regime << ES
   };
 
-  /// The minimum [`SIZE`](Self::SIZE) of a quire for `Posit<N, ES, Int>`, in bytes.
+  /// The minimum [`SIZE`](Self::SIZE) of a quire for [`Posit<N, ES, Int>`], in bytes.
   ///
   /// # Example
   ///
@@ -136,7 +136,7 @@ impl<
 
   /// The minimum number of operations on the quire that can lead to overflow is
   /// 2 <sup>[`PROD_LIMIT`](Self::PROD_LIMIT)</sup>; any number of [`Self::add_prod`] calls
-  /// smaller than that is guaranteed not to overflow.
+  /// smaller than that is *guaranteed* not to overflow.
   ///
   /// # Example
   ///
@@ -154,7 +154,7 @@ impl<
 
   /// The minimum number of additions of posits that can lead to overflow is
   /// 2 <sup>[`SUM_LIMIT`](Self::SUM_LIMIT)</sup>; any number of `+=` or `-=` operations smaller
-  /// than that is guaranteed not to overflow.
+  /// than that is *guaranteed* not to overflow.
   ///
   /// # Example
   ///

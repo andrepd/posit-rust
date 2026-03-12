@@ -50,18 +50,19 @@ impl<
   // Represented by the bit pattern `0b1111...1`.
   pub const MAX_NEGATIVE: Self = Self(const_as(-1));
 
-  /// The minimum exponent; [`Self::MIN_POSITIVE`] = 2 <sup>[`Self::MIN_EXP`]</sup>.
-  pub const MIN_EXP: Int = {
-    let max_regime = N as i128 - 2;
-    let min_exp = -(max_regime << ES);
-    const_as(min_exp)
-  };
-
-  /// The maximum exponent; [`Self::MAX_NEGATIVE`] = 2 <sup>[`Self::MAX_EXP`]</sup>.
+  /// The maximum exponent; [`Self::MAX`] = 2 <sup>[`Self::MAX_EXP`]</sup>. Equal to `-MIN_EXP`.
   pub const MAX_EXP: Int = {
     let max_regime = N as i128 - 2;
     let max_exp = max_regime << ES;
     const_as(max_exp)
+  };
+
+  /// The minimum exponent; [`Self::MIN_POSITIVE`] = 2 <sup>[`Self::MIN_EXP`]</sup>. Equal to
+  /// `-MAX_EXP`.
+  pub const MIN_EXP: Int = {
+    let max_regime = N as i128 - 2;
+    let min_exp = -(max_regime << ES);
+    const_as(min_exp)
   };
 }
 

@@ -165,9 +165,6 @@ impl<
 > core::ops::Neg for Quire<N, ES, SIZE> {
   type Output = Self;
 
-  /// Return a quire with value -`self`.
-  ///
-  /// Standard: "[**qNegate**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.11)".
   fn neg(mut self) -> Self::Output {
     // Two's complement negation is bitwise negating and adding 1.
     let mut carry = true;

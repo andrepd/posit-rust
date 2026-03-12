@@ -52,15 +52,6 @@ impl<const N: u32,const ES: u32,Int: crate::Int>
 core::ops::Neg for Posit<N, ES, Int> {
   type Output = Posit<N, ES, Int>;
 
-  /// Standard: "[**negate**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.2)".
-  ///
-  /// # Example
-  ///
-  /// ```
-  /// # use fast_posit::*;
-  /// assert_eq!(-p16::round_from(3), p16::round_from(-3));
-  /// assert_eq!(-p16::MAX, p16::MIN);
-  /// ```
   #[inline]
   fn neg(self) -> Self::Output {
     Posit::from_bits(self.0.wrapping_neg())
@@ -71,15 +62,6 @@ impl<const N: u32,const ES: u32,Int: crate::Int>
 core::ops::Neg for &Posit<N, ES, Int> {
   type Output = Posit<N, ES, Int>;
 
-  /// Standard: "[**negate**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.2)".
-  ///
-  /// # Example
-  ///
-  /// ```
-  /// # use fast_posit::*;
-  /// assert_eq!(-p16::round_from(3), p16::round_from(-3));
-  /// assert_eq!(-p16::MAX, p16::MIN);
-  /// ```
   #[inline]
   fn neg(self) -> Self::Output {
     Posit::from_bits(self.0.wrapping_neg())
