@@ -3,9 +3,6 @@ use super::*;
 macro_rules! impl_common {
   ($int:ty, $uint:ty) => {
     #[inline]
-    fn to_be(self) -> Self { self.to_be() }
-
-    #[inline]
     fn overflowing_add(self, other: Self) -> (Self, bool) { self.overflowing_add(other) }
   }
 }
@@ -47,6 +44,6 @@ impl Unsigned for u128 {
   impl_common!{i128, u128}
   
   fn shift_sqrt(self, _precision: u32) -> (Self, bool) {
-    todo!()
+    unimplemented!("Sqrt primitive not implemented for i128")
   }
 }

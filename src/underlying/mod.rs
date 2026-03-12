@@ -43,9 +43,6 @@ pub trait Sealed:
   fn as_u32(self) -> u32;
   fn of_u32(x: u32) -> Self;
 
-  fn to_be(self) -> Self;
-  fn from_be(self) -> Self;
-
   fn is_positive(self) -> bool;
   fn abs(self) -> Self;
 
@@ -98,6 +95,9 @@ pub trait Sealed:
   fn wrapping_neg(self) -> Self;
   fn wrapping_abs(self) -> Self;
 
+  /// If `self + other == self | other`, computes it, otherwise this is *undefined behaviour*.
+  unsafe fn disjoint_bitor(self, other: Self) -> Self;
+
   fn overflowing_add(self, other: Self) -> (Self, bool);
   fn carrying_add(self, other: Self, carry: bool) -> (Self, bool);
 
@@ -148,8 +148,6 @@ pub trait Unsigned:
   core::ops::Shl<u32, Output=Self> +
   core::ops::Shr<u32, Output=Self> +
 {
-  fn to_be(self) -> Self;
-
   fn overflowing_add(self, other: Self) -> (Self, bool);
 
   /// Compute the result of `(self << precision).isqrt()`, *without* overflow or loss of precision

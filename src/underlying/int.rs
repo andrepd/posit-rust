@@ -31,12 +31,6 @@ macro_rules! impl_common {
     }
 
     #[inline]
-    fn to_be(self) -> Self { self.to_be() }
-
-    #[inline]
-    fn from_be(self) -> Self { <$int>::from_be(self) }
-
-    #[inline]
     fn is_positive(self) -> bool {
       self >= 0
       // let mask = self >> (Self::BITS - 1);
@@ -110,6 +104,14 @@ macro_rules! impl_common {
 
     #[inline]
     fn wrapping_abs(self) -> Self { self.wrapping_abs() }
+
+    #[inline]
+    unsafe fn disjoint_bitor(self, other: Self) -> Self {
+      // SAFETY: Equivalent, precondition
+      unsafe { core::hint::assert_unchecked(self & other == 0) };
+      unsafe { core::hint::assert_unchecked(self + other == self | other) };
+      self + other
+    }
 
     #[inline]
     fn overflowing_add(self, other: Self) -> (Self, bool) { self.overflowing_add(other) }
