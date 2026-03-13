@@ -21,10 +21,10 @@ Some highlights of the Posit format:
 - Simple and deterministic rounding, with bounded errors, and no infinite loss of precision via
   under- and over-flows, in any circumstance. Unlike IEEE floats, all operations are
   deterministic, portable, and *fully reproducible* across systems.
-- Tapered accuracy, elegantly allocating more bits to the mantissa for values close to ±1,
+- Tapered accuracy, elegantly allocating more bits to the "mantissa" for values close to ±1,
   and gradually decreasing the precision as the absolute value of the exponent increases.
-- The ability to calculate sums and dot products with up to $2^{30}$ terms very fast and with NO
-  intermediate rounding whatsoever, even with parallelisation!
+- The ability to calculate sums and dot products very fast and with NO intermediate rounding
+  whatsoever, up to at least 1 billion terms, even with parallelisation!
 - Flexibility to choose any bit width ≥ 2 and any exponent width ≤ bit width, tailored to the
   parameters of your application: accuracy, dynamic range, memory constraints, etc.
 - No signed zero, no quadrillions of NaNs, no subnormals, no redundant bit patterns, no exceptions.
