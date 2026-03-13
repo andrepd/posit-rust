@@ -174,41 +174,62 @@ mod tests {
     };
   }
 
-  macro_rules! make_suite {
-    ($macro_name: ident, $name_src:ident, $src:ty) => {
+  macro_rules! suite_exhaustive {
+    ($name_src:ident, $src:ty) => {
       mod $name_src {
         use super::*;
-        $macro_name!{posit_10_0, $src, Posit<10, 0, i16>}
-        $macro_name!{posit_10_1, $src, Posit<10, 1, i16>}
-        $macro_name!{posit_10_2, $src, Posit<10, 2, i16>}
-        $macro_name!{posit_10_3, $src, Posit<10, 3, i16>}
-        $macro_name!{posit_8_0,  $src, Posit<8, 0, i8>}
-        $macro_name!{posit_20_4, $src, Posit<20, 4, i32>}
-        $macro_name!{p8,         $src, crate::p8}
-        $macro_name!{p16,        $src, crate::p16}
-        $macro_name!{p32,        $src, crate::p32}
-        $macro_name!{p64,        $src, crate::p64}
-        $macro_name!{posit_3_0,  $src, Posit<3, 0, i8>}
-        $macro_name!{posit_4_0,  $src, Posit<4, 0, i8>}
-        $macro_name!{posit_4_1,  $src, Posit<4, 1, i8>}
+        test_exhaustive!{posit_10_0_exhaustive, $src, Posit<10, 0, i16>}
+        test_exhaustive!{posit_10_1_exhaustive, $src, Posit<10, 1, i16>}
+        test_exhaustive!{posit_10_2_exhaustive, $src, Posit<10, 2, i16>}
+        test_exhaustive!{posit_10_3_exhaustive, $src, Posit<10, 3, i16>}
+        test_exhaustive!{posit_8_0_exhaustive,  $src, Posit<8, 0, i8>}
+        test_exhaustive!{posit_20_4_exhaustive, $src, Posit<20, 4, i32>}
+        test_exhaustive!{p8_exhaustive,         $src, crate::p8}
+        test_exhaustive!{p16_exhaustive,        $src, crate::p16}
+        test_exhaustive!{p32_exhaustive,        $src, crate::p32}
+        test_exhaustive!{p64_exhaustive,        $src, crate::p64}
+        test_exhaustive!{posit_3_0_exhaustive,  $src, Posit<3, 0, i8>}
+        test_exhaustive!{posit_4_0_exhaustive,  $src, Posit<4, 0, i8>}
+        test_exhaustive!{posit_4_1_exhaustive,  $src, Posit<4, 1, i8>}
       }
     };
   }
 
-  make_suite!{test_proptest, posit_10_0, Posit<10, 0, i16>}
-  make_suite!{test_proptest, posit_10_1, Posit<10, 1, i16>}
-  make_suite!{test_proptest, posit_10_2, Posit<10, 2, i16>}
-  make_suite!{test_proptest, posit_10_3, Posit<10, 3, i16>}
+  macro_rules! suite_proptest {
+    ($name_src:ident, $src:ty) => {
+      mod $name_src {
+        use super::*;
+        test_proptest!{posit_10_0_proptest, $src, Posit<10, 0, i16>}
+        test_proptest!{posit_10_1_proptest, $src, Posit<10, 1, i16>}
+        test_proptest!{posit_10_2_proptest, $src, Posit<10, 2, i16>}
+        test_proptest!{posit_10_3_proptest, $src, Posit<10, 3, i16>}
+        test_proptest!{posit_8_0_proptest,  $src, Posit<8, 0, i8>}
+        test_proptest!{posit_20_4_proptest, $src, Posit<20, 4, i32>}
+        test_proptest!{p8_proptest,         $src, crate::p8}
+        test_proptest!{p16_proptest,        $src, crate::p16}
+        test_proptest!{p32_proptest,        $src, crate::p32}
+        test_proptest!{p64_proptest,        $src, crate::p64}
+        test_proptest!{posit_3_0_proptest,  $src, Posit<3, 0, i8>}
+        test_proptest!{posit_4_0_proptest,  $src, Posit<4, 0, i8>}
+        test_proptest!{posit_4_1_proptest,  $src, Posit<4, 1, i8>}
+      }
+    };
+  }
 
-  make_suite!{test_proptest, posit_8_0, Posit<8, 0, i8>}
-  make_suite!{test_proptest, posit_20_4, Posit<20, 4, i32>}
+  suite_exhaustive!{posit_10_0, Posit<10, 0, i16>}
+  suite_exhaustive!{posit_10_1, Posit<10, 1, i16>}
+  suite_exhaustive!{posit_10_2, Posit<10, 2, i16>}
+  suite_exhaustive!{posit_10_3, Posit<10, 3, i16>}
 
-  make_suite!{test_proptest, p8, crate::p8}
-  make_suite!{test_proptest, p16, crate::p16}
-  make_suite!{test_proptest, p32, crate::p32}
-  make_suite!{test_proptest, p64, crate::p64}
+  suite_exhaustive!{posit_8_0, Posit<8, 0, i8>}
+  suite_exhaustive!{posit_20_4, Posit<20, 4, i32>}
 
-  make_suite!{test_proptest, posit_3_0, Posit<3, 0, i8>}
-  make_suite!{test_proptest, posit_4_0, Posit<4, 0, i8>}
-  make_suite!{test_proptest, posit_4_1, Posit<4, 1, i8>}
+  suite_exhaustive!{p8, crate::p8}
+  suite_exhaustive!{p16, crate::p16}
+  suite_proptest!{p32, crate::p32}
+  suite_proptest!{p64, crate::p64}
+
+  suite_exhaustive!{posit_3_0, Posit<3, 0, i8>}
+  suite_exhaustive!{posit_4_0, Posit<4, 0, i8>}
+  suite_exhaustive!{posit_4_1, Posit<4, 1, i8>}
 }
