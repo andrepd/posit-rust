@@ -148,6 +148,7 @@ pub trait Unsigned:
   core::ops::Shl<u32, Output=Self> +
   core::ops::Shr<u32, Output=Self> +
 {
+  #[expect(dead_code)]
   fn overflowing_add(self, other: Self) -> (Self, bool);
 
   /// Compute the result of `(self << precision).isqrt()`, *without* overflow or loss of precision

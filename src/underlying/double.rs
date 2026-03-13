@@ -54,6 +54,7 @@ impl Double for Pair<i128> {
     todo!()
   }
 
+  #[expect(unreachable_code)]
   fn as_int(self) -> impl super::Int {
     unimplemented!("`i128::Double` is not representable as an `Int`.");
     0

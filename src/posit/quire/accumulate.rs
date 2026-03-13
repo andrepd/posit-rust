@@ -71,6 +71,7 @@ impl<
   }
 
   /*#[inline(always)]*/
+  #[expect(unused_assignments)]
   pub(crate) unsafe fn accumulate_slice(
     &mut self,
     limbs: &[u64],
@@ -130,10 +131,9 @@ impl<
 
     // Part 3: If the quire originally had the same sign as `limbs`, but now has a different sign,
     // there was overflow.
-    let overflow = (
+    let overflow = 
       ((original_sign ^ implicit) as i64) > 0 
-      && ((quire[len_u64 - 1] ^ implicit) as i64) < 0
-    );
+      && ((quire[len_u64 - 1] ^ implicit) as i64) < 0;
     if crate::utl::unlikely(overflow) {
       self.set_nar()
     }
