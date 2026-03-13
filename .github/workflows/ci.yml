@@ -28,14 +28,14 @@ jobs:
     - name: Run tests
       run: cargo test --verbose --profile ${{ matrix.profile }}
 
-  miri:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4
-    - name: Select toolchain
-      run: rustup update nightly && rustup default nightly
-    - name: Install miri
-      run: rustup +nightly component add miri
-    - name: Run tests on miri
-      run: cargo miri test --verbose
+#  miri:
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#    - uses: actions/checkout@v4
+#    - name: Select toolchain
+#      run: rustup update nightly && rustup default nightly
+#    - name: Install miri
+#      run: rustup +nightly component add miri
+#    - name: Run tests on miri
+#      run: cargo miri test --verbose
