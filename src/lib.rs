@@ -17,9 +17,8 @@
 //!   - [Book](https://doi.org/10.1201/9781003466024 ) (2024)
 //!
 //! This crate aims to implement the entire posit standard and beyond, including features such as
-//! arbitrary posit and quire sizes beyond those prescribed by the standard. Versions prior to
-//! 1.0.0, however, may be incomplete. Correctness is ensured via extensive testing against an
-//! oracle.
+//! arbitrary posit and quire sizes, bounded posits, etc. Versions prior to 1.0.0, however,
+//! may be incomplete. Correctness is ensured via extensive testing against an oracle.
 //!
 //! # Usage
 //!
@@ -156,19 +155,35 @@ pub use posit::quire::Quire;
 pub use underlying::Int;
 pub use posit::convert::{RoundFrom, RoundInto};
 
-/// Standard-defined 8-bit posit (with 2-bit exponent).
+/// Standard-defined 8-bit posit (with 2-bit exponent and unbounded regime).
+///
+/// This type is defined in the [2022 standard](https://posithub.org/docs/posit_standard-2.pdf); it
+/// is a special case of the generic [`Posit`] type. If you want a posit with arbitrary size `N`,
+/// exponent size `ES`, and optionally maximum regime size `RS`, see [`Posit<N, ES, RS>`].
 #[allow(non_camel_case_types)]
 pub type p8 = Posit<8, 2, i8>;
 
-/// Standard-defined 16-bit posit (with 2-bit exponent).
+/// Standard-defined 16-bit posit (with 2-bit exponent and unbounded regime).
+///
+/// This type is defined in the [2022 standard](https://posithub.org/docs/posit_standard-2.pdf); it
+/// is a special case of the generic [`Posit`] type. If you want a posit with arbitrary size `N`,
+/// exponent size `ES`, and optionally maximum regime size `RS`, see [`Posit<N, ES, RS>`].
 #[allow(non_camel_case_types)]
 pub type p16 = Posit<16, 2, i16>;
 
-/// Standard-defined 32-bit posit (with 2-bit exponent).
+/// Standard-defined 32-bit posit (with 2-bit exponent and unbounded regime).
+///
+/// This type is defined in the [2022 standard](https://posithub.org/docs/posit_standard-2.pdf); it
+/// is a special case of the generic [`Posit`] type. If you want a posit with arbitrary size `N`,
+/// exponent size `ES`, and optionally maximum regime size `RS`, see [`Posit<N, ES, RS>`].
 #[allow(non_camel_case_types)]
 pub type p32 = Posit<32, 2, i32>;
 
-/// Standard-defined 64-bit posit (with 2-bit exponent).
+/// Standard-defined 64-bit posit (with 2-bit exponent and unbounded regime).
+///
+/// This type is defined in the [2022 standard](https://posithub.org/docs/posit_standard-2.pdf); it
+/// is a special case of the generic [`Posit`] type. If you want a posit with arbitrary size `N`,
+/// exponent size `ES`, and optionally maximum regime size `RS`, see [`Posit<N, ES, RS>`].
 #[allow(non_camel_case_types)]
 pub type p64 = Posit<64, 2, i64>;
 

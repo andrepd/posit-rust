@@ -37,14 +37,41 @@
 //! that `rational(a) + rational(b) == rational(a + b)`, i.e. adding the posits yields the same
 //! result as adding the arbitrary-precision rationals (modulo rounding, of course).
 
-/// A *posit* floating point number with `N` bits and `ES` exponent bits, using `Int` as its
-/// underlying type.
+/// A *posit* floating point number with `N` bits and `ES` exponent bits, optionally with a
+/// maximum regime size `RS` (making it a *b-posit*).
 ///
-/// If `Int` = `iX`, then `N` must be in the range `3 ..= X`, and `ES` must be in the range `0 ..
-/// N`. If this is not the case, a **compile-time** error will be raised.
+// A posit is an alternative floating point format first proposed in 2017
+//
+/// This is a generic type which can be instantiated with any valid combination of parameters
+/// (see below). It implements the functions described in the [2022 standard] (and more), either
+/// via the usual arithmetic operations (addition, negation, comparison, etc) or via named
+/// functions. Rounding conversions to and from other types (integers, IEEE floats, etc) are done
+/// via the [`RoundFrom`](crate::RoundFrom) and [`RoundInto`](crate::RoundInto) traits, which need
+/// to be in scope.
 ///
-/// Type aliases are provided at the [crate root](crate#types) for the posit types defined in
-/// [the standard](https://posithub.org/docs/posit_standard-2.pdf#subsection.3.1).
+/// Refer to the documentation for specific items for more detail, examples, and links to the
+/// definitions in the [2022 standard], if applicable.
+///
+/// If you are looking for [the types prescribed in the 2022 standard], see [`p8`](crate::p8),
+/// [`p16`](crate::p16), [`p32`](crate::p32), and [`p64`](crate::p64), which are simply type
+/// aliases for [`Posit<X, 2, iX>`].
+///
+/// [the types prescribed in the 2022 standard]: https://posithub.org/docs/posit_standard-2.pdf#subsection.3.1
+///
+/// # Parameters
+///
+/// The `N` and `ES` parameters are mandatory, and the `RS` parameter is optional. The parameter
+/// `Int` is the underlying physical storage used for the posit, which must be one of the
+/// primitive types `i8` to `i128`.
+///
+/// If `Int` = `iX`, then
+///
+///   - `N`, the number of bits, must be in the range `3 ..= X`,
+///   - `ES`, the number of exponent bits, must be in the range `0 .. N`.
+///   - `RS`, the maximum number of regime bits, if supplied, must be in the range `1 ..= N`,
+///     otherwise it will default to `N`(unbounded).
+///
+/// If any parameter is invalid, a **compile-time** error will be raised.
 ///
 /// # Example
 ///
@@ -54,19 +81,18 @@
 /// type Foo = Posit<32, 2, i32>;
 /// // A 6-bit posit with 1-bit exponent field, represented in an 8-bit machine type.
 /// type Bar = Posit<6, 1, i8>;
+/// // A 32-bit b-posit with 3-bit exponent field and at most a 6-bit regime field, represented in a 32-bit machine type.
+/// type Baz = Posit<32, 3, i32, 6>;
 /// ```
 ///
-/// The standard [`p8`](crate::p8), [`p16`](crate::p16), [`p32`](crate::p32), and
-/// [`p64`](crate::p64) types are simply type aliases for `Posit<X, 2, iX>`.
-///
 /// Note that `Posit` will have the same size (and alignment) as its `Int` parameter, so it's
-/// currently not possible to create e.g. a 4-bit posit that only takes 4 bits in memory.
+/// currently not possible to create e.g. a 4-bit posit that only actually takes 4 bits in memory.
 ///
-/// If the combination of parameters is invalid, the code will not compile.
+/// These are examples of invalid parameters which will not compile.
 ///
 /// ```compile_fail
 /// # use fast_posit::Posit;
-/// type Foo = Posit<40, 2, i32>;   // N=40 too large for i32
+/// type Foo = Posit<40, 2, i32>;   // N=40 too big for i32
 /// # let _ = Foo::ONE;
 /// ```
 /// ```compile_fail
@@ -79,10 +105,18 @@
 /// type Baz = Posit<32, 33, i32>;  // ES=33 too big for N=32
 /// # let _ = Baz::ONE + Baz::ONE;
 /// ```
+/// ```compile_fail
+/// # use fast_posit::Posit;
+/// type Qux = Posit<32, 2, 33, i32>;  // RS=33 too big for N=32
+/// # let _ = Qux::ONE + Qux::ONE;
+/// ```
+///
+/// [2022 standard]: https://posithub.org/docs/posit_standard-2.pdf
 pub struct Posit<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
+  const RS: u32 = N,
 > (Int);
 
 /// In order to perform most nontrivial operations, a `Posit<N, ES, Int>` needs to be *decoded*

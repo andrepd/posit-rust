@@ -54,8 +54,8 @@ This crate has the following objectives, in order of importance:
   formats in general, you may benefit from reading through this code!
 
 This crate aims to implement the entire posit standard and beyond, including features such as
-arbitrary posit and quire sizes beyond those prescribed by the standard. Versions prior to 1.0.0,
-however, may be incomplete; see the [feature list](#features) below.
+arbitrary posit and quire sizes, bounded posits, etc. Versions prior to 1.0.0, however, may be
+incomplete; see the [feature list](#features) below.
 
 ## Usage
 
