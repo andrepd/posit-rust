@@ -15,7 +15,7 @@ impl<const N: u32, const ES: u32, Int: crate::Int>
 Clone for Posit<N, ES, Int> {
   #[inline]
   fn clone(&self) -> Self {
-    Self(self.0)
+    *self
   }
 }
 
@@ -64,7 +64,7 @@ impl<const N: u32, const ES: u32, Int: crate::Int>
 PartialOrd for Posit<N, ES, Int> {
   #[inline]
   fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-    self.0.partial_cmp(&other.0)
+    Some(self.cmp(other))
   }
 }
 

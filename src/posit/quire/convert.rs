@@ -17,7 +17,7 @@ impl<
             return i as u32 * 64 + quire[idx_last - i].leading_zeros()
           }
         }
-        return quire.len() as u32 * 64
+        quire.len() as u32 * 64
       },
       false => {
         for i in 0 .. quire.len() {
@@ -25,7 +25,7 @@ impl<
             return i as u32 * 64 + quire[idx_last - i].leading_ones()
           }
         }
-        return quire.len() as u32 * 64
+        quire.len() as u32 * 64
       },
     }
   }
@@ -93,10 +93,9 @@ impl<
     // any casts to `Int`. To ensure this does not introduce a branch where it's not needed
     // (i.e. where there's no risk of any `exp` overflowing), we keep that behind an `if const`.
     let value_width = Quire::<N, ES, SIZE>::BITS - leading;
-    if const { Int::BITS <= 8 } {
-      if value_width > 2 * Quire::<N, ES, SIZE>::WIDTH + 1 {
-        return if quire[idx_last].is_positive() {Posit::MAX} else {Posit::MIN}
-      }
+    if const { Int::BITS <= 8 }
+    && value_width > 2 * Quire::<N, ES, SIZE>::WIDTH + 1 {
+      return if quire[idx_last].is_positive() {Posit::MAX} else {Posit::MIN}
     }
     let exp = Int::of_u32(value_width) - Int::of_u32(Quire::<N, ES, SIZE>::WIDTH) - Int::ONE - Int::ONE;
 

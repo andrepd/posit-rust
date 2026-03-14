@@ -82,7 +82,7 @@ impl<
   /// the slice len :)
   #[inline(always)]
   pub(crate) const fn as_u64_array(&self) -> &[u64] {
-    const { assert!(SIZE % 8 == 0, "Quire SIZE must be a multiple of 64 bits (8 bytes)"); }
+    const { assert!(SIZE.is_multiple_of(8), "Quire SIZE must be a multiple of 64 bits (8 bytes)"); }
     const { assert!(cfg!(target_endian = "little"), "Big-endian targets are not currently supported") }
     let ptr = self.0.as_ptr() as *const u64;
     // SAFETY: ptr and len form a valid slice; the size and alignment is correct, and any bit
@@ -92,7 +92,7 @@ impl<
 
   #[inline(always)]
   pub(crate) const fn as_u64_array_mut(&mut self) -> &mut [u64] {
-    const { assert!(SIZE % 8 == 0, "Quire SIZE must be a multiple of 64 bits (8 bytes)"); }
+    const { assert!(SIZE.is_multiple_of(8), "Quire SIZE must be a multiple of 64 bits (8 bytes)"); }
     const { assert!(cfg!(target_endian = "little"), "Big-endian targets are not currently supported") }
     let ptr = self.0.as_mut_ptr() as *mut u64;
     // SAFETY: ptr and len form a valid slice; the size and alignment is correct, and any bit
@@ -149,7 +149,7 @@ impl<
     // accumulated `2 ^ M` times, where `M` is the difference between that and this quire's
     // `SIZE`, before it overflows.
     let min_size_bits = 4 * Self::MAX_EXP + 1;
-    Self::BITS as u32 - min_size_bits
+    Self::BITS - min_size_bits
   };
 
   /// The minimum number of additions of posits that can lead to overflow is
@@ -167,7 +167,7 @@ impl<
     // accumulated `2 ^ M` times, where `M` is the difference between that and this quire's
     // `SIZE`, before it overflows.
     let min_size_bits = 3 * Self::MAX_EXP + 1;
-    Self::BITS as u32 - min_size_bits
+    Self::BITS - min_size_bits
   };
 
   /// The position of the fixed point, that is: "1.0" is represented in the quire as `1 << WIDTH`.
