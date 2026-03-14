@@ -11,16 +11,16 @@ use super::*;
 //
 // Because of that we just implement explicitly here.
 
-impl<const N: u32, const ES: u32, Int: crate::Int>
-Clone for Posit<N, ES, Int> {
+impl<const N: u32, const ES: u32, const RS: u32, Int: crate::Int>
+Clone for Posit<N, ES, Int, RS> {
   #[inline]
   fn clone(&self) -> Self {
     *self
   }
 }
 
-impl<const N: u32, const ES: u32, Int: crate::Int>
-Copy for Posit<N, ES, Int> {}
+impl<const N: u32, const ES: u32, const RS: u32, Int: crate::Int>
+Copy for Posit<N, ES, Int, RS> {}
 
 /// Note that, **unlike IEEE floats**, [NaR](Self::NAR) is equal to itself (and different from any
 /// other value).
@@ -35,16 +35,16 @@ Copy for Posit<N, ES, Int> {}
 /// assert!(p32::NAR != 3.round_into());
 /// assert!(f32::NAN != 3.);
 /// ```
-impl<const N: u32, const ES: u32, Int: crate::Int>
-PartialEq for Posit<N, ES, Int> {
+impl<const N: u32, const ES: u32, const RS: u32, Int: crate::Int>
+PartialEq for Posit<N, ES, Int, RS> {
   #[inline]
   fn eq(&self, other: &Self) -> bool {
     self.0 == other.0
   }
 }
 
-impl<const N: u32, const ES: u32, Int: crate::Int>
-Eq for Posit<N, ES, Int> {}
+impl<const N: u32, const ES: u32, const RS: u32, Int: crate::Int>
+Eq for Posit<N, ES, Int, RS> {}
 
 /// Note that, **unlike IEEE floats**, posits have a total order (i.e. implement [`Ord`]).
 /// [NaR](Self::NAR) is always smaller than any other value, and equal to itself.
@@ -60,32 +60,32 @@ Eq for Posit<N, ES, Int> {}
 /// assert!(p32::NAR < p32::round_from(-3));
 /// assert!(!(f32::NAN < -3.) && !(f32::NAN >= -3.));
 /// ```
-impl<const N: u32, const ES: u32, Int: crate::Int>
-PartialOrd for Posit<N, ES, Int> {
+impl<const N: u32, const ES: u32, const RS: u32, Int: crate::Int>
+PartialOrd for Posit<N, ES, Int, RS> {
   #[inline]
   fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
     Some(self.cmp(other))
   }
 }
 
-impl<const N: u32, const ES: u32, Int: crate::Int>
-Ord for Posit<N, ES, Int> {
+impl<const N: u32, const ES: u32, const RS: u32, Int: crate::Int>
+Ord for Posit<N, ES, Int, RS> {
   #[inline]
   fn cmp(&self, other: &Self) -> core::cmp::Ordering {
     self.0.cmp(&other.0)
   }
 }
 
-impl<const N: u32, const ES: u32, Int: crate::Int>
-core::hash::Hash for Posit<N, ES, Int> {
+impl<const N: u32, const ES: u32, const RS: u32, Int: crate::Int>
+core::hash::Hash for Posit<N, ES, Int, RS> {
   #[inline]
   fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
     self.0.hash(state);
   }
 }
 
-impl<const N: u32, const ES: u32, Int: crate::Int>
-Default for Posit<N, ES, Int> {
+impl<const N: u32, const ES: u32, const RS: u32, Int: crate::Int>
+Default for Posit<N, ES, Int, RS> {
   #[inline]
   fn default() -> Self {
     Self(Default::default())
