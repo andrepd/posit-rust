@@ -20,7 +20,7 @@ impl<
   pub const BITS: u32 = {
     assert!(
       N >= 3,
-      "A posit cannot have fewer than 3 bits",
+      "A posit cannot have fewer than 3 bits.",
     );
     assert!(
       N <= Int::BITS,
@@ -41,7 +41,7 @@ impl<
   pub const ES: u32 = {
     assert!(
       ES <= N,
-      "Cannot use a number of exponent bits ES higher than the number of total bits N",
+      "The number of exponent bits ES cannot be higher than the number of total bits N.",
     );
     // The value of ES isn't completely arbitrary. Very extreme values of ES would cause the maximum
     // exponent to overflow the width of the `Int` type. Therefore, we check this at compile-time.

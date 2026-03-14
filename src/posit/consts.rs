@@ -116,7 +116,7 @@ impl<
   }
 
   /// The maximum exponent; [`Self::MAX`] = 2 <sup>[`Self::MAX_EXP`]</sup>. Equal to `-MIN_EXP`.
-  pub const MAX_EXP: Int = {
+  pub(crate) const MAX_EXP: Int = {
     let max_regime = N as i128 - 2;
     let max_exp = max_regime << ES;
     const_as(max_exp)
@@ -124,7 +124,7 @@ impl<
 
   /// The minimum exponent; [`Self::MIN_POSITIVE`] = 2 <sup>[`Self::MIN_EXP`]</sup>. Equal to
   /// `-MAX_EXP`.
-  pub const MIN_EXP: Int = {
+  pub(crate) const MIN_EXP: Int = {
     let max_regime = N as i128 - 2;
     let min_exp = -(max_regime << ES);
     const_as(min_exp)
