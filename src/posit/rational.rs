@@ -174,7 +174,26 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> Posit<N, ES, Int> {
+> Posit<N, ES, Int>
+where
+  Rational: TryFrom<Posit<N, ES, Int>, Error = IsNaR>,
+{
+  const MAX_RATIONAL: LazyLock<Rational> = LazyLock::new(||
+    Rational::try_from(Posit::<N, ES, Int>::MAX).unwrap()
+  );
+
+  const MIN_POSITIVE_RATIONAL: LazyLock<Rational> = LazyLock::new(||
+    Rational::try_from(Posit::<N, ES, Int>::MIN_POSITIVE).unwrap()
+  );
+
+  const MAX_NEGATIVE_RATIONAL: LazyLock<Rational> = LazyLock::new(||
+    Rational::try_from(Posit::<N, ES, Int>::MAX_NEGATIVE).unwrap()
+  );
+
+  const MIN_RATIONAL: LazyLock<Rational> = LazyLock::new(||
+    Rational::try_from(Posit::<N, ES, Int>::MIN).unwrap()
+  );
+
   /// Values inside this range have *arithmetic rounding*. Values outside (if any) have *geometric
   /// rounding*.
   const ARITHMETIC_ROUNDING: LazyLock<RangeInclusive<Rational>> = LazyLock::new(|| {
@@ -211,17 +230,17 @@ where
 
   // Overflow case: if `exact` is > MAX, < MIN, > 0 and < MIN_POSITIVE, or < 0 and > MAX_NEGATIVE
   if exact > Rational::from(0) {
-    if exact >= Rational::try_from(Posit::<N, ES, Int>::MAX).unwrap() {
+    if exact >= *Posit::<N, ES, Int>::MAX_RATIONAL {
       return posit == Posit::<N, ES, Int>::MAX
     }
-    else if exact <= Rational::try_from(Posit::<N, ES, Int>::MIN_POSITIVE).unwrap() {
+    else if exact <= *Posit::<N, ES, Int>::MIN_POSITIVE_RATIONAL {
       return posit == Posit::<N, ES, Int>::MIN_POSITIVE
     }
   } else if exact < Rational::from(0) {
-    if exact <= Rational::try_from(Posit::<N, ES, Int>::MIN).unwrap() {
+    if exact <= *Posit::<N, ES, Int>::MIN_RATIONAL {
       return posit == Posit::<N, ES, Int>::MIN
     }
-    else if exact >= Rational::try_from(Posit::<N, ES, Int>::MAX_NEGATIVE).unwrap() {
+    else if exact >= *Posit::<N, ES, Int>::MAX_NEGATIVE_RATIONAL {
       return posit == Posit::<N, ES, Int>::MAX_NEGATIVE
     }
   }
