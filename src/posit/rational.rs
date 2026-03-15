@@ -1,30 +1,18 @@
-use super::*;
-
-use crate::Quire;
+use super::{Posit, Decoded, quire::Quire};
 
 use malachite::{Integer, rational::Rational};
 use malachite::base::num::arithmetic::traits::{PowerOf2, Pow, Abs, Reciprocal};
 
 /// A shortcut trait with a couple helper functions.
 pub trait IntExt: crate::Int {
-  fn pow(self, other: Self) -> Rational {
-    let exp: i128 = other.into();
-    let exp: i64 = exp.try_into().expect("Exponent overflow in converting to rational");
-    Rational::pow(Rational::from(self.into()), exp)
-  }
-
   fn power_of_2(self) -> Rational {
     let exp: i128 = self.into();
-    let exp: i64 = exp.try_into().expect("Exponent overflow in converting to rational");
+    let exp: i64 = exp.try_into().expect("Exponent overflow when converting to rational");
     Rational::power_of_2(exp)
   }
 }
 
-impl IntExt for i128 {}
-impl IntExt for i64 {}
-impl IntExt for i32 {}
-impl IntExt for i16 {}
-impl IntExt for i8 {}
+impl<T: crate::Int> IntExt for T {}
 
 /// The error type returned when a [Posit] cannot be converted to a [Rational] because it is
 /// [NaR](Posit::NAR).
@@ -38,9 +26,7 @@ impl<
   Int: IntExt,
 > Posit<N, ES, Int>
 where
-  Integer: From<Int>,
-  Rational: From<Int>,
-  Rational: From<Int::Unsigned>,
+  Rational: From<Int::Unsigned> + From<i32>,
 {
   /// Convert a posit **which is not 0 or NaR** into a [Rational] value. Panics if `self` is 0 or
   /// NaR.
@@ -56,7 +42,7 @@ where
 
     // First extract the sign; the rest of the algorithm takes place with the two's complement
     // absolute value of the posit.
-    let sign = !x.is_positive();
+    let is_positive = x.is_positive();
     let x = x.abs();
 
     // Shift out the sign bit (N-1), the next one (N-2) is the sign of the regime. If it's 0, we
@@ -107,10 +93,10 @@ where
     // Assemble the final number
     let useed = IntExt::power_of_2(Int::ONE << Self::ES);
 
-    let sign = (-Int::ONE).pow(Int::from(sign));
+    let sign = if is_positive {Rational::from(1)} else {Rational::from(-1)};
     let regime = useed.pow(regime as i64);
     let exponent = IntExt::power_of_2(exponent);
-    let fraction = Rational::from(Int::ONE) + (Rational::from(fraction) / Rational::power_of_2(Int::BITS as i64));
+    let fraction = Rational::from(1) + (Rational::from(fraction) / Rational::power_of_2(Int::BITS as i64));
 
     sign * regime * exponent * fraction
   }
@@ -122,15 +108,13 @@ impl<
   Int: IntExt,
 > TryFrom<Posit<N, ES, Int>> for Rational
 where
-  Integer: From<Int>,
-  Rational: From<Int>,
-  Rational: From<Int::Unsigned>,
+  Rational: From<Int::Unsigned> + From<i32>,
 {
   type Error = IsNaR;
 
   fn try_from(value: Posit<N, ES, Int>) -> Result<Self, Self::Error> {
     if value == Posit::ZERO {
-      Ok(Rational::from(Int::ZERO))
+      Ok(Rational::from(0))
     } else if value == Posit::NAR {
       Err(IsNaR)
     } else {
@@ -174,7 +158,7 @@ impl<
 
       for rest in bytes {  // The other bytes are unsigned u8
         numerator *= Integer::from(1 << 8);
-        numerator += Integer::from(*rest as i16);
+        numerator += Integer::from(*rest);
       };
 
       let denominator = Integer::power_of_2(Quire::<N, ES, BYTES>::WIDTH as u64);
@@ -199,11 +183,11 @@ where
   Rational: TryFrom<Posit<N, ES, Int>, Error = IsNaR>,
 {
   // Only the exact number 0 is rounded to posit 0.
-  if posit == Posit::<N, ES, Int>::ZERO { return exact == Rational::from(0) }
+  if posit == Posit::ZERO { return exact == Rational::from(0) }
   // No number is rounded to posit NaR.
-  if posit == Posit::<N, ES, Int>::NAR { return false }
+  if posit == Posit::NAR { return false }
 
-  // Overflow case: if exact is > MAX, < MIN, > 0 and < MIN_POSITIVE, or < 0 and > MAX_NEGATIVE
+  // Overflow case: if `exact` is > MAX, < MIN, > 0 and < MIN_POSITIVE, or < 0 and > MAX_NEGATIVE
   if exact > Rational::from(0) {
     if exact >= Rational::try_from(Posit::<N, ES, Int>::MAX).unwrap() {
       return posit == Posit::<N, ES, Int>::MAX
@@ -218,8 +202,10 @@ where
     else if exact >= Rational::try_from(Posit::<N, ES, Int>::MAX_NEGATIVE).unwrap() {
       return posit == Posit::<N, ES, Int>::MAX_NEGATIVE
     }
-  } else {
-    unreachable!()
+  }
+  // If `exact` is 0, the posit must be 0 (reverse of the case at the start)
+  else {
+    return posit == Posit::ZERO
   }
 
   // Remaining cases: round to nearest (arithmetic nearest, or geometric nearest *only if* exponent
@@ -272,6 +258,8 @@ where
   }
 }
 
+/// Check whether rational number `exact` should be rounded to `posit`. It is `Posit::NAR` if and
+/// only if `exact` is `IsNaR`.
 pub fn try_is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(
   exact: Result<Rational, IsNaR>,
   posit: Posit<N, ES, Int>,
