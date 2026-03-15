@@ -5,7 +5,8 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> Posit<N, ES, Int> {
+  const RS: u32,
+> Posit<N, ES, Int, RS> {
   /// The size of this Posit type in bits (i.e. parameter `N`).
   ///
   /// Note: this is the logical size, not necessarily the size of the underlying type.
@@ -73,6 +74,32 @@ impl<
       want this many.",
     );
     ES
+  };
+
+  /// The maximum number of regime bits (i.e. parameter `RS`).
+  ///
+  /// If this is not a *b-posit* (i.e. no non-default `RS` parameter is given), there is no bound
+  /// on the number of regime bits, and this is equal to [`BITS`](Self::BITS).
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # use fast_posit::*;
+  /// assert_eq!(p16::RS, 16);                     // Standard posit, no cap on regime bits
+  /// assert_eq!(Posit::<20, 1, i32>::RS, 20);     // Non-standard posit, no cap on regime bits
+  /// assert_eq!(Posit::<32, 5, i32, 6>::RS, 6);   // Non-standard b-posit, regime bits capped at 6
+  /// ```
+  pub const RS: u32 = {
+    assert!(
+      RS <= N,
+      "The cap on regime bits RS cannot be higher than the number of total bits N.",
+    );
+    assert!(
+      RS > 0,
+      "The regime field cannot be empty (note: a 1-bit regime field is valid and yields a \
+      \"sane-float\" with fixed-size exponent and fraction fields and no tapered accuracy).",
+    );
+    RS
   };
 
   /// When representing an `N`-bit posit using a machine type whose width is `M`, the leftmost
@@ -203,6 +230,9 @@ impl<
 
   /// As [`Posit::ES`].
   pub const ES: u32 = Posit::<N, ES, Int>::ES;
+
+  /// As [`Posit::RS`].
+  pub const RS: u32 = Posit::<N, ES, Int>::RS;
 
   /// As [`Posit::JUNK_BITS`].
   pub(crate) const JUNK_BITS: u32 = Posit::<N, ES, Int>::JUNK_BITS;
