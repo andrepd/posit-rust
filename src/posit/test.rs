@@ -51,15 +51,18 @@ impl<
   Int: crate::Int,
 > Decoded<N, ES, Int> {
   /// Range of the absolute values of frac bit patterns, i.e. any number with leading `0b01`.
-  const RANGE_FRAC_ABS: Range<i128> =
-    (i128::MIN as u128 >> (128 - Int::BITS) >> 1) as i128
-    .. (i128::MIN as u128 >> (128 - Int::BITS)) as i128;
+  const RANGE_FRAC_ABS: Range<i128> = {
+    let frac_one: u128 = i128::MIN as u128 >> (128 - Int::BITS) >> 1;
+    let frac_two: u128 = i128::MIN as u128 >> (128 - Int::BITS);
+    frac_one as i128 .. frac_two as i128
+  };
 
   /// Range of the valid exponents, i.e. `3 * MIN_EXP ..= 3 * MAX_EXP`, which is the max value we
   /// guarantee is representable in a [Decoded].
-  const RANGE_EXP: RangeInclusive<i128> =
-    -3 * ((Self::BITS as i128 - 2) << Self::ES)
-    ..= 3 * ((Self::BITS as i128 - 2) << Self::ES);
+  const RANGE_EXP: RangeInclusive<i128> = {
+    let max_exp: i128 = const_as(Posit::<N, ES, Int>::MAX_EXP);
+    -3 * max_exp ..= 3* max_exp
+  };
 
   /// An iterator through **all the valid values of [Self]**, including values that do not
   /// correspond exactly to a `posit.decode_regular()` call and hence need to be rounded.
