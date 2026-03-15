@@ -114,8 +114,12 @@ impl<
   /// quire is directly related to this (see [`Self::MIN_SIZE`] and [`Self::WIDTH`] below).
   pub(crate) const MAX_EXP: u32 = {
     assert!(ES < 20, "Cannot use the quire with very high ES (≥ 20)");
-    let max_regime = N - 2;
-    max_regime << ES
+    let max_exp = Posit::<N, ES, i128>::MAX_EXP;
+    if 0 <= max_exp && max_exp < 1 << 31 {
+      max_exp as u32
+    } else {
+      unreachable!()
+    }
   };
 
   /// The minimum [`SIZE`](Self::SIZE) of a quire for [`Posit<N, ES, Int>`], in bytes.

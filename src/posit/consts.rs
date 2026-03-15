@@ -115,19 +115,20 @@ impl<
     unreachable!()
   }
 
-  /// The maximum exponent; [`Self::MAX`] = 2 <sup>[`Self::MAX_EXP`]</sup>. Equal to `-MIN_EXP`.
-  pub(crate) const MAX_EXP: Int = {
-    let max_regime = N as i128 - 2;
-    let max_exp = max_regime << ES;
-    const_as(max_exp)
+  /// The maximum (absolute value of the) regime.
+  ///
+  /// It is equal to 1 less than the maximum length of the regime, therefore equal to
+  /// `Self::BITS - 2` or `Self::RS`, whichever is larger.
+  pub(crate) const MAX_REGIME: u32 = {
+    if RS >= N - 2 {N - 2} else {RS}
   };
 
-  /// The minimum exponent; [`Self::MIN_POSITIVE`] = 2 <sup>[`Self::MIN_EXP`]</sup>. Equal to
-  /// `-MAX_EXP`.
-  pub(crate) const MIN_EXP: Int = {
-    let max_regime = N as i128 - 2;
-    let min_exp = -(max_regime << ES);
-    const_as(min_exp)
+  /// The maximum exponent; [`Self::MAX`] = 2 <sup>[`Self::MAX_EXP`]</sup>. Equal to
+  /// `-MIN_EXP`.
+  pub(crate) const MAX_EXP: Int = {
+    let max_regime = Self::MAX_REGIME as i128;
+    let max_exp = max_regime << ES;
+    const_as(max_exp)
   };
 }
 

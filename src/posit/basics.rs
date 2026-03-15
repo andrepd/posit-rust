@@ -46,19 +46,28 @@ impl<
     // The value of ES isn't completely arbitrary. Very extreme values of ES would cause the maximum
     // exponent to overflow the width of the `Int` type. Therefore, we check this at compile-time.
     //
+    // TODO: in the future, statically use a wider type to store the `exp` in `Decoded` if and only
+    // if the maximum exponent overflows the width of a single `Int`. This is currently awkward to
+    // do... but it means users are forced to use a wider machine type than needed for types with
+    // a very large ES.
+    //
     // The maximum exponent is 2 ^ Self::MAX_EXP. However, for guarding against overflow in all
     // operations in the Posit standard, it's also really helpful to represent quantities up to
-    // (2 ^ Self::MAX_EXP) ^ 3 = 2 ^ (3 * Self::MAX_EXP). Rounding up to a clean number, we require
-    // the number 4 * Self::MAX_EXP (exclusive) to be representable in an `Int`.
+    // (2 ^ MAX_EXP) ^ 3 = 2 ^ (3 * MAX_EXP). Rounding up to a clean number, we require that the
+    // number 4 * MAX_EXP (exclusive) be representable in an `Int`.
     //
-    // Self::MAX_EXP is (N-2) * 2^ES, so our requirement is 4 * (N-2) * 2^ES < 2 ^ Int::BITS, or
-    // N - 2 < 2 ^ (Int::BITS - ES - 2).
+    // `Self::MAX_EXP` is `Self::MAX_REGIME * 2^ES`, so our requirement is 
     //
-    // To make Rust allow this to go in compile-time (const), we round (N-2) down to the nearest
-    // power of two and take the log, i.e. we check 2 ^ floor(log(N-2)) < 2 ^ (Int::BITS - ES - 2)
-    // or finally floor(log(N-2)) < Int::BITS - ES - 2.
+    //      4 * Self::MAX_REGIME * 2^ES < 2 ^ Int::BITS
+    //   => Self::MAX_REGIME < 2 ^ (Int::BITS - ES - 2)
+    //
+    // To make Rust allow this to go in compile-time (const), we round `Self::MAX_REGIME` down to
+    // the nearest power of two and take the log, i.e. we assert
+    //
+    //      2 ^ floor(log(Self::MAX_REGIME)) < 2 ^ (Int::BITS - ES - 2)
+    //   => floor(log(Self::MAX_REGIME)) < Int::BITS - ES - 2.
     assert!(
-      (N - 2).ilog2() + ES + 2 < Int::BITS,
+      Self::MAX_REGIME.ilog2() + ES + 2 < Int::BITS,
       "The chosen ES is too big for this combination of N and underlying Int type. Consider \
       lowering the number of exponent bits, or choosing a bigger underlying Int if you really \
       want this many.",
