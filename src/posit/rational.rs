@@ -167,6 +167,28 @@ impl<
   }
 }
 
+use std::sync::LazyLock;
+use std::ops::RangeInclusive;
+
+impl<
+  const N: u32,
+  const ES: u32,
+  Int: crate::Int,
+> Posit<N, ES, Int> {
+  /// Values inside this range have *arithmetic rounding*. Values outside (if any) have *geometric
+  /// rounding*.
+  const ARITHMETIC_ROUNDING: LazyLock<RangeInclusive<Rational>> = LazyLock::new(|| {
+    // If `1 + regime_len + 1 + Self::ES > Self::BITS`, i.e. on the edges of the posit's dynamic
+    // range, some exponent bits are chopped and hence we are in a region of geometric rounding.
+    //
+    // So if `regime_len ≤ Self::BITS - 2 - Self::ES`, we are in the arithmetic rounding region,
+    // otherwise we're on the geometric rounding region. This `regime_len` corresponds to an
+    // exponent of `(Self::BITS - 2 - Self::ES) << Self::ES`..
+    let geometric_cutoff = Rational::power_of_2(((N - 2 - ES) as i64) << ES);
+    (&geometric_cutoff).reciprocal() ..= geometric_cutoff
+  });
+}
+
 /// Check whether the rational number `exact` should be rounded to `posit`.
 ///
 ///   - Over- or under-flow (exponent < [Posit::MIN_EXP] or > [Posit::MIN_EXP]: round to
@@ -210,23 +232,12 @@ where
 
   // Remaining cases: round to nearest (arithmetic nearest, or geometric nearest *only if* exponent
   // bits are cut). `distance` uses arithmetic or geometric distance accordingly.
-  let distance = {
-    // If `1 + regime_len + 1 + Self::ES > Self::BITS`, i.e. on the edges of the posit's dynamic
-    // range, some exponent bits are chopped and hence we are in a region of geometric rounding.
-    //
-    // So if `regime_len ≤ Self::BITS - 2 - Self::ES`, we are in the arithmetic rounding region,
-    // otherwise we're on the geometric rounding region. This `regime_len` corresponds to an
-    // exponent of `(Self::BITS - 2 - Self::ES) << Self::ES`..
-    let geometric_cutoff = Rational::power_of_2(((N - 2 - ES) as i64) << ES);
-    let arithmetic_range = (&geometric_cutoff).reciprocal() ..= geometric_cutoff;
-    let is_arithmetic_rounding = arithmetic_range.contains(&(&exact).abs());
-
-    move |x: &Rational, y: &Rational| {
-      if is_arithmetic_rounding {
-        x-y
-      } else {
-        if x.abs() >= y.abs() {x/y} else {y/x}
-      }
+  let distance = |x: &Rational, y: &Rational| {
+    let arithmetic_range = Posit::<N, ES, Int>::ARITHMETIC_ROUNDING;
+    if arithmetic_range.contains(&(&exact).abs()) {
+      x-y
+    } else {
+      if x.abs() >= y.abs() {x/y} else {y/x}
     }
   };
 
