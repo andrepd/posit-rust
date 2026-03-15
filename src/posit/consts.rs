@@ -5,7 +5,8 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> Posit<N, ES, Int> {
+  const RS: u32,
+> Posit<N, ES, Int, RS> {
   /// Zero (`0`), the additive identity element.
   pub const ZERO: Self = Self(Int::ZERO);
 
@@ -153,6 +154,10 @@ mod tests {
       Rational::try_from(Posit::<10, 1, i16>::ZERO),
       Ok(Rational::from(0)),
     );
+    assert_eq!(
+      Posit::<16, 5, i16, 6>::ZERO.to_bits(),
+      0,
+    );
   }
 
   #[test]
@@ -168,6 +173,10 @@ mod tests {
     assert_eq!(
       Rational::try_from(Posit::<10, 1, i16>::NAR),
       Err(super::rational::IsNaR),
+    );
+    assert_eq!(
+      Posit::<16, 5, i16, 6>::NAR.to_bits(),
+      0b1000_0000_0000_0000,
     );
   }
 
@@ -185,6 +194,10 @@ mod tests {
       Rational::try_from(Posit::<10, 1, i16>::MIN_POSITIVE),
       Ok(Rational::from_signeds(1, (1i64 << 2).pow(10 - 2))),
     );
+    assert_eq!(
+      Posit::<16, 5, i16, 6>::MIN_POSITIVE.to_bits(),
+      0b000000_00_0000_0001,
+    );
   }
 
   #[test]
@@ -200,6 +213,10 @@ mod tests {
     assert_eq!(
       Rational::try_from(Posit::<10, 1, i16>::MAX),
       Ok(Rational::from((1i64 << 2).pow(10 - 2))),
+    );
+    assert_eq!(
+      Posit::<16, 5, i16, 6>::MAX.to_bits(),
+      0b0111_1111_1111_1111,
     );
   }
 
@@ -217,6 +234,10 @@ mod tests {
       Rational::try_from(Posit::<10, 1, i16>::MAX_NEGATIVE),
       Ok(-Rational::from_signeds(1, (1i64 << 2).pow(10 - 2))),
     );
+    assert_eq!(
+      Posit::<16, 5, i16, 6>::MAX_NEGATIVE.to_bits(),
+      0b1111_1111_1111_1111,
+    );
   }
 
   #[test]
@@ -232,6 +253,10 @@ mod tests {
     assert_eq!(
       Rational::try_from(Posit::<10, 1, i16>::MIN),
       Ok(-Rational::from((1i64 << 2).pow(10 - 2))),
+    );
+    assert_eq!(
+      Posit::<16, 5, i16, 6>::MIN.to_bits(),
+      0b1000_0000_0000_0001,
     );
   }
 
@@ -249,6 +274,10 @@ mod tests {
       Rational::try_from(Posit::<10, 1, i16>::ONE),
       Ok(Rational::from(1)),
     );
+    assert_eq!(
+      Posit::<16, 5, i16, 6>::ONE.to_bits(),
+      0b0100_0000_0000_0000,
+    );
   }
 
   #[test]
@@ -265,11 +294,15 @@ mod tests {
       Rational::try_from(Posit::<10, 1, i16>::MINUS_ONE),
       Ok(-Rational::from(1)),
     );
+    assert_eq!(
+      Posit::<16, 5, i16, 6>::MINUS_ONE.to_bits(),
+      0b1100_0000_0000_0000,
+    );
   }
 
   #[test]
   fn int_max() {
-    fn exhaustive<const N: u32, const ES: u32, Int: crate::Int>() {
+    fn b_exhaustive<const N: u32, const ES: u32, Int: crate::Int, const RS: u32>() {
       use crate::RoundInto;
       // All numbers from 0 to INT_MAX round-trip losslessly to posit
       let int_max: i32 = const_as(Posit::<N, ES, Int>::INT_MAX);
@@ -284,6 +317,9 @@ mod tests {
       let re_int_invalid: i32 = posit_invalid.round_into();
       assert_ne!(int_invalid, re_int_invalid)
     }
+    fn exhaustive<const N: u32, const ES: u32, Int: crate::Int>() {
+      b_exhaustive::<N, ES, Int, N>()
+    }
 
     exhaustive::<10, 0, i16>();
     exhaustive::<10, 1, i16>();
@@ -293,10 +329,11 @@ mod tests {
     exhaustive::<8, 2, i8>();
     exhaustive::<16, 2, i16>();
     exhaustive::<32, 2, i32>();
-    exhaustive::<32, 2, i32>();
     exhaustive::<3, 0, i8>();
     exhaustive::<4, 0, i8>();
     exhaustive::<4, 1, i8>();
+    b_exhaustive::<8, 3, i8, 6>();
+    b_exhaustive::<16, 5, i16, 6>();
   }
 
   /// Aux function: the max value of an n-bit posit with 2-bit exponent (as per the standard).
