@@ -29,10 +29,9 @@ impl<
 
     // Shift out the JUNK_BITS, if they exist
     let x = self.0 << Self::JUNK_BITS;
-    debug_assert!(
-      x != Int::ZERO && x != Int::MIN,
-      "Safety precondition violated: {self:?} cannot be 0 or NaR",
-    );
+
+    // Assume **input** invariants.
+    unsafe { core::hint::assert_unchecked(x != Int::ZERO && x != Int::MIN) }
 
     // Shift out the sign bit and count length of the initial run of 0s or 1s. `regime_raw` will be
     // that value minus 1.
@@ -124,7 +123,17 @@ impl<
     // emit either a `|` or a `+`.
     let frac = unsafe { Int::disjoint_bitor(Int::MIN.lshr(u32::from(x.is_positive())), fraction) };
     let exp = unsafe { Int::disjoint_bitor(regime << Self::ES, exponent) };
-    Decoded{frac, exp}
+
+    let decoded = Decoded{frac, exp};
+
+    // Assume **output** invariants.
+    unsafe {
+      core::hint::assert_unchecked(decoded.is_normalised());
+      core::hint::assert_unchecked(x >> (Int::BITS - 1) == frac >> (Int::BITS - 1));
+      core::hint::assert_unchecked(x.is_positive() == frac.is_positive());
+    }
+
+    decoded
   }
 
   /// Decode a posit. The core logic lives in [Self::decode_regular].

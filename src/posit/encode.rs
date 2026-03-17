@@ -21,10 +21,8 @@ impl<
   /// [`self.is_normalised()`](Self::is_normalised) has to hold, or calling this function
   /// is *undefined behaviour*.
   pub(crate) unsafe fn encode_regular_round(self, mut sticky: Int) -> Posit<N, ES, Int> {
-    debug_assert!(
-      self.is_normalised(),
-      "Safety precondition violated: {:?} cannot have an underflowing frac or overflowing exp", self,
-    );
+    // Assume **input** invariants.
+    unsafe { core::hint::assert_unchecked(self.is_normalised()) }
 
     // Start by extracting the regime part of the exponent (bits higher than the lowest ES).
     let regime = self.exp >> ES;
@@ -200,7 +198,17 @@ impl<
 
     // Assemble the final result, and return
     let bits = all_bits + Int::from(round_up & !regime_overflow);
-    unsafe { Posit::from_bits_unchecked(bits | Int::from(regime_overflow)) }
+    let posit = unsafe { Posit::from_bits_unchecked(bits | Int::from(regime_overflow)) };
+
+    // Assume **output** invariants.
+    unsafe {
+      core::hint::assert_unchecked(posit != Posit::ZERO && posit != Posit::NAR);
+      core::hint::assert_unchecked(!posit.is_special());
+      core::hint::assert_unchecked(self.frac >> (Int::BITS - 1) == posit.0 >> (Int::BITS - 1));
+      core::hint::assert_unchecked(self.frac.is_positive() == posit.0.is_positive());
+    }
+
+    posit
   }
 
   /// Encode a posit, **ignoring rounding**.
@@ -216,10 +224,7 @@ impl<
   /// is *undefined behaviour*.
   #[inline]
   pub(crate) unsafe fn encode_regular(self) -> Posit<N, ES, Int> {
-    debug_assert!(
-      self.is_normalised(),
-      "Safety precondition violated: {:?} cannot have an underflowing frac or overflowing exp", self,
-    );
+    unsafe { core::hint::assert_unchecked(self.is_normalised()) }
     // TODO: bench vs specialised impl
     unsafe { self.encode_regular_round(Int::ZERO) }
   }
