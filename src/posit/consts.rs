@@ -334,6 +334,7 @@ mod tests {
     exhaustive::<4, 1, i8>();
     b_exhaustive::<8, 3, i8, 6>();
     b_exhaustive::<16, 5, i16, 6>();
+    b_exhaustive::<20, 5, i32, 6>();
   }
 
   /// Aux function: the max value of an n-bit posit with 2-bit exponent (as per the standard).
