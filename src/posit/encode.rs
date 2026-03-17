@@ -4,7 +4,7 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> Decoded<N, ES, Int> {
+> Decoded<N, ES, N, Int> {
   /// Encode a posit, rounding if necessary. The rounding rule is always the same: "round to
   /// nearest, round ties to even bit pattern, never round to 0 (i.e. never over- or under-flow)".
   ///
@@ -315,9 +315,9 @@ mod tests {
     /// (after rounding) into `posit`.
     fn assert_encode_rounded<const N: u32, const ES: u32, Int: crate::Int>(
       rational: &str,
-      decoded: Decoded<N, ES, Int>,
+      decoded: Decoded<N, ES, N, Int>,
       posit: Int,
-    ) where Rational: From<Decoded<N, ES, Int>> {
+    ) where Rational: From<Decoded<N, ES, N, Int>> {
       use core::str::FromStr;
       assert_eq!(Rational::from(decoded), Rational::from_str(rational).unwrap());
       assert_eq!(decoded.try_encode(), Ok(Posit::<N, ES, Int>::from_bits(posit)));
@@ -326,7 +326,7 @@ mod tests {
     #[test]
     #[allow(overflowing_literals)]
     fn posit_6_2_manual_pos() {
-      type D = Decoded<6, 2, i8>;
+      type D = Decoded<6, 2, 6, i8>;
       assert_encode_rounded("200/100", D { frac: 0b01_0000 << 2, exp: 1 }, 0b010010);  // 2    → 2
       assert_encode_rounded("225/100", D { frac: 0b01_0010 << 2, exp: 1 }, 0b010010);  // 2.25 → 2
       assert_encode_rounded("250/100", D { frac: 0b01_0100 << 2, exp: 1 }, 0b010010);  // 2.5  → 2
@@ -341,7 +341,7 @@ mod tests {
     #[test]
     #[allow(overflowing_literals)]
     fn posit_6_2_manual_neg() {
-      type D = Decoded<6, 2, i8>;
+      type D = Decoded<6, 2, 6, i8>;
       assert_encode_rounded("-200/100", D { frac: 0b10_0000 << 2, exp: 0 }, 0b101110);  // -2    → -2
       assert_encode_rounded("-225/100", D { frac: 0b10_1110 << 2, exp: 1 }, 0b101110);  // -2.25 → -2
       assert_encode_rounded("-250/100", D { frac: 0b10_1100 << 2, exp: 1 }, 0b101110);  // -2.5  → -2
@@ -356,7 +356,7 @@ mod tests {
     #[test]
     #[allow(overflowing_literals)]
     fn p8_manual_pos() {
-      type D = Decoded<8, 2, i8>;
+      type D = Decoded<8, 2, 8, i8>;
       assert_encode_rounded("900/100",  D { frac: 0b01_001000, exp: 3 }, 0b01011001);  // 9     → 9
       assert_encode_rounded("925/100",  D { frac: 0b01_001010, exp: 3 }, 0b01011001);  // 9.25  → 9
       assert_encode_rounded("950/100",  D { frac: 0b01_001100, exp: 3 }, 0b01011010);  // 9.5   → 10
@@ -371,7 +371,7 @@ mod tests {
     #[test]
     #[allow(overflowing_literals)]
     fn p8_manual_neg() {
-      type D = Decoded<8, 2, i8>;
+      type D = Decoded<8, 2, 8, i8>;
       assert_encode_rounded("-900/100",  D { frac: 0b10_111000u8 as _, exp: 3 }, 0b10100111);  // -9     → -9
       assert_encode_rounded("-925/100",  D { frac: 0b10_110110u8 as _, exp: 3 }, 0b10100111);  // -9.25  → -9
       assert_encode_rounded("-950/100",  D { frac: 0b10_110100u8 as _, exp: 3 }, 0b10100110);  // -9.5   → -10
@@ -385,11 +385,11 @@ mod tests {
 
     /// Aux function: check that `decoded` is rounded correctly.
     fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(
-      decoded: Decoded<N, ES, Int>,
+      decoded: Decoded<N, ES, N, Int>,
       sticky: bool,
     ) -> bool
     where
-      Rational: From<Decoded<N, ES, Int>>,
+      Rational: From<Decoded<N, ES, N, Int>>,
       Rational: TryFrom<Posit<N, ES, Int>, Error = super::rational::IsNaR>,
     {
       use malachite::base::num::arithmetic::traits::Pow;
@@ -424,22 +424,22 @@ mod tests {
       }
     }
 
-    test_exhaustive!{posit_10_0_exhaustive, Decoded::<10, 0, i16>}
-    test_exhaustive!{posit_10_1_exhaustive, Decoded::<10, 1, i16>}
-    test_exhaustive!{posit_10_2_exhaustive, Decoded::<10, 2, i16>}
-    test_exhaustive!{posit_10_3_exhaustive, Decoded::<10, 3, i16>}
+    test_exhaustive!{posit_10_0_exhaustive, Decoded::<10, 0, 10, i16>}
+    test_exhaustive!{posit_10_1_exhaustive, Decoded::<10, 1, 10, i16>}
+    test_exhaustive!{posit_10_2_exhaustive, Decoded::<10, 2, 10, i16>}
+    test_exhaustive!{posit_10_3_exhaustive, Decoded::<10, 3, 10, i16>}
 
-    test_exhaustive!{posit_8_0_exhaustive, Decoded::<8, 0, i8>}
-    test_proptest!{posit_20_4_proptest, Decoded::<20, 4, i32>}
+    test_exhaustive!{posit_8_0_exhaustive, Decoded::<8, 0, 8, i8>}
+    test_proptest!{posit_20_4_proptest, Decoded::<20, 4, 20, i32>}
 
-    test_exhaustive!{p8_exhaustive, Decoded::<8, 2, i8>}
-    test_exhaustive!{p16_exhaustive, Decoded::<16, 2, i16>}
-    test_proptest!{p32_proptest, Decoded::<32, 2, i32>}
-    test_proptest!{p64_proptest, Decoded::<64, 2, i64>}
+    test_exhaustive!{p8_exhaustive, Decoded::<8, 2, 8, i8>}
+    test_exhaustive!{p16_exhaustive, Decoded::<16, 2, 16, i16>}
+    test_proptest!{p32_proptest, Decoded::<32, 2, 32, i32>}
+    test_proptest!{p64_proptest, Decoded::<64, 2, 64, i64>}
 
-    test_exhaustive!{posit_3_0_exhaustive, Decoded::<3, 0, i8>}
-    test_exhaustive!{posit_4_0_exhaustive, Decoded::<4, 0, i8>}
-    test_exhaustive!{posit_4_1_exhaustive, Decoded::<4, 1, i8>}
+    test_exhaustive!{posit_3_0_exhaustive, Decoded::<3, 0, 3, i8>}
+    test_exhaustive!{posit_4_0_exhaustive, Decoded::<4, 0, 4, i8>}
+    test_exhaustive!{posit_4_1_exhaustive, Decoded::<4, 1, 4, i8>}
 
     #[test]
     fn p8_max() {

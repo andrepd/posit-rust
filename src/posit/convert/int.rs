@@ -14,7 +14,7 @@ unsafe fn round_from_kernel<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
->(int: FromInt) -> (Decoded<N, ES, Int>, Int) {
+>(int: FromInt) -> (Decoded<N, ES, N, Int>, Int) {
   // If converting into a narrower type (`FromInt` → `Int`), we need to shift right, *before* we
   // convert to the narrower type. Some bits will be lost in this conversion; we will accumulate
   // them into `sticky`.
@@ -43,7 +43,7 @@ unsafe fn round_from_kernel<
   let underflow = unsafe { int.leading_run_minus_one() };
   let frac = const_as::<FromInt, Int>(int << underflow >> shift_right) << shift_left;
   let exp = {
-    let exp = Decoded::<N, ES, FromInt>::FRAC_WIDTH.wrapping_sub(underflow);
+    let exp = Decoded::<N, ES, N, FromInt>::FRAC_WIDTH.wrapping_sub(underflow);
     const_as::<i32, Int>(exp as i32)
   };
   let sticky = {
@@ -61,7 +61,7 @@ fn round_into_kernel<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
->(decoded: Decoded<N, ES, Int>) -> ToInt {
+>(decoded: Decoded<N, ES, N, Int>) -> ToInt {
   // If converting into a narrower type (`Int` → `ToInt`), we need to shift right, *before* we
   // convert to the narrower type. Some bits will be lost in this conversion; we will accumulate
   // them into `sticky`.
@@ -109,7 +109,7 @@ fn round_into_kernel<
   //     all bits (in which case `ToInt::ZERO` is returned).
 
   // This is the amount that `frac` needs to be shifted right (or left, if negative).
-  let shift = Int::of_u32(Decoded::<N, ES, Int>::FRAC_WIDTH).wrapping_sub(decoded.exp);
+  let shift = Int::of_u32(Decoded::<N, ES, N, Int>::FRAC_WIDTH).wrapping_sub(decoded.exp);
 
   // If `shift` is negative: the `ToInt` type needs to be wide enough to hold the value.
   if shift < Int::ZERO {
@@ -178,8 +178,8 @@ macro_rules! make_impl {
 
         // This piece of code is only necessary in really extreme cases, like converting i128::MAX
         // to an 8-bit posit. But in those cases, we do need to guard against overflow on `exp`.
-        if const { <$t>::BITS as i128 > 1 << Decoded::<N, ES, Int>::FRAC_WIDTH } {
-          let limit = 1 << (1 << Decoded::<N, ES, Int>::FRAC_WIDTH);
+        if const { <$t>::BITS as i128 > 1 << Decoded::<N, ES, N, Int>::FRAC_WIDTH } {
+          let limit = 1 << (1 << Decoded::<N, ES, N, Int>::FRAC_WIDTH);
           if value >=  limit { return Posit::MAX }
           if value <= -limit { return Posit::MIN }
         }

@@ -13,7 +13,7 @@ impl<
   /// `x` and `y` have to be [normalised](Decoded::is_normalised), or calling this function
   /// is *undefined behaviour*.
   #[inline]
-  pub(crate) unsafe fn mul_kernel(x: Decoded<N, ES, Int>, y: Decoded<N, ES, Int>) -> (Decoded<N, ES, Int>, Int) {
+  pub(crate) unsafe fn mul_kernel(x: Decoded<N, ES, N, Int>, y: Decoded<N, ES, N, Int>) -> (Decoded<N, ES, N, Int>, Int) {
     // Multiplying two numbers in the form `frac × 2^exp` is much easier than adding them. We have
     //
     //   (x.frac / FRAC_DENOM * 2^x.exp) * (y.frac / FRAC_DENOM * 2^y.exp)

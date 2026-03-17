@@ -28,7 +28,7 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> Debug for Decoded<N, ES, Int> {
+> Debug for Decoded<N, ES, N, Int> {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     let frac_hidden = self.frac.lshr(Self::FRAC_WIDTH);
     let frac_explicit = (self.frac << 2).lshr(3);
@@ -105,23 +105,23 @@ mod tests {
   #[test]
   fn decoded() {
     assert_eq!(
-      format!("{:?}", Decoded::<6, 2, i16>{ frac: 0b01_0010101110110_0, exp: 3 }).as_str(),
+      format!("{:?}", Decoded::<6, 2, 6, i16>{ frac: 0b01_0010101110110_0, exp: 3 }).as_str(),
       "Decoded { frac: 0b01_0010101110110_0, exp: 0b00000000000000_11 (+3) }",
     );
     assert_eq!(
-      format!("{:?}", Decoded::<6, 2, i16>{ frac: 0b10_1101010001010_0, exp: 3 }).as_str(),
+      format!("{:?}", Decoded::<6, 2, 6, i16>{ frac: 0b10_1101010001010_0, exp: 3 }).as_str(),
       "Decoded { frac: 0b10_1101010001010_0, exp: 0b00000000000000_11 (+3) }",
     );
     assert_eq!(
-      format!("{:?}", Decoded::<6, 2, i16>{ frac: 0b01_0000000000000_1, exp: -1 }).as_str(),
+      format!("{:?}", Decoded::<6, 2, 6, i16>{ frac: 0b01_0000000000000_1, exp: -1 }).as_str(),
       "Decoded { frac: 0b01_0000000000000_1, exp: 0b11111111111111_11 (-1) }",
     );
     assert_eq!(
-      format!("{:?}", Decoded::<6, 4, i16>{ frac: 0b01_0000000000000_1, exp: -20 }).as_str(),
+      format!("{:?}", Decoded::<6, 4, 6, i16>{ frac: 0b01_0000000000000_1, exp: -20 }).as_str(),
       "Decoded { frac: 0b01_0000000000000_1, exp: 0b111111111110_1100 (-20) }",
     );
     assert_eq!(
-      format!("{:?}", Decoded::<6, 0, i16>{ frac: 0b01_0000000000000_1, exp: -20 }).as_str(),
+      format!("{:?}", Decoded::<6, 0, 6, i16>{ frac: 0b01_0000000000000_1, exp: -20 }).as_str(),
       "Decoded { frac: 0b01_0000000000000_1, exp: 0b1111111111101100_ (-20) }",
     );
   }

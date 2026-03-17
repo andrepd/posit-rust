@@ -158,6 +158,7 @@ pub struct Posit<
 pub struct Decoded<
   const N: u32,
   const ES: u32,
+  const RS: u32,
   Int: crate::Int,
 > {
   /// The `frac`tion is the `frac / FRAC_DENOM` part of the posit value. Since the constant

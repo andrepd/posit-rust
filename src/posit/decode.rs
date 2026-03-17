@@ -11,7 +11,7 @@ impl<
   ///
   /// `self` cannot be [0](Self::ZERO) or [NaR](Self::NAR), or calling this function is *undefined
   /// behaviour*.
-  pub(crate) unsafe fn decode_regular(self) -> Decoded<N, ES, Int> {
+  pub(crate) unsafe fn decode_regular(self) -> Decoded<N, ES, N, Int> {
     // This routine is central to nearly every nontrivial algorithm, so it's critical to get right!
     // With care, we can make it as small as ~20 instructions and ~7 cycles throughput on a modern
     // x86 CPU.
@@ -132,7 +132,7 @@ impl<
   /// If the posit is an exception value ([0](Posit::ZERO) or [NaR](Posit::NAR)), return
   /// `Err(self)` instead.
   #[cfg(test)]
-  pub(crate) fn try_decode(self) -> Result<Decoded<N, ES, Int>, Posit<N, ES, Int>> {
+  pub(crate) fn try_decode(self) -> Result<Decoded<N, ES, N, Int>, Posit<N, ES, Int>> {
     if self == Self::ZERO || self == Self::NAR {
       Err(self)
     } else {

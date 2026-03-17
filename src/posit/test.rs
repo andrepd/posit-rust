@@ -49,7 +49,7 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> Decoded<N, ES, Int> {
+> Decoded<N, ES, N, Int> {
   /// Range of the absolute values of frac bit patterns, i.e. any number with leading `0b01`.
   const RANGE_FRAC_ABS: Range<i128> = {
     let frac_one: u128 = i128::MIN as u128 >> (128 - Int::BITS) >> 1;
@@ -122,7 +122,7 @@ impl<
 /// Hand-written examples for a 6-bit positive with 2-bit exponent (cf. Posit Arithmetic, John L.
 /// Gustafson, Chapter 2).
 // const POSIT_6_2: &[(Posit<6, 2, i32>, Decoded<6, 2, i32>)] = &[
-pub fn posit_6_2() -> impl Iterator<Item = (Posit<6, 2, i32>, Decoded<6, 2, i32>)> {
+pub fn posit_6_2() -> impl Iterator<Item = (Posit<6, 2, i32>, Decoded<6, 2, 6, i32>)> {
   [
     // Pos
     (0b000001, 0b01_000_0, -16),
@@ -251,11 +251,11 @@ mod tests {
     let max_exp = 3 * (2 << 1);
     let n_frac = 1 << 7;
     assert_eq!(
-      Decoded::<4, 1, i8>::cases_exhaustive().collect::<Vec<_>>().len(),
+      Decoded::<4, 1, 4, i8>::cases_exhaustive().collect::<Vec<_>>().len(),
       (2 * max_exp + 1) * n_frac,
     );
 
-    let exhaustive = Decoded::<4, 1, i8>::cases_exhaustive();
+    let exhaustive = Decoded::<4, 1, 4, i8>::cases_exhaustive();
     let expected = (-12 ..= 12).flat_map(|exp| {
       (0b01_000000 ..= 0b01_111111).chain(0b10_000000u8 as i8 ..= 0b10_111111u8 as i8)
         .map(move |frac| Decoded{frac, exp})

@@ -8,7 +8,7 @@ fn decode_finite_f64<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
->(num: f64) -> (Decoded<N, ES, Int>, Int) {  // TODO type for `(Decoded, sticky)`
+>(num: f64) -> (Decoded<N, ES, N, Int>, Int) {  // TODO type for `(Decoded, sticky)`
   debug_assert!(num.is_finite());
   const MANTISSA_BITS: u32 = f64::MANTISSA_DIGITS - 1;
   const EXP_BIAS: i64 = f64::MIN_EXP as i64 - 1;
@@ -108,7 +108,7 @@ fn decode_finite_f32<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
->(num: f32) -> (Decoded<N, ES, Int>, Int) {
+>(num: f32) -> (Decoded<N, ES, N, Int>, Int) {
   debug_assert!(num.is_finite());
   // TODO I'm lazy so for I'm just gonna call into [`decode_finite_f64`], since `f32` → `f64` is
   // lossless; write standalone impl at some point
@@ -168,7 +168,7 @@ fn encode_finite_f64<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
->(decoded: Decoded<N, ES, Int>) -> f64 {
+>(decoded: Decoded<N, ES, N, Int>) -> f64 {
   // Rust assumes that the "default" IEEE rounding mode "roundTiesToEven" is always in effect
   // (anything else is UB). This considerably simplifies this implementation.
   const MANTISSA_BITS: u32 = f64::MANTISSA_DIGITS - 1;
@@ -180,7 +180,7 @@ fn encode_finite_f64<
     // Small detail: a `frac` of `0b10_000…` (= -2.0) is translated to a float mantissa with
     // absolute value 1.0, compensated by adding +1 to the exponent.
     if decoded.frac != Int::MIN {
-      (decoded.frac.wrapping_abs().mask_lsb(Decoded::<N, ES, Int>::FRAC_WIDTH), decoded.exp)
+      (decoded.frac.wrapping_abs().mask_lsb(Decoded::<N, ES, N, Int>::FRAC_WIDTH), decoded.exp)
     } else {
       (Int::ZERO, decoded.exp + Int::ONE)
     };
@@ -220,8 +220,8 @@ fn encode_finite_f64<
 
   // There are only `MANTISSA_BITS` bits for the mantissa, any less than that and we have to do
   // some rounding.
-  let shift_left  = MANTISSA_BITS.saturating_sub(Decoded::<N, ES, Int>::FRAC_WIDTH);
-  let shift_right = Decoded::<N, ES, Int>::FRAC_WIDTH.saturating_sub(MANTISSA_BITS);
+  let shift_left  = MANTISSA_BITS.saturating_sub(Decoded::<N, ES, N, Int>::FRAC_WIDTH);
+  let shift_right = Decoded::<N, ES, N, Int>::FRAC_WIDTH.saturating_sub(MANTISSA_BITS);
   let mantissa = const_as::<Int, i64>(frac_abs >> shift_right) << shift_left;
   // Compute also the bits lost due to right shift, and compile them into `round` and `sticky`
   // bits.
@@ -252,7 +252,7 @@ fn encode_finite_f32<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
->(decoded: Decoded<N, ES, Int>) -> f32 {
+>(decoded: Decoded<N, ES, N, Int>) -> f32 {
   // Again, I'm lazy so shortcut for now.
   encode_finite_f64(decoded) as f32
 }

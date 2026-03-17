@@ -13,7 +13,7 @@ impl<
   /// `x` must to be [normalised](Decoded::is_normalised) and `x.frac` must be positive, or calling
   /// this function is *undefined behaviour*.
   #[inline]
-  pub(crate) unsafe fn sqrt_kernel(x: Decoded<N, ES, Int>) -> (Decoded<N, ES, Int>, Int) {
+  pub(crate) unsafe fn sqrt_kernel(x: Decoded<N, ES, N, Int>) -> (Decoded<N, ES, N, Int>, Int) {
     // Taking the square root of a number in the form `frac × 2^exp` has two steps.
     //
     // First, ensure that `exp` is an even number. If it's odd, add 1 to exp and compensate `frac`
@@ -40,7 +40,7 @@ impl<
     let frac_adjusted = (x.frac).as_unsigned() << exp_odd.as_u32();
     let exp_adjusted = x.exp - exp_odd;
 
-    let (result, _) = frac_adjusted.shift_sqrt(Decoded::<N, ES, Int>::FRAC_WIDTH);
+    let (result, _) = frac_adjusted.shift_sqrt(Decoded::<N, ES, N, Int>::FRAC_WIDTH);
     let frac = Int::of_unsigned(result);
     let exp = exp_adjusted >> 1;
     let sticky = Int::ONE;

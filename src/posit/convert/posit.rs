@@ -77,10 +77,10 @@ impl<
       // Corner-case: if Self::MAX_EXP may overflow the destination type `Int2`, we must check
       // whether the exponent *does* overflow the destination type.
       if Int1::BITS > Int2::BITS
-      && Self::MAX_EXP >= const_as(Decoded::<N2, ES2, Int2>::FRAC_DENOM)
-      && decoded.exp.abs() >= const_as(Decoded::<N2, ES2, Int2>::FRAC_DENOM) {
+      && Self::MAX_EXP >= const_as(Decoded::<N2, ES2, N2, Int2>::FRAC_DENOM)
+      && decoded.exp.abs() >= const_as(Decoded::<N2, ES2, N2, Int2>::FRAC_DENOM) {
         // TODO remove branch? It's exceedingly rare anyways
-        let exp = Decoded::<N2, ES2, Int2>::FRAC_DENOM - Int2::ONE;
+        let exp = Decoded::<N2, ES2, N2, Int2>::FRAC_DENOM - Int2::ONE;
         let exp = if decoded.exp.is_positive() {exp} else {-exp};
         // SAFETY: `decoded.frac` starts with `0b01` or `0b10`, so `decoded.frac >> shift_right <<
         // shift_left` also does; `exp` is the max/min exponent.

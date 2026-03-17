@@ -127,13 +127,13 @@ impl<
   const N: u32,
   const ES: u32,
   Int: IntExt,
-> From<Decoded<N, ES, Int>> for Rational
+> From<Decoded<N, ES, N, Int>> for Rational
 where
   Integer: From<Int>,
   Int: malachite::base::num::basic::signeds::PrimitiveSigned,
 {
-  fn from(value: Decoded<N, ES, Int>) -> Self {
-    let frac = Rational::from_signeds(value.frac, Decoded::<N, ES, Int>::FRAC_DENOM);
+  fn from(value: Decoded<N, ES, N, Int>) -> Self {
+    let frac = Rational::from_signeds(value.frac, Decoded::<N, ES, N, Int>::FRAC_DENOM);
     let exp = IntExt::power_of_2(value.exp);
     frac * exp
   }

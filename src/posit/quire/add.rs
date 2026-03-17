@@ -30,7 +30,7 @@ impl<
   /// `x` must be the result of a [`Posit::decode_regular`] call, or calling this function
   /// is *undefined behaviour*.
   #[inline(always)]
-  pub(crate) unsafe fn add_posit_kernel<Int: crate::Int>(&mut self, x: Decoded<N, ES, Int>) {
+  pub(crate) unsafe fn add_posit_kernel<Int: crate::Int>(&mut self, x: Decoded<N, ES, N, Int>) {
     if const { Int::BITS > 64 } {
       unimplemented!("Quire operations are currently not supported for N > 64")
     }
@@ -45,7 +45,7 @@ impl<
     // fixed point.
     //
     // Writing `base_shift` as `WIDTH - FRAC_WIDTH`: we need to shift by `base_shift + x.exp`.
-    let base_shift = Int::of_u32(Self::WIDTH) - Int::of_u32(Decoded::<N, ES, Int>::FRAC_WIDTH);
+    let base_shift = Int::of_u32(Self::WIDTH) - Int::of_u32(Decoded::<N, ES, N, Int>::FRAC_WIDTH);
     let shift = base_shift + x.exp;
 
     // One caveat: even though `shift` is almost always positive (a left-shift), if `FRAC_WIDTH` is
@@ -106,8 +106,8 @@ impl<
   #[inline(always)]
   pub(crate) unsafe fn add_posit_prod_kernel<Int: crate::Int>(
     &mut self,
-    x: Decoded<N, ES, Int>,
-    y: Decoded<N, ES, Int>,
+    x: Decoded<N, ES, N, Int>,
+    y: Decoded<N, ES, N, Int>,
   ) {
     if const { Int::BITS > 32 } {
       unimplemented!("`quire.add_prod(posit, posit)` is currently only implemented up to 32-bit posits.")
@@ -126,7 +126,7 @@ impl<
     // calculate the `shift` amount, i.e. the difference between the position of the decimal point
     // in `frac` (2×FRAC_WIDTH from the left) and in the quire (WIDTH from the left) plus the
     // `exp`.
-    let base_shift = Int::of_u32(Self::WIDTH) - Int::of_u32(2 * Decoded::<N, ES, Int>::FRAC_WIDTH);
+    let base_shift = Int::of_u32(Self::WIDTH) - Int::of_u32(2 * Decoded::<N, ES, N, Int>::FRAC_WIDTH);
     let shift = base_shift + exp;
 
     // Unlike in `add_posit_kernel`, it's now more common that we hit the limits of the quire and

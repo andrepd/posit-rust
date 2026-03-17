@@ -13,7 +13,7 @@ impl<
   /// `x` and `y` have to be [normalised](Decoded::is_normalised) and cannot be symmetrical, or
   /// calling this function is *undefined behaviour*.
   #[inline]
-  pub(crate) unsafe fn add_kernel(x: Decoded<N, ES, Int>, y: Decoded<N, ES, Int>) -> (Decoded<N, ES, Int>, Int) {
+  pub(crate) unsafe fn add_kernel(x: Decoded<N, ES, N, Int>, y: Decoded<N, ES, N, Int>) -> (Decoded<N, ES, N, Int>, Int) {
     // Adding two numbers in the form `x.frac × 2^x.exp` and `y.exp × 2^y.exp` is easy, if only
     // `x.exp` = `y.exp`: then the result would be just `(x.frac + y.exp) × 2^x.exp`. Therefore,
     // to add two numbers we just have to (1) reduce to the same exponent, and (2) add the

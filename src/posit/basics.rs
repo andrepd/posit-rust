@@ -207,8 +207,9 @@ impl<
 impl<
   const N: u32,
   const ES: u32,
+  const RS: u32,
   Int: crate::Int,
-> Decoded<N, ES, Int> {
+> Decoded<N, ES, RS, Int> {
   /// The [`Decoded::frac`] field has the decimal point [`Decoded::FRAC_WIDTH`] bits from the
   /// right.
   ///
@@ -226,16 +227,16 @@ impl<
   // TODO MIN/MAX_EXP? Used a couple of times
 
   /// As [`Posit::BITS`].
-  pub const BITS: u32 = Posit::<N, ES, Int>::BITS;
+  pub const BITS: u32 = Posit::<N, ES, Int, RS>::BITS;
 
   /// As [`Posit::ES`].
-  pub const ES: u32 = Posit::<N, ES, Int>::ES;
+  pub const ES: u32 = Posit::<N, ES, Int, RS>::ES;
 
   /// As [`Posit::RS`].
-  pub const RS: u32 = Posit::<N, ES, Int>::RS;
+  pub const RS: u32 = Posit::<N, ES, Int, RS>::RS;
 
   /// As [`Posit::JUNK_BITS`].
-  pub(crate) const JUNK_BITS: u32 = Posit::<N, ES, Int>::JUNK_BITS;
+  pub(crate) const JUNK_BITS: u32 = Posit::<N, ES, Int, RS>::JUNK_BITS;
 
   /// Checks whether `self` is "normalised", i.e. whether 
   ///
