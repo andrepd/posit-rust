@@ -4,14 +4,15 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> Posit<N, ES, Int> {
+  const RS: u32,
+> Posit<N, ES, Int, RS> {
   /// Decode a posit **which is not 0 or NaR** into its constituent `frac`tion and `exp`onent.
   ///
   /// # Safety
   ///
   /// `self` cannot be [0](Self::ZERO) or [NaR](Self::NAR), or calling this function is *undefined
   /// behaviour*.
-  pub(crate) unsafe fn decode_regular(self) -> Decoded<N, ES, N, Int> {
+  pub(crate) unsafe fn decode_regular(self) -> Decoded<N, ES, RS, Int> {
     // This routine is central to nearly every nontrivial algorithm, so it's critical to get right!
     // With care, we can make it as small as ~20 instructions and ~7 cycles throughput on a modern
     // x86 CPU.
@@ -56,6 +57,11 @@ impl<
     let regime_raw = unsafe { (x_xor << 1).leading_zeros_nonzero() };
     unsafe { core::hint::assert_unchecked(regime_raw <= Self::BITS - 2) };
 
+    // For b-posits: the regime is capped at `RS`, so simply cap the `regime_raw` at `RS - 1`.
+    // Note that due to the previous `assert_unchecked`, this is elided for normal posits, where
+    // `RS == BITS`.
+    let regime_raw = regime_raw.min(Self::RS - 1);
+
     // Now, the regime bits are supposed to encode a regime
     //
     //   n-1, if the regime bits are a run of n 1s terminated by a 0
@@ -82,9 +88,22 @@ impl<
     // (or trust the tests)!
     let regime = Int::of_u32(regime_raw).not_if_positive(x_xor);
 
-    // Shift out sign and regime bits (1 sign bit, regime_raw + 1 run of 0s or 1s, 1 terminating 0
-    // or 1).
-    let y = (x << 3) << regime_raw;
+    // Shift out sign and regime bits. If the regime length is smaller than `RS` (automatically
+    // true if there's no cap on the regime bits, i.e. `RS == N`), then we have:
+    //
+    //   1 sign bit, `regime_raw + 1` run of 0s or 1s, 1 terminating bit
+    //
+    // If the regime length is equal to `RS`, which can only happen if RS is smaller than N - 2
+    // anyway, then the regime was terminated by hitting the cap, therefore there's no terminating
+    // bit, so we have:
+    //
+    //   1 sign bit, `regime_raw + 1` run of 0s or 1s
+    let y =
+      if const { Self::RS == Self::BITS } {
+        x << 3 << regime_raw
+      } else {
+        x << 2 << regime_raw << u32::from(regime_raw != Self::RS - 1)
+      };
 
     // The rightmost `ES` bits of `y` are the exponent. However, we still need to negate them if
     // the Posit is negative (remember, we are supposed to interpret the fields from the two's
@@ -147,7 +166,7 @@ impl<
   /// If the posit is an exception value ([0](Posit::ZERO) or [NaR](Posit::NAR)), return
   /// `Err(self)` instead.
   #[cfg(test)]
-  pub(crate) fn try_decode(self) -> Result<Decoded<N, ES, N, Int>, Posit<N, ES, Int>> {
+  pub(crate) fn try_decode(self) -> Result<Decoded<N, ES, RS, Int>, Posit<N, ES, Int, RS>> {
     if self == Self::ZERO || self == Self::NAR {
       Err(self)
     } else {
@@ -220,4 +239,11 @@ mod tests {
   test_exhaustive!{posit_3_0_exhaustive, Posit::<3, 0, i8>}
   test_exhaustive!{posit_4_0_exhaustive, Posit::<4, 0, i8>}
   test_exhaustive!{posit_4_1_exhaustive, Posit::<4, 1, i8>}
+
+  test_exhaustive!{bposit_8_3_6_exhaustive, Posit::<8, 3, i8, 6>}
+  test_exhaustive!{bposit_16_5_6_exhaustive, Posit::<16, 5, i16, 6>}
+  test_exhaustive!{bposit_16_3_13_exhaustive, Posit::<16, 3, i16, 13>}
+  test_exhaustive!{bposit_16_3_14_exhaustive, Posit::<16, 3, i16, 14>}
+  test_exhaustive!{bposit_16_3_15_exhaustive, Posit::<16, 3, i16, 15>}
+  test_exhaustive!{bposit_20_5_6_exhaustive, Posit::<20, 5, i32, 6>}
 }
