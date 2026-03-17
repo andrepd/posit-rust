@@ -186,24 +186,25 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> Posit<N, ES, Int>
+  const RS: u32,
+> Posit<N, ES, Int, RS>
 where
-  Rational: TryFrom<Posit<N, ES, Int>, Error = IsNaR>,
+  Rational: TryFrom<Posit<N, ES, Int, RS>, Error = IsNaR>,
 {
   const MAX_RATIONAL: LazyLock<Rational> = LazyLock::new(||
-    Rational::try_from(Posit::<N, ES, Int>::MAX).unwrap()
+    Rational::try_from(Posit::<N, ES, Int, RS>::MAX).unwrap()
   );
 
   const MIN_POSITIVE_RATIONAL: LazyLock<Rational> = LazyLock::new(||
-    Rational::try_from(Posit::<N, ES, Int>::MIN_POSITIVE).unwrap()
+    Rational::try_from(Posit::<N, ES, Int, RS>::MIN_POSITIVE).unwrap()
   );
 
   const MAX_NEGATIVE_RATIONAL: LazyLock<Rational> = LazyLock::new(||
-    Rational::try_from(Posit::<N, ES, Int>::MAX_NEGATIVE).unwrap()
+    Rational::try_from(Posit::<N, ES, Int, RS>::MAX_NEGATIVE).unwrap()
   );
 
   const MIN_RATIONAL: LazyLock<Rational> = LazyLock::new(||
-    Rational::try_from(Posit::<N, ES, Int>::MIN).unwrap()
+    Rational::try_from(Posit::<N, ES, Int, RS>::MIN).unwrap()
   );
 
   /// Values inside this range have *arithmetic rounding*. Values outside (if any) have *geometric
@@ -214,7 +215,13 @@ where
     //
     // So if `regime_len ≤ Self::BITS - 2 - Self::ES`, we are in the arithmetic rounding region,
     // otherwise we're on the geometric rounding region. This `regime_len` corresponds to an
-    // exponent of `(Self::BITS - 2 - Self::ES) << Self::ES`..
+    // exponent of `(Self::BITS - 2 - Self::ES) << Self::ES`.
+    //
+    // If there is a cap on the `regime_len`, then it is possible that this case is never hit, i.e.
+    // we never chop off any exponent bits. In that case, `MAX` would be smaller than the
+    // `geometric_cutoff`, and therefore any value that would lie outside `ARITHMETIC_ROUNDING`
+    // would also lie outside the representable range at all, meaning there's no range where
+    // geometric rounding takes place, ergo no "twilight zone".
     let geometric_cutoff = Rational::power_of_2(((N - 2 - ES) as i64) << ES);
     (&geometric_cutoff).reciprocal() ..= geometric_cutoff
   });
@@ -228,12 +235,12 @@ where
 ///     nearest posit in terms of absolute **ratio**, ties to even.
 ///   - Normal case (remaining domain): round to nearest posit in terms of absolute **difference**,
 ///     ties to even.
-pub fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(
+pub fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int, const RS: u32>(
   exact: Rational,
-  posit: Posit<N, ES, Int>,
+  posit: Posit<N, ES, Int, RS>,
 ) -> bool
 where
-  Rational: TryFrom<Posit<N, ES, Int>, Error = IsNaR>,
+  Rational: TryFrom<Posit<N, ES, Int, RS>, Error = IsNaR>,
 {
   // Only the exact number 0 is rounded to posit 0.
   if posit == Posit::ZERO { return exact == Rational::from(0) }
@@ -242,18 +249,18 @@ where
 
   // Overflow case: if `exact` is > MAX, < MIN, > 0 and < MIN_POSITIVE, or < 0 and > MAX_NEGATIVE
   if exact > Rational::from(0) {
-    if exact >= *Posit::<N, ES, Int>::MAX_RATIONAL {
-      return posit == Posit::<N, ES, Int>::MAX
+    if exact >= *Posit::<N, ES, Int, RS>::MAX_RATIONAL {
+      return posit == Posit::<N, ES, Int, RS>::MAX
     }
-    else if exact <= *Posit::<N, ES, Int>::MIN_POSITIVE_RATIONAL {
-      return posit == Posit::<N, ES, Int>::MIN_POSITIVE
+    else if exact <= *Posit::<N, ES, Int, RS>::MIN_POSITIVE_RATIONAL {
+      return posit == Posit::<N, ES, Int, RS>::MIN_POSITIVE
     }
   } else if exact < Rational::from(0) {
-    if exact <= *Posit::<N, ES, Int>::MIN_RATIONAL {
-      return posit == Posit::<N, ES, Int>::MIN
+    if exact <= *Posit::<N, ES, Int, RS>::MIN_RATIONAL {
+      return posit == Posit::<N, ES, Int, RS>::MIN
     }
-    else if exact >= *Posit::<N, ES, Int>::MAX_NEGATIVE_RATIONAL {
-      return posit == Posit::<N, ES, Int>::MAX_NEGATIVE
+    else if exact >= *Posit::<N, ES, Int, RS>::MAX_NEGATIVE_RATIONAL {
+      return posit == Posit::<N, ES, Int, RS>::MAX_NEGATIVE
     }
   }
   // If `exact` is 0, the posit must be 0 (reverse of the case at the start)
@@ -264,7 +271,7 @@ where
   // Remaining cases: round to nearest (arithmetic nearest, or geometric nearest *only if* exponent
   // bits are cut). `distance` uses arithmetic or geometric distance accordingly.
   let distance = |x: &Rational, y: &Rational| {
-    let arithmetic_range = Posit::<N, ES, Int>::ARITHMETIC_ROUNDING;
+    let arithmetic_range = Posit::<N, ES, Int, RS>::ARITHMETIC_ROUNDING;
     if arithmetic_range.contains(&(&exact).abs()) {
       x-y
     } else {
@@ -302,12 +309,12 @@ where
 
 /// Check whether rational number `exact` should be rounded to `posit`. It is `Posit::NAR` if and
 /// only if `exact` is `IsNaR`.
-pub fn try_is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(
+pub fn try_is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int, const RS: u32>(
   exact: Result<Rational, IsNaR>,
-  posit: Posit<N, ES, Int>,
+  posit: Posit<N, ES, Int, RS>,
 ) -> bool
 where
-  Rational: TryFrom<Posit<N, ES, Int>, Error = IsNaR>,
+  Rational: TryFrom<Posit<N, ES, Int, RS>, Error = IsNaR>,
 {
   match exact {
     Ok(exact) => is_correct_rounded(exact, posit),
@@ -467,6 +474,51 @@ mod tests {
     assert_eq!(BP16::ONE.try_into(), Ok(Rational::from(1)));
     assert_eq!(BP16::MINUS_ONE.try_into(), Ok(Rational::from(-1)));
     assert_eq!(Rational::try_from(BP16::NAR), Err(IsNaR));
+  }
+
+  #[test]
+  fn is_correct_rounded() {
+    // Extremes
+    assert!(super::is_correct_rounded(Rational::power_of_2(23_i64), crate::p8::MAX));
+    assert!(super::is_correct_rounded(Rational::power_of_2(24_i64), crate::p8::MAX));
+    assert!(super::is_correct_rounded(Rational::power_of_2(99_i64), crate::p8::MAX));
+
+    assert!(super::is_correct_rounded(-Rational::power_of_2(23_i64), crate::p8::MIN));
+    assert!(super::is_correct_rounded(-Rational::power_of_2(24_i64), crate::p8::MIN));
+    assert!(super::is_correct_rounded(-Rational::power_of_2(99_i64), crate::p8::MIN));
+
+    assert!(super::is_correct_rounded(Rational::power_of_2(-23_i64), crate::p8::MIN_POSITIVE));
+    assert!(super::is_correct_rounded(Rational::power_of_2(-24_i64), crate::p8::MIN_POSITIVE));
+    assert!(super::is_correct_rounded(Rational::power_of_2(-99_i64), crate::p8::MIN_POSITIVE));
+
+    assert!(super::is_correct_rounded(-Rational::power_of_2(-23_i64), crate::p8::MAX_NEGATIVE));
+    assert!(super::is_correct_rounded(-Rational::power_of_2(-24_i64), crate::p8::MAX_NEGATIVE));
+    assert!(super::is_correct_rounded(-Rational::power_of_2(-99_i64), crate::p8::MAX_NEGATIVE));
+
+    assert!(!super::is_correct_rounded(Rational::power_of_2(-8000_i64), crate::p8::ZERO));
+    assert!(!super::is_correct_rounded(-Rational::power_of_2(-8000_i64), crate::p8::ZERO));
+
+    // Geometric rounding
+    assert_eq!(Ok(Rational::from(1 << 16)), Rational::try_from(crate::p8::from_bits(0b0_111110_0)));
+    assert!(super::is_correct_rounded(Rational::from((1 << 17) - 1), crate::p8::from_bits(0b0_111110_0)));
+    assert!(super::is_correct_rounded(Rational::from((1 << 17) + 0), crate::p8::from_bits(0b0_111110_0)));
+    assert!(super::is_correct_rounded(Rational::from((1 << 17) + 1), crate::p8::from_bits(0b0_111110_1)));
+    assert_eq!(Ok(Rational::from(1 << 18)), Rational::try_from(crate::p8::from_bits(0b0_111110_1)));
+
+    // Arithmetic rounding
+    assert_eq!(Ok(Rational::from(40)), Rational::try_from(crate::p8::from_bits(0b0_110_01_01)));
+    assert!(super::is_correct_rounded(Rational::from(44 - 1), crate::p8::from_bits(0b0_110_01_01)));
+    assert!(super::is_correct_rounded(Rational::from(44 + 0), crate::p8::from_bits(0b0_110_01_10)));
+    assert!(super::is_correct_rounded(Rational::from(44 + 1), crate::p8::from_bits(0b0_110_01_10)));
+    assert_eq!(Ok(Rational::from(48)), Rational::try_from(crate::p8::from_bits(0b0_110_01_10)));
+
+    // Arithmetic rounding on b-posit
+    type BP8 = Posit<8, 3, i8, 3>;
+    assert_eq!(Ok(Rational::from_signeds(200, 100 << 24)), Rational::try_from(BP8::from_bits(0b0_0000_01_0)));
+    assert!(super::is_correct_rounded(Rational::from_signeds(250 - 1, 100 << 24), BP8::from_bits(0b0_0000_01_0)));
+    assert!(super::is_correct_rounded(Rational::from_signeds(250 + 0, 100 << 24), BP8::from_bits(0b0_0000_01_0)));
+    assert!(super::is_correct_rounded(Rational::from_signeds(250 + 1, 100 << 24), BP8::from_bits(0b0_0000_01_1)));
+    assert_eq!(Ok(Rational::from_signeds(300, 100 << 24)), Rational::try_from(BP8::from_bits(0b0_0000_01_1)));
   }
 
   #[test]
