@@ -24,7 +24,8 @@ impl<
   const N: u32,
   const ES: u32,
   Int: IntExt,
-> Posit<N, ES, Int>
+  const RS: u32,
+> Posit<N, ES, Int, RS>
 where
   Rational: From<Int::Unsigned> + From<i32>,
 {
@@ -61,6 +62,10 @@ where
         // shifted x 1 place to the right so we have shifted a terminating 0 in anyways.
         (!x).leading_zeros()
       };
+
+    // In case there's a limit `RS` on the regime size, apply it.
+    let regime_len = regime_len.min(RS);
+
     // The regime is
     //   -n  if it's a run of n 0s, or
     //   n-1 if it's a run of n 1s.
@@ -70,10 +75,15 @@ where
     // the exponent, so we just shift those down to the rightmost ES bits and we have our
     // exponent.
     //
+    // If the regime was capped at `RS`, then there is no terminating bit; the next field
+    // (the exponent if it exists, or the fraction otherwise) starts *immediately* after.
+    let regime_is_terminated = regime_len < RS;
+    let x = x << regime_len;
+    let x = x << (if regime_is_terminated {1} else {0});
+
     // Note that if there are less than ES bits leftover after the regime, the exponent may be
     // partially or even totally missing; this is okay, since in this case we have to fill in 0s
-    // from the right, which is exactly what the shift does.
-    let x = (x << regime_len) << 1;
+    // from the right, which is exactly what the shift did.
     let exponent = if const { Self::ES != 0 } {x.lshr(Int::BITS - Self::ES)} else {Int::ZERO};
 
     // Shift out the exponent bits. After this we have the fraction bits starting from the left.
@@ -106,13 +116,14 @@ impl<
   const N: u32,
   const ES: u32,
   Int: IntExt,
-> TryFrom<Posit<N, ES, Int>> for Rational
+  const RS: u32,
+> TryFrom<Posit<N, ES, Int, RS>> for Rational
 where
   Rational: From<Int::Unsigned> + From<i32>,
 {
   type Error = IsNaR;
 
-  fn try_from(value: Posit<N, ES, Int>) -> Result<Self, Self::Error> {
+  fn try_from(value: Posit<N, ES, Int, RS>) -> Result<Self, Self::Error> {
     if value == Posit::ZERO {
       Ok(Rational::from(0))
     } else if value == Posit::NAR {
@@ -126,14 +137,15 @@ where
 impl<
   const N: u32,
   const ES: u32,
+  const RS: u32,
   Int: IntExt,
-> From<Decoded<N, ES, N, Int>> for Rational
+> From<Decoded<N, ES, RS, Int>> for Rational
 where
   Integer: From<Int>,
   Int: malachite::base::num::basic::signeds::PrimitiveSigned,
 {
-  fn from(value: Decoded<N, ES, N, Int>) -> Self {
-    let frac = Rational::from_signeds(value.frac, Decoded::<N, ES, N, Int>::FRAC_DENOM);
+  fn from(value: Decoded<N, ES, RS, Int>) -> Self {
+    let frac = Rational::from_signeds(value.frac, Decoded::<N, ES, RS, Int>::FRAC_DENOM);
     let exp = IntExt::power_of_2(value.exp);
     frac * exp
   }
@@ -387,33 +399,74 @@ mod tests {
     assert_eq!(Posit::<6, 1, i8>::from_bits(0b001101).try_into(), Ok(Rational::from_signeds(5, 8)));
     assert_eq!(Posit::<6, 1, i8>::from_bits(0b110010).try_into(), Ok(Rational::from_signeds(-3, 4)));
 
-    assert_eq!(crate::p16::from_bits(0b0_01_00_10000001000).try_into(), Ok(Rational::from_signeds(3080, 1 << 15)));
-    assert_eq!(crate::p16::from_bits(0b0_01_00_11011001000).try_into(), Ok(Rational::from_signeds(3784, 1 << 15)));
-    assert_eq!(crate::p16::from_bits(0b0_01_00_11011001000).try_into(), Ok(Rational::from_signeds(3784, 1 << 15)));
-    assert_eq!(crate::p16::from_bits(0b0_01_01_11011001000).try_into(), Ok(Rational::from_signeds(3784, 1 << 14)));
-    assert_eq!(crate::p16::from_bits(0b0_01_10_11011001000).try_into(), Ok(Rational::from_signeds(3784, 1 << 13)));
-    assert_eq!(crate::p16::from_bits(0b0_01_11_11011001000).try_into(), Ok(Rational::from_signeds(3784, 1 << 12)));
-    assert_eq!(crate::p16::from_bits(0b0_11110_10_11001000).try_into(), Ok(Rational::from(456 << 6)));
-    assert_eq!(crate::p16::from_bits(0b0_11110_01_11001000).try_into(), Ok(Rational::from(456 << 5)));
+    use crate::p16;
+    assert_eq!(p16::from_bits(0b0_01_00_10000001000).try_into(), Ok(Rational::from_signeds(3080, 1 << 15)));
+    assert_eq!(p16::from_bits(0b0_01_00_11011001000).try_into(), Ok(Rational::from_signeds(3784, 1 << 15)));
+    assert_eq!(p16::from_bits(0b0_01_00_11011001000).try_into(), Ok(Rational::from_signeds(3784, 1 << 15)));
+    assert_eq!(p16::from_bits(0b0_01_01_11011001000).try_into(), Ok(Rational::from_signeds(3784, 1 << 14)));
+    assert_eq!(p16::from_bits(0b0_01_10_11011001000).try_into(), Ok(Rational::from_signeds(3784, 1 << 13)));
+    assert_eq!(p16::from_bits(0b0_01_11_11011001000).try_into(), Ok(Rational::from_signeds(3784, 1 << 12)));
+    assert_eq!(p16::from_bits(0b0_11110_10_11001000).try_into(), Ok(Rational::from(456 << 6)));
+    assert_eq!(p16::from_bits(0b0_11110_01_11001000).try_into(), Ok(Rational::from(456 << 5)));
 
-    assert_eq!(crate::p16::from_bits(0b1_00001_10_00111000).try_into(), Ok(Rational::from(-456 << 5)));
-    assert_eq!(crate::p16::from_bits(0b1_00001_01_00111000).try_into(), Ok(Rational::from(-456 << 6)));
-    assert_eq!(crate::p16::from_bits(0b1_001_01_0100111000).try_into(), Ok(Rational::from_signeds(-1736, 1 << 4)));
-    assert_eq!(crate::p16::from_bits(0b1_1110_10_100111000).try_into(), Ok(Rational::from_signeds(-712, 1 << 20)));
+    assert_eq!(p16::from_bits(0b1_00001_10_00111000).try_into(), Ok(Rational::from(-456 << 5)));
+    assert_eq!(p16::from_bits(0b1_00001_01_00111000).try_into(), Ok(Rational::from(-456 << 6)));
+    assert_eq!(p16::from_bits(0b1_001_01_0100111000).try_into(), Ok(Rational::from_signeds(-1736, 1 << 4)));
+    assert_eq!(p16::from_bits(0b1_1110_10_100111000).try_into(), Ok(Rational::from_signeds(-712, 1 << 20)));
 
-    assert_eq!(crate::p16::from_bits(0b1_11111111111110_1_).try_into(), Ok(Rational::from_signeds(-1, 1i64 << 50)));
-    assert_eq!(crate::p16::from_bits(0b1_11111111111110_0_).try_into(), Ok(Rational::from_signeds(-1, 1i64 << 48)));
-    assert_eq!(crate::p16::from_bits(0b0_11111111110_00_10).try_into(), Ok(Rational::from(3i64 << 35)));
+    assert_eq!(p16::from_bits(0b1_11111111111110_1_).try_into(), Ok(Rational::from_signeds(-1, 1i64 << 50)));
+    assert_eq!(p16::from_bits(0b1_11111111111110_0_).try_into(), Ok(Rational::from_signeds(-1, 1i64 << 48)));
+    assert_eq!(p16::from_bits(0b0_11111111110_00_10).try_into(), Ok(Rational::from(3i64 << 35)));
 
-    assert_eq!(crate::p16::MAX.try_into(), Ok(Rational::from(1i64 << 56)));
-    assert_eq!(crate::p16::MIN.try_into(), Ok(Rational::from(-1i64 << 56)));
-    assert_eq!(crate::p16::MIN_POSITIVE.try_into(), Ok(Rational::from_signeds(1, 1i64 << 56)));
-    assert_eq!(crate::p16::MAX_NEGATIVE.try_into(), Ok(Rational::from_signeds(1, -1i64 << 56)));
+    assert_eq!(p16::MAX.try_into(), Ok(Rational::power_of_2(56_i64)));
+    assert_eq!(p16::MIN.try_into(), Ok(-Rational::power_of_2(56_i64)));
+    assert_eq!(p16::MIN_POSITIVE.try_into(), Ok(Rational::power_of_2(-56_i64)));
+    assert_eq!(p16::MAX_NEGATIVE.try_into(), Ok(-Rational::power_of_2(-56_i64)));
 
-    assert_eq!(crate::p16::ZERO.try_into(), Ok(Rational::from(0)));
-    assert_eq!(crate::p16::ONE.try_into(), Ok(Rational::from(1)));
-    assert_eq!(crate::p16::MINUS_ONE.try_into(), Ok(Rational::from(-1)));
-    assert_eq!(Rational::try_from(crate::p16::NAR), Err(IsNaR));
+    assert_eq!(p16::ZERO.try_into(), Ok(Rational::from(0)));
+    assert_eq!(p16::ONE.try_into(), Ok(Rational::from(1)));
+    assert_eq!(p16::MINUS_ONE.try_into(), Ok(Rational::from(-1)));
+    assert_eq!(Rational::try_from(p16::NAR), Err(IsNaR));
+  }
+
+  /// Examples for bounded posits.
+  #[test]
+  #[allow(overflowing_literals)]
+  fn examples_bposit() {
+    type BP16 = Posit<16, 2, i16, 6>;
+    assert_eq!(BP16::from_bits(0b0_01_00_10000001000).try_into(), Ok(Rational::from_signeds(3080, 1 << 15)));
+    assert_eq!(BP16::from_bits(0b0_01_00_11011001000).try_into(), Ok(Rational::from_signeds(3784, 1 << 15)));
+    assert_eq!(BP16::from_bits(0b0_01_00_11011001000).try_into(), Ok(Rational::from_signeds(3784, 1 << 15)));
+    assert_eq!(BP16::from_bits(0b0_01_01_11011001000).try_into(), Ok(Rational::from_signeds(3784, 1 << 14)));
+    assert_eq!(BP16::from_bits(0b0_01_10_11011001000).try_into(), Ok(Rational::from_signeds(3784, 1 << 13)));
+    assert_eq!(BP16::from_bits(0b0_01_11_11011001000).try_into(), Ok(Rational::from_signeds(3784, 1 << 12)));
+    assert_eq!(BP16::from_bits(0b0_11110_10_11001000).try_into(), Ok(Rational::from(456 << 6)));
+    assert_eq!(BP16::from_bits(0b0_11110_01_11001000).try_into(), Ok(Rational::from(456 << 5)));
+
+    assert_eq!(BP16::from_bits(0b1_00001_10_00111000).try_into(), Ok(Rational::from(-456 << 5)));
+    assert_eq!(BP16::from_bits(0b1_00001_01_00111000).try_into(), Ok(Rational::from(-456 << 6)));
+    assert_eq!(BP16::from_bits(0b1_001_01_0100111000).try_into(), Ok(Rational::from_signeds(-1736, 1 << 4)));
+    assert_eq!(BP16::from_bits(0b1_1110_10_100111000).try_into(), Ok(Rational::from_signeds(-712, 1 << 20)));
+
+    assert_eq!(BP16::from_bits(0b0_11110_01_11000000).try_into(), Ok(Rational::power_of_2(13_i64) * Rational::from_signeds(0b1_11, 4)));
+    assert_eq!(BP16::from_bits(0b0_111110_01_1100000).try_into(), Ok(Rational::power_of_2(17_i64) * Rational::from_signeds(0b1_11, 4)));
+    assert_eq!(BP16::from_bits(0b0_111111_01_1100000).try_into(), Ok(Rational::power_of_2(21_i64) * Rational::from_signeds(0b1_11, 4)));
+    assert_eq!(BP16::from_bits(0b0_111111_11_1100000).try_into(), Ok(Rational::power_of_2(23_i64) * Rational::from_signeds(0b1_11, 4)));
+
+    assert_eq!(BP16::from_bits(0b0_00001_01_11000000).try_into(), Ok(Rational::power_of_2(-15_i64) * Rational::from_signeds(0b1_11, 4)));
+    assert_eq!(BP16::from_bits(0b0_000001_01_1100000).try_into(), Ok(Rational::power_of_2(-19_i64) * Rational::from_signeds(0b1_11, 4)));
+    assert_eq!(BP16::from_bits(0b0_000000_11_1100000).try_into(), Ok(Rational::power_of_2(-21_i64) * Rational::from_signeds(0b1_11, 4)));
+    assert_eq!(BP16::from_bits(0b0_000000_01_1100000).try_into(), Ok(Rational::power_of_2(-23_i64) * Rational::from_signeds(0b1_11, 4)));
+
+    assert_eq!(BP16::MAX.try_into(),          Ok( Rational::power_of_2(24_i64)  - Rational::from(1 << (24 - 8))              ));
+    assert_eq!(BP16::MIN.try_into(),          Ok(-Rational::power_of_2(24_i64)  + Rational::from(1 << (24 - 8))              ));
+    assert_eq!(BP16::MIN_POSITIVE.try_into(), Ok( Rational::power_of_2(-24_i64) + Rational::from_signeds(1, 1i64 << (24 + 7))));
+    assert_eq!(BP16::MAX_NEGATIVE.try_into(), Ok(-Rational::power_of_2(-24_i64) - Rational::from_signeds(1, 1i64 << (24 + 7))));
+
+    assert_eq!(BP16::ZERO.try_into(), Ok(Rational::from(0)));
+    assert_eq!(BP16::ONE.try_into(), Ok(Rational::from(1)));
+    assert_eq!(BP16::MINUS_ONE.try_into(), Ok(Rational::from(-1)));
+    assert_eq!(Rational::try_from(BP16::NAR), Err(IsNaR));
   }
 
   #[test]
