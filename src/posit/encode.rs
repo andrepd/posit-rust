@@ -102,20 +102,28 @@ impl<
     //   - Maximum regime of 0s: s000…001
     //   - Maximum regime of 1s: s111…111
     //
-    // We can, however, clamp always the `regime_raw` to `Self::BITS - 3`, and simply set the lsb
+    // We can, however, clamp always the `regime_raw` to `Self::BITS - 2`, and simply set the lsb
     // to 1 whenever the `regime_raw` would exceed that value, since both the cases above end in
-    // 1. This way we posit consists entirely of regime bits (plus the sign bit). In this case, we
-    // return early, and the rest of the code can assume `regime_raw < Self::BITS - 2`.
-    let regime_raw_max = Self::BITS - 3;
-    let regime_overflow = regime_raw > regime_raw_max;
+    // 1. This way we posit consists entirely of regime bits (plus the sign bit).
+    let regime_raw_max = Self::BITS - 2;
+    let regime_overflow = regime_raw >= regime_raw_max;
     let regime_raw = if regime_overflow {regime_raw_max} else {regime_raw};
 
-    // Continue assembling the regime bits.
+    // Continue assembling the regime bits. "Drag" the initial 01 or 10 bits `regime_raw` to the
+    // left (with an arithmetic right shift of course) to build a regime of length `regime_raw +
+    // 1`.
     let regime_bits = (!frac_xor_regime).mask_msb(2) >> regime_raw;
     // Combine the sign and regime bits into a register. The msb of the result, i.e. the sign bit,
     // is the msb of `frac`.
     let sign_and_regime_bits = self.frac.mask_msb(1) | regime_bits.lshr(1);
     let sign_and_regime_bits = sign_and_regime_bits >> Self::JUNK_BITS;
+
+    // If `regime_overflow`, then we are done. Otherwise, we can proceed for the rest of this
+    // function assuming that the regime is bounded and that rounding is to be applied as normal
+    // (with no chance that we need to saturate).
+    if regime_overflow {
+      return unsafe { Posit::from_bits_unchecked(sign_and_regime_bits | Int::ONE) }
+    }
 
     // Next we need to place the exponent bits in the right place, just after the regime bits. The
     // sign and regime take up: 1 bit (sign) + regime_raw + 1 bits (run of 0s/1s) + 1 bit
@@ -196,9 +204,9 @@ impl<
 
     let round_up: bool = round & (odd | (sticky != Int::ZERO));
 
-    // Assemble the final result, and return
-    let bits = all_bits + Int::from(round_up & !regime_overflow);
-    let posit = unsafe { Posit::from_bits_unchecked(bits | Int::from(regime_overflow)) };
+    // Assemble the final result.
+    let bits = all_bits + Int::from(round_up);
+    let posit = unsafe { Posit::from_bits_unchecked(bits) };
 
     // Assume **output** invariants.
     unsafe {
