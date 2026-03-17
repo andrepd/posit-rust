@@ -121,8 +121,14 @@ impl<
     //
     // We also use `disjoint_bitor` instead of just bitwise-or, in to give the compiler freedom to
     // emit either a `|` or a `+`.
-    let frac = unsafe { Int::disjoint_bitor(Int::MIN.lshr(u32::from(x.is_positive())), fraction) };
-    let exp = unsafe { Int::disjoint_bitor(regime << Self::ES, exponent) };
+    let frac = unsafe { Int::disjoint_bitor(
+      Int::MIN.lshr(u32::from(x.is_positive())),
+      fraction,
+    )};
+    let exp = unsafe { Int::disjoint_bitor(
+      regime << Self::ES,
+      exponent,
+    )};
 
     let decoded = Decoded{frac, exp};
 
