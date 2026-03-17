@@ -7,7 +7,8 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> Debug for Posit<N, ES, Int> {
+  const RS: u32,
+> Debug for Posit<N, ES, Int, RS> {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     if const { Self::JUNK_BITS == 0 } {
       let bits = self.0;
@@ -27,8 +28,9 @@ impl<
 impl<
   const N: u32,
   const ES: u32,
+  const RS: u32,
   Int: crate::Int,
-> Debug for Decoded<N, ES, N, Int> {
+> Debug for Decoded<N, ES, RS, Int> {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     let frac_hidden = self.frac.lshr(Self::FRAC_WIDTH);
     let frac_explicit = (self.frac << 2).lshr(3);
