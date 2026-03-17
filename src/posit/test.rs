@@ -7,7 +7,8 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> Posit<N, ES, Int> {
+  const RS: u32,
+> Posit<N, ES, Int, RS> {
   /// Range of the absolute values of posit bit patterns, excluding 0 and NaR.
   const RANGE_ABS: RangeInclusive<i128> = const_as(Self::MIN_POSITIVE.0) ..= const_as(Self::MAX.0);
 
@@ -49,7 +50,8 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> Decoded<N, ES, N, Int> {
+  const RS: u32,
+> Decoded<N, ES, RS, Int> {
   /// Range of the absolute values of frac bit patterns, i.e. any number with leading `0b01`.
   const RANGE_FRAC_ABS: Range<i128> = {
     let frac_one: u128 = i128::MIN as u128 >> (128 - Int::BITS) >> 1;
@@ -60,7 +62,7 @@ impl<
   /// Range of the valid exponents, i.e. `3 * MIN_EXP ..= 3 * MAX_EXP`, which is the max value we
   /// guarantee is representable in a [Decoded].
   const RANGE_EXP: RangeInclusive<i128> = {
-    let max_exp: i128 = const_as(Posit::<N, ES, Int>::MAX_EXP);
+    let max_exp: i128 = const_as(Posit::<N, ES, Int, RS>::MAX_EXP);
     -3 * max_exp ..= 3* max_exp
   };
 
