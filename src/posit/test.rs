@@ -9,7 +9,7 @@ impl<
   Int: crate::Int,
 > Posit<N, ES, Int> {
   /// Range of the absolute values of posit bit patterns, excluding 0 and NaR.
-  const RANGE_ABS: RangeInclusive<i128> = 1 ..= (i128::MAX >> (128 - Self::BITS));
+  const RANGE_ABS: RangeInclusive<i128> = const_as(Self::MIN_POSITIVE.0) ..= const_as(Self::MAX.0);
 
   /// An iterator through all the posits except 0 and NaR.
   pub(crate) fn cases_exhaustive() -> impl Iterator<Item = Self> {
