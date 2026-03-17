@@ -4,7 +4,8 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> Posit<N, ES, Int> {
+  const RS: u32,
+> Posit<N, ES, Int, RS> {
   /// Returns the posit value of the lexicographic successor of `self`'s representation.
   ///
   /// Note that, unlike every other function of a posit, `next` and `prior` do not produce a
@@ -48,9 +49,9 @@ impl<
   }
 }
 
-impl<const N: u32,const ES: u32,Int: crate::Int>
-core::ops::Neg for Posit<N, ES, Int> {
-  type Output = Posit<N, ES, Int>;
+impl<const N: u32, const ES: u32, Int: crate::Int, const RS: u32>
+core::ops::Neg for Posit<N, ES, Int, RS> {
+  type Output = Posit<N, ES, Int, RS>;
 
   #[inline]
   fn neg(self) -> Self::Output {
@@ -58,9 +59,9 @@ core::ops::Neg for Posit<N, ES, Int> {
   }
 }
 
-impl<const N: u32,const ES: u32,Int: crate::Int>
-core::ops::Neg for &Posit<N, ES, Int> {
-  type Output = Posit<N, ES, Int>;
+impl<const N: u32, const ES: u32, Int: crate::Int, const RS: u32>
+core::ops::Neg for &Posit<N, ES, Int, RS> {
+  type Output = Posit<N, ES, Int, RS>;
 
   #[inline]
   fn neg(self) -> Self::Output {
@@ -74,7 +75,8 @@ core::ops::Neg for &Posit<N, ES, Int> {
 // TODO And make explicit that NaR inputs are propagated to NaR outputs everywhere? Or just that
 // `next` and `prior` do not?
 
-impl<const N: u32,const ES: u32,Int: crate::Int> Posit<N, ES, Int> {
+impl<const N: u32, const ES: u32, Int: crate::Int, const RS: u32>
+Posit<N, ES, Int, RS> {
   /// Return the absolute value of `self`.
   ///
   /// Standard: "[**abs**](https://posithub.org/docs/posit_standard-2.pdf#subsection.5.2)".
@@ -152,6 +154,15 @@ mod tests {
         assert_eq!(Rational::try_from(-p).unwrap(), -Rational::try_from(p).unwrap())
       }
     }
+
+    #[test]
+    fn bposit_16_5_6() {
+      assert_eq!(-Posit::<16, 5, i16, 6>::ZERO, Posit::<16, 5, i16, 6>::ZERO);
+      assert_eq!(-Posit::<16, 5, i16, 6>::NAR, Posit::<16, 5, i16, 6>::NAR);
+      for p in Posit::<16, 5, i16, 6>::cases_exhaustive() {
+        assert_eq!(Rational::try_from(-p).unwrap(), -Rational::try_from(p).unwrap())
+      }
+    }
   }
 
   mod abs {
@@ -173,6 +184,16 @@ mod tests {
       assert_eq!(Posit::<10, 0, i16>::ZERO.abs(), Posit::<10, 0, i16>::ZERO);
       assert_eq!(Posit::<10, 0, i16>::NAR.abs(), Posit::<10, 0, i16>::NAR);
       for p in Posit::<10, 0, i16>::cases_exhaustive() {
+        assert_eq!(Rational::try_from(p.abs()).unwrap(), Rational::try_from(p).unwrap().abs())
+      }
+    }
+
+    #[test]
+    fn bposit_16_5_6() {
+      use malachite::base::num::arithmetic::traits::Abs;
+      assert_eq!(Posit::<16, 5, i16, 6>::ZERO.abs(), Posit::<16, 5, i16, 6>::ZERO);
+      assert_eq!(Posit::<16, 5, i16, 6>::NAR.abs(), Posit::<16, 5, i16, 6>::NAR);
+      for p in Posit::<16, 5, i16, 6>::cases_exhaustive() {
         assert_eq!(Rational::try_from(p.abs()).unwrap(), Rational::try_from(p).unwrap().abs())
       }
     }
@@ -198,6 +219,18 @@ mod tests {
       assert_eq!(Posit::<10, 0, i16>::ZERO.sign(), Posit::<10, 0, i16>::ZERO);
       assert_eq!(Posit::<10, 0, i16>::NAR.sign(), Posit::<10, 0, i16>::NAR);
       for p in Posit::<10, 0, i16>::cases_exhaustive() {
+        assert_eq!(
+          p.sign(),
+          if p > Posit::ZERO {Posit::ONE} else {Posit::MINUS_ONE},
+        )
+      }
+    }
+
+    #[test]
+    fn bposit_16_5_6() {
+      assert_eq!(Posit::<16, 5, i16, 6>::ZERO.sign(), Posit::<16, 5, i16, 6>::ZERO);
+      assert_eq!(Posit::<16, 5, i16, 6>::NAR.sign(), Posit::<16, 5, i16, 6>::NAR);
+      for p in Posit::<16, 5, i16, 6>::cases_exhaustive() {
         assert_eq!(
           p.sign(),
           if p > Posit::ZERO {Posit::ONE} else {Posit::MINUS_ONE},
