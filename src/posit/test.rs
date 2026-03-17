@@ -249,17 +249,52 @@ mod tests {
   }
 
   #[test]
+  fn cases_exhaustive_all_bposit() {
+    let cases = Posit::<8, 2, i8>::cases_exhaustive_all();
+    let cases1 = Posit::<8, 2, i8, 1>::cases_exhaustive_all();
+    assert!(cases.map(Posit::to_bits).eq(cases1.map(Posit::to_bits)));
+    let cases = Posit::<8, 2, i8>::cases_exhaustive_all();
+    let cases2 = Posit::<8, 2, i8, 2>::cases_exhaustive_all();
+    assert!(cases.map(Posit::to_bits).eq(cases2.map(Posit::to_bits)));
+    let cases = Posit::<8, 2, i8>::cases_exhaustive_all();
+    let cases3 = Posit::<8, 2, i8, 3>::cases_exhaustive_all();
+    assert!(cases.map(Posit::to_bits).eq(cases3.map(Posit::to_bits)));
+    let cases = Posit::<8, 2, i8>::cases_exhaustive_all();
+    let cases7 = Posit::<8, 2, i8, 7>::cases_exhaustive_all();
+    assert!(cases.map(Posit::to_bits).eq(cases7.map(Posit::to_bits)));
+  }
+
+  #[test]
+  #[allow(overflowing_literals)]
   fn decoded_cases_exhaustive() {
     let max_exp = 3 * (2 << 1);
     let n_frac = 1 << 7;
     assert_eq!(
       Decoded::<4, 1, 4, i8>::cases_exhaustive().collect::<Vec<_>>().len(),
-      (2 * max_exp + 1) * n_frac,
+      (2 * max_exp as usize + 1) * n_frac,
     );
 
     let exhaustive = Decoded::<4, 1, 4, i8>::cases_exhaustive();
-    let expected = (-12 ..= 12).flat_map(|exp| {
-      (0b01_000000 ..= 0b01_111111).chain(0b10_000000u8 as i8 ..= 0b10_111111u8 as i8)
+    let expected = (-max_exp ..= max_exp).flat_map(|exp| {
+      (0b01_000000 ..= 0b01_111111).chain(0b10_000000 ..= 0b10_111111)
+        .map(move |frac| Decoded{frac, exp})
+    });
+    assert!(exhaustive.eq(expected))
+  }
+
+  #[test]
+  #[allow(overflowing_literals)]
+  fn decoded_cases_exhaustive_bposit() {
+    let max_exp = 3 * (3 << 1);
+    let n_frac = 1 << 7;
+    assert_eq!(
+      Decoded::<6, 1, 3, i8>::cases_exhaustive().collect::<Vec<_>>().len(),
+      (2 * max_exp as usize + 1) * n_frac,
+    );
+
+    let exhaustive = Decoded::<6, 1, 3, i8>::cases_exhaustive();
+    let expected = (-max_exp ..= max_exp).flat_map(|exp| {
+      (0b01_000000 ..= 0b01_111111).chain(0b10_000000 ..= 0b10_111111)
         .map(move |frac| Decoded{frac, exp})
     });
     assert!(exhaustive.eq(expected))
