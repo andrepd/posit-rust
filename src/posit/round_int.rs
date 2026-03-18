@@ -4,7 +4,8 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> Posit<N, ES, Int> {
+  const RS: u32,
+> Posit<N, ES, Int, RS> {
   // TODO note that these functions can probably be made more efficient if we don't call
   // encode/decode, since all we have to do is manipulate the `frac` field without touching the
   // exponents (not quite, because of overflow, but that overflow of frac into exp and regime is
@@ -212,13 +213,13 @@ mod tests {
   use malachite::base::rounding_modes::RoundingMode;
 
   /// Aux function: check that `posit` rounded to `rounded_posit` is correct for `rounding_mode`.
-  fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(
-    posit: Posit<N, ES, Int>,
-    rounded_posit: Posit<N, ES, Int>,
+  fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int, const RS: u32>(
+    posit: Posit<N, ES, Int, RS>,
+    rounded_posit: Posit<N, ES, Int, RS>,
     rounding_mode: RoundingMode,
   ) -> bool
   where
-    Rational: From<i32> + TryFrom<Posit<N, ES, Int>, Error = super::rational::IsNaR>,
+    Rational: From<i32> + TryFrom<Posit<N, ES, Int, RS>, Error = super::rational::IsNaR>,
   {
     use malachite::base::num::arithmetic::traits::RoundToMultiple;
     let posit = Rational::try_from(posit)
@@ -270,6 +271,16 @@ mod tests {
     test_exhaustive!{posit_3_0_exhaustive, Posit::<3, 0, i8>}
     test_exhaustive!{posit_4_0_exhaustive, Posit::<4, 0, i8>}
     test_exhaustive!{posit_4_1_exhaustive, Posit::<4, 1, i8>}
+
+    test_exhaustive!{bposit_8_3_6_exhaustive, Posit::<8, 3, i8, 6>}
+    test_exhaustive!{bposit_16_5_6_exhaustive, Posit::<16, 5, i16, 6>}
+    test_proptest!{bposit_32_5_6_proptest, Posit::<32, 5, i32, 6>}
+    test_proptest!{bposit_64_5_6_proptest, Posit::<64, 5, i64, 6>}
+
+    test_exhaustive!{bposit_10_2_6_exhaustive, Posit::<10, 2, i16, 7>}
+    test_exhaustive!{bposit_10_2_7_exhaustive, Posit::<10, 2, i16, 7>}
+    test_exhaustive!{bposit_10_2_8_exhaustive, Posit::<10, 2, i16, 8>}
+    test_exhaustive!{bposit_10_2_9_exhaustive, Posit::<10, 2, i16, 9>}
   }
 
   mod floor {
@@ -315,6 +326,16 @@ mod tests {
     test_exhaustive!{posit_3_0_exhaustive, Posit::<3, 0, i8>}
     test_exhaustive!{posit_4_0_exhaustive, Posit::<4, 0, i8>}
     test_exhaustive!{posit_4_1_exhaustive, Posit::<4, 1, i8>}
+
+    test_exhaustive!{bposit_8_3_6_exhaustive, Posit::<8, 3, i8, 6>}
+    test_exhaustive!{bposit_16_5_6_exhaustive, Posit::<16, 5, i16, 6>}
+    test_proptest!{bposit_32_5_6_proptest, Posit::<32, 5, i32, 6>}
+    test_proptest!{bposit_64_5_6_proptest, Posit::<64, 5, i64, 6>}
+
+    test_exhaustive!{bposit_10_2_6_exhaustive, Posit::<10, 2, i16, 7>}
+    test_exhaustive!{bposit_10_2_7_exhaustive, Posit::<10, 2, i16, 7>}
+    test_exhaustive!{bposit_10_2_8_exhaustive, Posit::<10, 2, i16, 8>}
+    test_exhaustive!{bposit_10_2_9_exhaustive, Posit::<10, 2, i16, 9>}
   }
 
   mod ceil {
@@ -360,5 +381,15 @@ mod tests {
     test_exhaustive!{posit_3_0_exhaustive, Posit::<3, 0, i8>}
     test_exhaustive!{posit_4_0_exhaustive, Posit::<4, 0, i8>}
     test_exhaustive!{posit_4_1_exhaustive, Posit::<4, 1, i8>}
+
+    test_exhaustive!{bposit_8_3_6_exhaustive, Posit::<8, 3, i8, 6>}
+    test_exhaustive!{bposit_16_5_6_exhaustive, Posit::<16, 5, i16, 6>}
+    test_proptest!{bposit_32_5_6_proptest, Posit::<32, 5, i32, 6>}
+    test_proptest!{bposit_64_5_6_proptest, Posit::<64, 5, i64, 6>}
+
+    test_exhaustive!{bposit_10_2_6_exhaustive, Posit::<10, 2, i16, 7>}
+    test_exhaustive!{bposit_10_2_7_exhaustive, Posit::<10, 2, i16, 7>}
+    test_exhaustive!{bposit_10_2_8_exhaustive, Posit::<10, 2, i16, 8>}
+    test_exhaustive!{bposit_10_2_9_exhaustive, Posit::<10, 2, i16, 9>}
   }
 }
