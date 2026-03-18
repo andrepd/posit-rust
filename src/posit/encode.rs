@@ -3,8 +3,9 @@ use super::*;
 impl<
   const N: u32,
   const ES: u32,
+  const RS: u32,
   Int: crate::Int,
-> Decoded<N, ES, N, Int> {
+> Decoded<N, ES, RS, Int> {
   /// Encode a posit, rounding if necessary. The rounding rule is always the same: "round to
   /// nearest, round ties to even bit pattern, never round to 0 (i.e. never over- or under-flow)".
   ///
@@ -20,7 +21,7 @@ impl<
   ///
   /// [`self.is_normalised()`](Self::is_normalised) has to hold, or calling this function
   /// is *undefined behaviour*.
-  pub(crate) unsafe fn encode_regular_round(self, mut sticky: Int) -> Posit<N, ES, Int> {
+  pub(crate) unsafe fn encode_regular_round(self, mut sticky: Int) -> Posit<N, ES, Int, RS> {
     // Assume **input** invariants.
     unsafe { core::hint::assert_unchecked(self.is_normalised()) }
 
@@ -105,8 +106,12 @@ impl<
     // We can, however, clamp always the `regime_raw` to `Self::BITS - 2`, and simply set the lsb
     // to 1 whenever the `regime_raw` would exceed that value, since both the cases above end in
     // 1. This way we posit consists entirely of regime bits (plus the sign bit).
+    //
+    // What about b-posits? In that case, the regime length is capped at `RS`, so `regime_raw` is
+    // capped at `Self::RS - 1`. However, if the regime length would overflow this, we *still*
+    // need to saturate to MAX/MIN or MIN_POSITIVE/MAX_NEGATIVE.
     let regime_raw_max = Self::BITS - 3;
-    let regime_overflow = regime_raw > regime_raw_max;
+    let regime_overflow = regime_raw > regime_raw_max.min(Self::RS - 1);
     let regime_raw = if regime_overflow {regime_raw_max} else {regime_raw};
 
     // Continue assembling the regime bits. "Drag" the initial 01 or 10 bits `regime_raw` to the
@@ -125,6 +130,14 @@ impl<
     if crate::utl::unlikely(regime_overflow) {
       return unsafe { Posit::from_bits_unchecked(sign_and_regime_bits | Int::ONE) }
     }
+
+    // If the `RS` is capped, remember to clear the bits below the regime.
+    let sign_and_regime_bits =
+      if const { Self::RS == Self::BITS } {
+        sign_and_regime_bits
+      } else {
+        sign_and_regime_bits.mask_msb(1 + Self::RS + Self::JUNK_BITS)
+      };
 
     // Next we need to place the exponent bits in the right place, just after the regime bits. The
     // sign and regime take up: 1 bit (sign) + regime_raw + 1 bits (run of 0s/1s) + 1 bit
@@ -193,8 +206,12 @@ impl<
     //
     // The lowest `regime_raw + 2` bits of `exponent_and_fraction_bits` go to `sticky`, and the
     // last one shifted out goes to `round`.
-    sticky |= exponent_and_fraction_bits.mask_lsb(2 + regime_raw);
-    let exponent_and_fraction_bits = exponent_and_fraction_bits.lshr(2 + regime_raw);
+    //
+    // Of course, remember again that if this is a b-posit then the regime may be terminated simply
+    // by hitting the max regime length, and **not** by an opposite bit.
+    let regime_len = (regime_raw + 2).min(Self::RS);
+    sticky |= exponent_and_fraction_bits.mask_lsb(regime_len);
+    let exponent_and_fraction_bits = exponent_and_fraction_bits.lshr(regime_len);
     let round = exponent_and_fraction_bits.get_lsb();
     let exponent_and_fraction_bits = exponent_and_fraction_bits.lshr(1);
 
@@ -205,9 +222,20 @@ impl<
 
     let round_up: bool = round & (odd | (sticky != Int::ZERO));
 
-    // Assemble the final result.
-    let bits = all_bits + Int::from(round_up);
-    let posit = unsafe { Posit::from_bits_unchecked(bits) };
+    // Finally, we need special handling for b-posits. Essentially, if rounding causes over- or
+    // under-flow, we need to "undo" it. TODO elaborate, improve
+    let rounded = all_bits.wrapping_add(Int::from(round_up));
+    let unrounded = all_bits.wrapping_add(Int::from(!round_up));
+    let posit = 
+      if const { Self::RS == Self::BITS } {
+        unsafe { Posit::from_bits_unchecked(rounded) }
+      } else {
+        if rounded << Self::JUNK_BITS << 1 == Int::ZERO {
+          unsafe { Posit::from_bits_unchecked(unrounded) }
+        } else {
+          unsafe { Posit::from_bits_unchecked(rounded) }
+        }
+      };
 
     // Assume **output** invariants.
     unsafe {
@@ -232,7 +260,7 @@ impl<
   /// [`self.is_normalised()`](Self::is_normalised) has to hold, or calling this function
   /// is *undefined behaviour*.
   #[inline]
-  pub(crate) unsafe fn encode_regular(self) -> Posit<N, ES, Int> {
+  pub(crate) unsafe fn encode_regular(self) -> Posit<N, ES, Int, RS> {
     unsafe { core::hint::assert_unchecked(self.is_normalised()) }
     // TODO: bench vs specialised impl
     unsafe { self.encode_regular_round(Int::ZERO) }
@@ -242,7 +270,7 @@ impl<
   ///
   /// If `!self.is_normalised()`, return `Err(())` instead.
   #[cfg(test)]
-  pub(crate) fn try_encode_round(self, sticky: Int) -> Result<Posit<N, ES, Int>, ()> {
+  pub(crate) fn try_encode_round(self, sticky: Int) -> Result<Posit<N, ES, Int, RS>, ()> {
     if self.is_normalised() {
       Ok(unsafe { self.encode_regular_round(sticky) })
     } else {
@@ -254,7 +282,7 @@ impl<
   ///
   /// If `!self.is_normalised()`, return `Err(())` instead.
   #[cfg(test)]
-  pub(crate) fn try_encode(self) -> Result<Posit<N, ES, Int>, ()> {
+  pub(crate) fn try_encode(self) -> Result<Posit<N, ES, Int, RS>, ()> {
     if self.is_normalised() {
       Ok(unsafe { self.encode_regular() })
     } else {
@@ -320,6 +348,16 @@ mod tests {
     test_exhaustive!{posit_3_0_exhaustive, Posit::<3, 0, i8>}
     test_exhaustive!{posit_4_0_exhaustive, Posit::<4, 0, i8>}
     test_exhaustive!{posit_4_1_exhaustive, Posit::<4, 1, i8>}
+
+    test_exhaustive!{bposit_8_3_6_exhaustive, Posit::<8, 3, i8, 6>}
+    test_exhaustive!{bposit_16_5_6_exhaustive, Posit::<16, 5, i16, 6>}
+    test_proptest!{bposit_32_5_6_proptest, Posit::<32, 5, i32, 6>}
+    test_proptest!{bposit_64_5_6_proptest, Posit::<64, 5, i64, 6>}
+
+    test_exhaustive!{bposit_10_2_6_exhaustive, Posit::<10, 2, i16, 6>}
+    test_exhaustive!{bposit_10_2_7_exhaustive, Posit::<10, 2, i16, 7>}
+    test_exhaustive!{bposit_10_2_8_exhaustive, Posit::<10, 2, i16, 8>}
+    test_exhaustive!{bposit_10_2_9_exhaustive, Posit::<10, 2, i16, 9>}
   }
 
   mod rounding {
@@ -327,14 +365,14 @@ mod tests {
 
     /// Aux function: assert that `decoded` is indeed `rational`, and that it is encoded
     /// (after rounding) into `posit`.
-    fn assert_encode_rounded<const N: u32, const ES: u32, Int: crate::Int>(
+    fn assert_encode_rounded<const N: u32, const ES: u32, const RS: u32, Int: crate::Int>(
       rational: &str,
-      decoded: Decoded<N, ES, N, Int>,
+      decoded: Decoded<N, ES, RS, Int>,
       posit: Int,
-    ) where Rational: From<Decoded<N, ES, N, Int>> {
+    ) where Rational: From<Decoded<N, ES, RS, Int>> {
       use core::str::FromStr;
       assert_eq!(Rational::from(decoded), Rational::from_str(rational).unwrap());
-      assert_eq!(decoded.try_encode(), Ok(Posit::<N, ES, Int>::from_bits(posit)));
+      assert_eq!(decoded.try_encode(), Ok(Posit::<N, ES, Int, RS>::from_bits(posit)));
     }
 
     #[test]
@@ -398,16 +436,16 @@ mod tests {
     }
 
     /// Aux function: check that `decoded` is rounded correctly.
-    fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(
-      decoded: Decoded<N, ES, N, Int>,
+    fn is_correct_rounded<const N: u32, const ES: u32, const RS: u32, Int: crate::Int>(
+      decoded: Decoded<N, ES, RS, Int>,
       sticky: bool,
     ) -> bool
     where
-      Rational: From<Decoded<N, ES, N, Int>>,
-      Rational: TryFrom<Posit<N, ES, Int>, Error = super::rational::IsNaR>,
+      Rational: From<Decoded<N, ES, RS, Int>>,
+      Rational: TryFrom<Posit<N, ES, Int, RS>, Error = super::rational::IsNaR>,
     {
       use malachite::base::num::arithmetic::traits::Pow;
-      let epsilon = Rational::try_from(Posit::<N, ES, Int>::MIN_POSITIVE).unwrap().pow(32i64);
+      let epsilon = Rational::try_from(Posit::<N, ES, Int, RS>::MIN_POSITIVE).unwrap().pow(32i64);
       let posit = decoded.try_encode_round(Int::from(sticky)).expect("Invalid test case!");
       let exact = if !sticky {Rational::from(decoded)} else {Rational::from(decoded) + epsilon};
       super::rational::is_correct_rounded(exact, posit)
@@ -454,6 +492,16 @@ mod tests {
     test_exhaustive!{posit_3_0_exhaustive, Decoded::<3, 0, 3, i8>}
     test_exhaustive!{posit_4_0_exhaustive, Decoded::<4, 0, 4, i8>}
     test_exhaustive!{posit_4_1_exhaustive, Decoded::<4, 1, 4, i8>}
+
+    test_exhaustive!{bposit_8_3_6_exhaustive, Decoded::<8, 3, 6, i8>}
+    test_exhaustive!{bposit_16_5_6_exhaustive, Decoded::<16, 5, 6, i16>}
+    test_proptest!{bposit_32_5_6_proptest, Decoded::<32, 5, 6, i32>}
+    test_proptest!{bposit_64_5_6_proptest, Decoded::<64, 5, 6, i64>}
+
+    test_exhaustive!{bposit_10_2_6_exhaustive, Decoded::<10, 2, 7, i16>}
+    test_exhaustive!{bposit_10_2_7_exhaustive, Decoded::<10, 2, 7, i16>}
+    test_exhaustive!{bposit_10_2_8_exhaustive, Decoded::<10, 2, 8, i16>}
+    test_exhaustive!{bposit_10_2_9_exhaustive, Decoded::<10, 2, 9, i16>}
 
     #[test]
     fn p8_max() {
