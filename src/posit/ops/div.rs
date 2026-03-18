@@ -4,7 +4,8 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> Posit<N, ES, Int> {
+  const RS: u32,
+> Posit<N, ES, Int, RS> {
   /// Return a [normalised](Decoded::is_normalised) `Decoded` that's the result of dividing `x` by
   /// `y`, plus the sticky bit.
   ///
@@ -13,7 +14,7 @@ impl<
   /// `x` and `y` have to be [normalised](Decoded::is_normalised), or calling this function
   /// is *undefined behaviour*.
   #[inline]
-  pub(crate) unsafe fn div_kernel(x: Decoded<N, ES, N, Int>, y: Decoded<N, ES, N, Int>) -> (Decoded<N, ES, N, Int>, Int) {
+  pub(crate) unsafe fn div_kernel(x: Decoded<N, ES, RS, Int>, y: Decoded<N, ES, RS, Int>) -> (Decoded<N, ES, RS, Int>, Int) {
     // Let's use ÷ to denote true mathematical division, and / denote integer division *that rounds
     // down* (i.e. towards negative infinity, not towards zero). To divide two numbers in the form
     // `frac × 2^exp`, we have:
@@ -46,12 +47,12 @@ impl<
     // relative magnitudes of the `frac`s, without dividing. Then we only need to do the second
     // division.
     // SAFETY: `y` is normalised, so `y.frac` cannot be 0 nor -1.
-    let (div, _) = unsafe { x.frac.shift_div_rem(y.frac, Decoded::<N, ES, N, Int>::FRAC_WIDTH) };
+    let (div, _) = unsafe { x.frac.shift_div_rem(y.frac, Decoded::<N, ES, RS, Int>::FRAC_WIDTH) };
     // SAFETY: `x.frac` and `y.frac` are not 0, so `div` cannot be 0; nor can it ever be MIN.
     let underflow = unsafe { div.leading_run_minus_one() };
 
     // SAFETY: `y` is normalised, so `y.frac` cannot be 0 nor -1.
-    let (frac, sticky) = unsafe { x.frac.shift_div_rem(y.frac, Decoded::<N, ES, N, Int>::FRAC_WIDTH + underflow) };
+    let (frac, sticky) = unsafe { x.frac.shift_div_rem(y.frac, Decoded::<N, ES, RS, Int>::FRAC_WIDTH + underflow) };
     let exp = x.exp - y.exp - Int::of_u32(underflow);
 
     (Decoded{frac, exp}, sticky)

@@ -4,7 +4,8 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> Posit<N, ES, Int> {
+  const RS: u32,
+> Posit<N, ES, Int, RS> {
   /// Return a [normalised](Decoded::is_normalised) `Decoded` that's the result of multiplying `x`
   /// and `y`, plus the sticky bit.
   ///
@@ -13,7 +14,7 @@ impl<
   /// `x` and `y` have to be [normalised](Decoded::is_normalised), or calling this function
   /// is *undefined behaviour*.
   #[inline]
-  pub(crate) unsafe fn mul_kernel(x: Decoded<N, ES, N, Int>, y: Decoded<N, ES, N, Int>) -> (Decoded<N, ES, N, Int>, Int) {
+  pub(crate) unsafe fn mul_kernel(x: Decoded<N, ES, RS, Int>, y: Decoded<N, ES, RS, Int>) -> (Decoded<N, ES, RS, Int>, Int) {
     // Multiplying two numbers in the form `frac × 2^exp` is much easier than adding them. We have
     //
     //   (x.frac / FRAC_DENOM * 2^x.exp) * (y.frac / FRAC_DENOM * 2^y.exp)

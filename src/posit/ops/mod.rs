@@ -13,48 +13,48 @@ mod div;
 /// Helper macro for implementing operators for all combinations of value and reference
 macro_rules! mk_ops {
   ($trait:ident, $trait_assign:ident, $name:ident, $name_assign:ident) => {
-    impl<const N: u32, const ES: u32, Int: crate::Int>
-    $trait<Posit<N, ES, Int>> for Posit<N, ES, Int> {
-      type Output = Posit<N, ES, Int>;
+    impl<const N: u32, const ES: u32, Int: crate::Int, const RS: u32>
+    $trait<Posit<N, ES, Int, RS>> for Posit<N, ES, Int, RS> {
+      type Output = Posit<N, ES, Int, RS>;
 
       #[inline]
       fn $name(self, rhs: Self) -> Self::Output { self.$name(rhs) }
     }
 
-    impl<const N: u32, const ES: u32, Int: crate::Int>
-    $trait<&Posit<N, ES, Int>> for Posit<N, ES, Int> {
-      type Output = Posit<N, ES, Int>;
+    impl<const N: u32, const ES: u32, Int: crate::Int, const RS: u32>
+    $trait<&Posit<N, ES, Int, RS>> for Posit<N, ES, Int, RS> {
+      type Output = Posit<N, ES, Int, RS>;
 
       #[inline]
       fn $name(self, rhs: &Self) -> Self::Output { self.$name(*rhs) }
     }
 
-    impl<const N: u32, const ES: u32, Int: crate::Int>
-    $trait<Posit<N, ES, Int>> for &Posit<N, ES, Int> {
-      type Output = Posit<N, ES, Int>;
+    impl<const N: u32, const ES: u32, Int: crate::Int, const RS: u32>
+    $trait<Posit<N, ES, Int, RS>> for &Posit<N, ES, Int, RS> {
+      type Output = Posit<N, ES, Int, RS>;
 
       #[inline]
-      fn $name(self, rhs: Posit<N, ES, Int>) -> Self::Output { (*self).$name(rhs) }
+      fn $name(self, rhs: Posit<N, ES, Int, RS>) -> Self::Output { (*self).$name(rhs) }
     }
 
-    impl<const N: u32, const ES: u32, Int: crate::Int>
-    $trait<&Posit<N, ES, Int>> for &Posit<N, ES, Int> {
-      type Output = Posit<N, ES, Int>;
+    impl<const N: u32, const ES: u32, Int: crate::Int, const RS: u32>
+    $trait<&Posit<N, ES, Int, RS>> for &Posit<N, ES, Int, RS> {
+      type Output = Posit<N, ES, Int, RS>;
 
       #[inline]
-      fn $name(self, rhs: &Posit<N, ES, Int>) -> Self::Output { (*self).$name(*rhs) }
+      fn $name(self, rhs: &Posit<N, ES, Int, RS>) -> Self::Output { (*self).$name(*rhs) }
     }
 
-    impl<const N: u32, const ES: u32, Int: crate::Int>
-    $trait_assign<Posit<N, ES, Int>> for Posit<N, ES, Int> {
+    impl<const N: u32, const ES: u32, Int: crate::Int, const RS: u32>
+    $trait_assign<Posit<N, ES, Int, RS>> for Posit<N, ES, Int, RS> {
       #[inline]
-      fn $name_assign(&mut self, rhs: Posit<N, ES, Int>) { *self = self.$name(rhs) }
+      fn $name_assign(&mut self, rhs: Posit<N, ES, Int, RS>) { *self = self.$name(rhs) }
     }
 
-    impl<const N: u32, const ES: u32, Int: crate::Int>
-    $trait_assign<&Posit<N, ES, Int>> for Posit<N, ES, Int> {
+    impl<const N: u32, const ES: u32, Int: crate::Int, const RS: u32>
+    $trait_assign<&Posit<N, ES, Int, RS>> for Posit<N, ES, Int, RS> {
       #[inline]
-      fn $name_assign(&mut self, rhs: &Posit<N, ES, Int>) { *self = self.$name(*rhs) }
+      fn $name_assign(&mut self, rhs: &Posit<N, ES, Int, RS>) { *self = self.$name(*rhs) }
     }
   }
 }
@@ -82,12 +82,12 @@ macro_rules! mk_tests {
     }
 
     /// Aux function: check that `a $op b` is rounded correctly.
-    fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(
-      a: Posit<N, ES, Int>,
-      b: Posit<N, ES, Int>,
+    fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int, const RS: u32>(
+      a: Posit<N, ES, Int, RS>,
+      b: Posit<N, ES, Int, RS>,
     ) -> bool
     where
-      Rational: TryFrom<Posit<N, ES, Int>, Error = super::rational::IsNaR>,
+      Rational: TryFrom<Posit<N, ES, Int, RS>, Error = super::rational::IsNaR>,
     {
       let posit = a $op b;
       if let (Ok(a), Ok(b)) = (Rational::try_from(a), Rational::try_from(b)) {
@@ -146,6 +146,16 @@ macro_rules! mk_tests {
     test_exhaustive!{posit_3_0_exhaustive, Posit::<3, 0, i8>}
     test_exhaustive!{posit_4_0_exhaustive, Posit::<4, 0, i8>}
     test_exhaustive!{posit_4_1_exhaustive, Posit::<4, 1, i8>}
+
+    test_exhaustive!{bposit_8_3_6_exhaustive, Posit::<8, 3, i8, 6>}
+    test_proptest!{bposit_16_5_6_proptest, Posit::<16, 5, i16, 6>}
+    test_proptest!{bposit_32_5_6_proptest, Posit::<32, 5, i32, 6>}
+    test_proptest!{bposit_64_5_6_proptest, Posit::<64, 5, i64, 6>}
+
+    test_exhaustive!{bposit_10_2_6_exhaustive, Posit::<10, 2, i16, 7>}
+    test_exhaustive!{bposit_10_2_7_exhaustive, Posit::<10, 2, i16, 7>}
+    test_exhaustive!{bposit_10_2_8_exhaustive, Posit::<10, 2, i16, 8>}
+    test_exhaustive!{bposit_10_2_9_exhaustive, Posit::<10, 2, i16, 9>}
   }
 }
 
