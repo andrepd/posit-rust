@@ -222,7 +222,21 @@ where
     // `geometric_cutoff`, and therefore any value that would lie outside `ARITHMETIC_ROUNDING`
     // would also lie outside the representable range at all, meaning there's no range where
     // geometric rounding takes place, ergo no "twilight zone".
-    let geometric_cutoff = Rational::power_of_2(((N - 2 - ES) as i64) << ES);
+
+    // Making this as obvious as possible: if there are no exponent bits, or if the maximum length
+    // of the sign+regime+exponent bits does not overflow the number of total bits, then no
+    // exponent bits are ever chopped, and we are *always* in the arithmetic rounding region.
+    const SIGN_BIT: u32 = 1;
+    if Self::ES == 0 || SIGN_BIT + Self::RS + Self::ES <= Self::BITS {
+      return Self::MIN_POSITIVE_RATIONAL.clone() ..= Self::MAX_RATIONAL.clone()
+    }
+    // Otherwise: a `max_regime_len` such that `1 + max_regime_len + ES <= N` (including the
+    // terminating bit) is the limit for arithmetic rounding. A longer regime causes exponent bits
+    // to be lost, and thus geometric rounding to be used.
+    const REGIME_TERMINATING_BIT: u32 = 1;
+    let max_regime_len = Self::BITS - Self::ES - SIGN_BIT;
+    let max_regime = max_regime_len - REGIME_TERMINATING_BIT;
+    let geometric_cutoff = Rational::power_of_2((max_regime as i64) << ES);
     (&geometric_cutoff).reciprocal() ..= geometric_cutoff
   });
 }
