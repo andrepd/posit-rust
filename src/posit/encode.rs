@@ -105,8 +105,8 @@ impl<
     // We can, however, clamp always the `regime_raw` to `Self::BITS - 2`, and simply set the lsb
     // to 1 whenever the `regime_raw` would exceed that value, since both the cases above end in
     // 1. This way we posit consists entirely of regime bits (plus the sign bit).
-    let regime_raw_max = Self::BITS - 2;
-    let regime_overflow = regime_raw >= regime_raw_max;
+    let regime_raw_max = Self::BITS - 3;
+    let regime_overflow = regime_raw > regime_raw_max;
     let regime_raw = if regime_overflow {regime_raw_max} else {regime_raw};
 
     // Continue assembling the regime bits. "Drag" the initial 01 or 10 bits `regime_raw` to the
@@ -118,10 +118,11 @@ impl<
     let sign_and_regime_bits = self.frac.mask_msb(1) | regime_bits.lshr(1);
     let sign_and_regime_bits = sign_and_regime_bits >> Self::JUNK_BITS;
 
-    // If `regime_overflow`, then we are done. Otherwise, we can proceed for the rest of this
-    // function assuming that the regime is bounded and that rounding is to be applied as normal
-    // (with no chance that we need to saturate).
-    if regime_overflow {
+    // As mentioned, if `regime_overflow` is true, then we are done: the posit consists entirely of
+    // sign and regime bits. Otherwise, we can proceed for the rest of this function assuming that
+    // the regime is bounded and that rounding is to be applied as normal (with no chance that we
+    // need to saturate).
+    if crate::utl::unlikely(regime_overflow) {
       return unsafe { Posit::from_bits_unchecked(sign_and_regime_bits | Int::ONE) }
     }
 
