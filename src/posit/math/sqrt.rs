@@ -4,7 +4,8 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> Posit<N, ES, Int> {
+  const RS: u32,
+> Posit<N, ES, Int, RS> {
   /// Return a [normalised](Decoded::is_normalised) `Decoded` that is the result of √x, if `x` is
   /// non-negative.
   ///
@@ -13,7 +14,7 @@ impl<
   /// `x` must to be [normalised](Decoded::is_normalised) and `x.frac` must be positive, or calling
   /// this function is *undefined behaviour*.
   #[inline]
-  pub(crate) unsafe fn sqrt_kernel(x: Decoded<N, ES, N, Int>) -> (Decoded<N, ES, N, Int>, Int) {
+  pub(crate) unsafe fn sqrt_kernel(x: Decoded<N, ES, RS, Int>) -> (Decoded<N, ES, RS, Int>, Int) {
     // Taking the square root of a number in the form `frac × 2^exp` has two steps.
     //
     // First, ensure that `exp` is an even number. If it's odd, add 1 to exp and compensate `frac`
@@ -40,7 +41,7 @@ impl<
     let frac_adjusted = (x.frac).as_unsigned() << exp_odd.as_u32();
     let exp_adjusted = x.exp - exp_odd;
 
-    let (result, _) = frac_adjusted.shift_sqrt(Decoded::<N, ES, N, Int>::FRAC_WIDTH);
+    let (result, _) = frac_adjusted.shift_sqrt(Decoded::<N, ES, RS, Int>::FRAC_WIDTH);
     let frac = Int::of_unsigned(result);
     let exp = exp_adjusted >> 1;
     let sticky = Int::ONE;
@@ -84,11 +85,11 @@ mod tests {
   use proptest::prelude::*;
 
   /// Aux function: check that `x.sqrt()` is rounded correctly.
-  fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int>(
-    x: Posit<N, ES, Int>,
+  fn is_correct_rounded<const N: u32, const ES: u32, Int: crate::Int, const RS: u32>(
+    x: Posit<N, ES, Int, RS>,
   ) -> bool
   where
-    Rational: TryFrom<Posit<N, ES, Int>, Error = super::rational::IsNaR>, 
+    Rational: TryFrom<Posit<N, ES, Int, RS>, Error = super::rational::IsNaR>, 
   {
     let posit = x.sqrt();
     if let Ok(rational) = Rational::try_from(x)
@@ -142,4 +143,14 @@ mod tests {
   test_exhaustive!{posit_3_0_exhaustive, Posit::<3, 0, i8>}
   test_exhaustive!{posit_4_0_exhaustive, Posit::<4, 0, i8>}
   test_exhaustive!{posit_4_1_exhaustive, Posit::<4, 1, i8>}
+
+  test_exhaustive!{bposit_8_3_6_exhaustive, Posit::<8, 3, i8, 6>}
+  test_exhaustive!{bposit_16_5_6_exhaustive, Posit::<16, 5, i16, 6>}
+  test_proptest!{bposit_32_5_6_proptest, Posit::<32, 5, i32, 6>}
+  test_proptest!{bposit_64_5_6_proptest, Posit::<64, 5, i64, 6>}
+
+  test_exhaustive!{bposit_10_2_6_exhaustive, Posit::<10, 2, i16, 7>}
+  test_exhaustive!{bposit_10_2_7_exhaustive, Posit::<10, 2, i16, 7>}
+  test_exhaustive!{bposit_10_2_8_exhaustive, Posit::<10, 2, i16, 8>}
+  test_exhaustive!{bposit_10_2_9_exhaustive, Posit::<10, 2, i16, 9>}
 }
