@@ -68,6 +68,7 @@ Use standard posit types, or define your own.
 ```rust
 use fast_posit::{p8, p16, p32, p64};  // Standard: n bits, 2 exponent bits
 type MyPosit = Posit<24, 3, i32>;  // Non-standard: 24 bits, 3 exponent bits
+type MyBoundedPosit = Posit<32, 3, i32, 6>;  // b-posit: 32 bits, 3 exponent bits, 6 max regime
 ```
 
 Create posits from ints, IEEE floats, strings, constants, or a raw bit representation.
@@ -198,6 +199,8 @@ standard paths you may need to set `RUSTFLAGS="-L /path/to/lib"`.
 ## Features
 
 - [x] Posits with arbitrary size and arbitrary exponent size
+  - [x] Bounded posits, with a maximum regime size
+  - [ ] Biased posits, with a non-zero exponent bias
 - [x] Basics
   - [x] Arithmetic (+, -, ×, ÷)
   - [x] Comparisons (>, ==, …)
@@ -219,6 +222,7 @@ standard paths you may need to set `RUSTFLAGS="-L /path/to/lib"`.
   - [x] Adding posits
   - [x] Adding products of posits
   - [x] Adding quires
+- [ ] C header library
 
 ## Dependencies
 
