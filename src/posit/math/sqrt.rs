@@ -149,7 +149,7 @@ mod tests {
   test_proptest!{bposit_32_5_6_proptest, Posit::<32, 5, i32, 6>}
   test_proptest!{bposit_64_5_6_proptest, Posit::<64, 5, i64, 6>}
 
-  test_exhaustive!{bposit_10_2_6_exhaustive, Posit::<10, 2, i16, 7>}
+  test_exhaustive!{bposit_10_2_6_exhaustive, Posit::<10, 2, i16, 6>}
   test_exhaustive!{bposit_10_2_7_exhaustive, Posit::<10, 2, i16, 7>}
   test_exhaustive!{bposit_10_2_8_exhaustive, Posit::<10, 2, i16, 8>}
   test_exhaustive!{bposit_10_2_9_exhaustive, Posit::<10, 2, i16, 9>}

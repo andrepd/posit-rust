@@ -498,7 +498,7 @@ mod tests {
     test_proptest!{bposit_32_5_6_proptest, Decoded::<32, 5, 6, i32>}
     test_proptest!{bposit_64_5_6_proptest, Decoded::<64, 5, 6, i64>}
 
-    test_exhaustive!{bposit_10_2_6_exhaustive, Decoded::<10, 2, 7, i16>}
+    test_exhaustive!{bposit_10_2_6_exhaustive, Decoded::<10, 2, 6, i16>}
     test_exhaustive!{bposit_10_2_7_exhaustive, Decoded::<10, 2, 7, i16>}
     test_exhaustive!{bposit_10_2_8_exhaustive, Decoded::<10, 2, 8, i16>}
     test_exhaustive!{bposit_10_2_9_exhaustive, Decoded::<10, 2, 9, i16>}
