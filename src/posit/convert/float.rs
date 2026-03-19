@@ -8,7 +8,8 @@ fn decode_finite_f64<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
->(num: f64) -> (Decoded<N, ES, N, Int>, Int) {  // TODO type for `(Decoded, sticky)`
+  const RS: u32,
+>(num: f64) -> (Decoded<N, ES, RS, Int>, Int) {  // TODO type for `(Decoded, sticky)`
   debug_assert!(num.is_finite());
   const MANTISSA_BITS: u32 = f64::MANTISSA_DIGITS - 1;
   const EXP_BIAS: i64 = f64::MIN_EXP as i64 - 1;
@@ -108,7 +109,8 @@ fn decode_finite_f32<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
->(num: f32) -> (Decoded<N, ES, N, Int>, Int) {
+  const RS: u32,
+>(num: f32) -> (Decoded<N, ES, RS, Int>, Int) {
   debug_assert!(num.is_finite());
   // TODO I'm lazy so for I'm just gonna call into [`decode_finite_f64`], since `f32` → `f64` is
   // lossless; write standalone impl at some point
@@ -119,7 +121,8 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> RoundFrom<f32> for Posit<N, ES, Int> {
+  const RS: u32,
+> RoundFrom<f32> for Posit<N, ES, Int, RS> {
   /// Convert an `f32` into a `Posit`, [rounding according to the standard]:
   ///
   /// - If the value is any infinity or any NaN, it converts to [NaR](Posit::NAR).
@@ -143,7 +146,8 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> RoundFrom<f64> for Posit<N, ES, Int> {
+  const RS: u32,
+> RoundFrom<f64> for Posit<N, ES, Int, RS> {
   /// Convert an `f64` into a `Posit`, [rounding according to the standard]:
   ///
   /// - If the value is any infinity or any NaN, it converts to [NaR](Posit::NAR).
@@ -168,7 +172,8 @@ fn encode_finite_f64<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
->(decoded: Decoded<N, ES, N, Int>) -> f64 {
+  const RS: u32,
+>(decoded: Decoded<N, ES, RS, Int>) -> f64 {
   // Rust assumes that the "default" IEEE rounding mode "roundTiesToEven" is always in effect
   // (anything else is UB). This considerably simplifies this implementation.
   const MANTISSA_BITS: u32 = f64::MANTISSA_DIGITS - 1;
@@ -180,7 +185,7 @@ fn encode_finite_f64<
     // Small detail: a `frac` of `0b10_000…` (= -2.0) is translated to a float mantissa with
     // absolute value 1.0, compensated by adding +1 to the exponent.
     if decoded.frac != Int::MIN {
-      (decoded.frac.wrapping_abs().mask_lsb(Decoded::<N, ES, N, Int>::FRAC_WIDTH), decoded.exp)
+      (decoded.frac.wrapping_abs().mask_lsb(Decoded::<N, ES, RS, Int>::FRAC_WIDTH), decoded.exp)
     } else {
       (Int::ZERO, decoded.exp + Int::ONE)
     };
@@ -220,8 +225,8 @@ fn encode_finite_f64<
 
   // There are only `MANTISSA_BITS` bits for the mantissa, any less than that and we have to do
   // some rounding.
-  let shift_left  = MANTISSA_BITS.saturating_sub(Decoded::<N, ES, N, Int>::FRAC_WIDTH);
-  let shift_right = Decoded::<N, ES, N, Int>::FRAC_WIDTH.saturating_sub(MANTISSA_BITS);
+  let shift_left  = MANTISSA_BITS.saturating_sub(Decoded::<N, ES, RS, Int>::FRAC_WIDTH);
+  let shift_right = Decoded::<N, ES, RS, Int>::FRAC_WIDTH.saturating_sub(MANTISSA_BITS);
   let mantissa = const_as::<Int, i64>(frac_abs >> shift_right) << shift_left;
   // Compute also the bits lost due to right shift, and compile them into `round` and `sticky`
   // bits.
@@ -252,7 +257,8 @@ fn encode_finite_f32<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
->(decoded: Decoded<N, ES, N, Int>) -> f32 {
+  const RS: u32,
+>(decoded: Decoded<N, ES, RS, Int>) -> f32 {
   // Again, I'm lazy so shortcut for now.
   encode_finite_f64(decoded) as f32
 }
@@ -261,7 +267,8 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> RoundFrom<Posit<N, ES, Int>> for f32 {
+  const RS: u32,
+> RoundFrom<Posit<N, ES, Int, RS>> for f32 {
   /// Convert a `Posit` into an `f32`, [rounding according to the standard]:
   ///
   /// - If the value is [0](Posit::ZERO), the result is `+0.0`.
@@ -271,7 +278,7 @@ impl<
   ///   to nearest, in case of a tie round to nearest even bit pattern).
   ///
   /// [rounding according to the standard]: https://posithub.org/docs/posit_standard-2.pdf#subsection.6.5
-  fn round_from(value: Posit<N, ES, Int>) -> Self {
+  fn round_from(value: Posit<N, ES, Int, RS>) -> Self {
     if value == Posit::ZERO {
       0.
     } else if value == Posit::NAR {
@@ -288,7 +295,8 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> RoundFrom<Posit<N, ES, Int>> for f64 {
+  const RS: u32,
+> RoundFrom<Posit<N, ES, Int, RS>> for f64 {
   /// Convert a `Posit` into an `f64`, [rounding according to the standard]:
   ///
   /// - If the value is [0](Posit::ZERO), the result is `+0.0`.
@@ -298,7 +306,7 @@ impl<
   ///   to nearest, in case of a tie round to nearest even bit pattern).
   ///
   /// [rounding according to the standard]: https://posithub.org/docs/posit_standard-2.pdf#subsection.6.5
-  fn round_from(value: Posit<N, ES, Int>) -> Self {
+  fn round_from(value: Posit<N, ES, Int, RS>) -> Self {
     if value == Posit::ZERO {
       0.
     } else if value == Posit::NAR {
@@ -419,6 +427,15 @@ mod tests {
       mod posit_3_0 { make_tests!{f64, Posit::<3, 0, i8>} }
       mod posit_4_0 { make_tests!{f64, Posit::<4, 0, i8>} }
       mod posit_4_1 { make_tests!{f64, Posit::<4, 1, i8>} }
+
+      mod bposit_8_3_6  { make_tests!{f64, Posit::<8, 3, i8, 6>} }
+      mod bposit_16_5_6 { make_tests!{f64, Posit::<16, 5, i16, 6>} }
+      mod bposit_32_5_6 { make_tests!{f64, Posit::<32, 5, i32, 6>} }
+      mod bposit_64_5_6 { make_tests!{f64, Posit::<64, 5, i64, 6>} }
+      mod bposit_10_2_6 { make_tests!{f64, Posit::<10, 2, i16, 6>} }
+      mod bposit_10_2_7 { make_tests!{f64, Posit::<10, 2, i16, 7>} }
+      mod bposit_10_2_8 { make_tests!{f64, Posit::<10, 2, i16, 8>} }
+      mod bposit_10_2_9 { make_tests!{f64, Posit::<10, 2, i16, 9>} }
     }
 
     mod f32 {
@@ -439,6 +456,15 @@ mod tests {
       mod posit_3_0 { make_tests!{f32, Posit::<3, 0, i8>} }
       mod posit_4_0 { make_tests!{f32, Posit::<4, 0, i8>} }
       mod posit_4_1 { make_tests!{f32, Posit::<4, 1, i8>} }
+
+      mod bposit_8_3_6  { make_tests!{f32, Posit::<8, 3, i8, 6>} }
+      mod bposit_16_5_6 { make_tests!{f32, Posit::<16, 5, i16, 6>} }
+      mod bposit_32_5_6 { make_tests!{f32, Posit::<32, 5, i32, 6>} }
+      mod bposit_64_5_6 { make_tests!{f32, Posit::<64, 5, i64, 6>} }
+      mod bposit_10_2_6 { make_tests!{f32, Posit::<10, 2, i16, 6>} }
+      mod bposit_10_2_7 { make_tests!{f32, Posit::<10, 2, i16, 7>} }
+      mod bposit_10_2_8 { make_tests!{f32, Posit::<10, 2, i16, 8>} }
+      mod bposit_10_2_9 { make_tests!{f32, Posit::<10, 2, i16, 9>} }
     }
   }
 
@@ -514,6 +540,15 @@ mod tests {
       mod posit_3_0 { test_exhaustive!{f64, Posit::<3, 0, i8>} }
       mod posit_4_0 { test_exhaustive!{f64, Posit::<4, 0, i8>} }
       mod posit_4_1 { test_exhaustive!{f64, Posit::<4, 1, i8>} }
+
+      mod bposit_8_3_6  { test_exhaustive!{f64, Posit::<8, 3, i8, 6>} }
+      mod bposit_16_5_6 { test_exhaustive!{f64, Posit::<16, 5, i16, 6>} }
+      mod bposit_32_5_6 { test_proptest!{f64, Posit::<32, 5, i32, 6>} }
+      // mod bposit_64_5_6 { test_proptest!{f64, Posit::<64, 5, i64, 6>} }
+      mod bposit_10_2_6 { test_exhaustive!{f64, Posit::<10, 2, i16, 6>} }
+      mod bposit_10_2_7 { test_exhaustive!{f64, Posit::<10, 2, i16, 7>} }
+      mod bposit_10_2_8 { test_exhaustive!{f64, Posit::<10, 2, i16, 8>} }
+      mod bposit_10_2_9 { test_exhaustive!{f64, Posit::<10, 2, i16, 9>} }
     }
 
     mod f32 {
@@ -534,6 +569,15 @@ mod tests {
       mod posit_3_0 { test_exhaustive!{f32, Posit::<3, 0, i8>} }
       mod posit_4_0 { test_exhaustive!{f32, Posit::<4, 0, i8>} }
       mod posit_4_1 { test_exhaustive!{f32, Posit::<4, 1, i8>} }
+
+      mod bposit_8_3_6  { test_exhaustive!{f32, Posit::<8, 3, i8, 6>} }
+      // mod bposit_16_5_6 { test_exhaustive!{f32, Posit::<16, 5, i16, 6>} }
+      // mod bposit_32_5_6 { test_proptest!{f32, Posit::<32, 5, i32, 6>} }
+      // mod bposit_64_5_6 { test_proptest!{f32, Posit::<64, 5, i64, 6>} }
+      mod bposit_10_2_6 { test_exhaustive!{f32, Posit::<10, 2, i16, 6>} }
+      mod bposit_10_2_7 { test_exhaustive!{f32, Posit::<10, 2, i16, 7>} }
+      mod bposit_10_2_8 { test_exhaustive!{f32, Posit::<10, 2, i16, 8>} }
+      mod bposit_10_2_9 { test_exhaustive!{f32, Posit::<10, 2, i16, 9>} }
     }
   }
 }
