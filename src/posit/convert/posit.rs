@@ -5,14 +5,16 @@ impl<
   const N1: u32,
   const ES1: u32,
   Int1: crate::Int,
-> Posit<N1, ES1, Int1> {
-  /// Very fast, the `ES` have to be the same.
+  const RS1: u32,
+> Posit<N1, ES1, Int1, RS1> {
+  /// Very fast, the `ES` and `RS` have to be the same.
   fn round_from_fast<
     const N2: u32,
     const ES2: u32,
     Int2: crate::Int,
-  >(self) -> Posit<N2, ES2, Int2> {
-    if const { ES1 != ES2 } { unimplemented!() }
+    const RS2: u32,
+  >(self) -> Posit<N2, ES2, Int2, RS2> {
+    if const { ES1 != ES2 || RS1 != RS2 } { unimplemented!() }
     if const { N1 <= N2 } {
       // Converting to a wider posit is even simpler: no rounding, just pad with zeroes.
       let bits = const_as::<Int1, Int2>(self.to_bits()) << (N2 - N1);
@@ -46,20 +48,21 @@ impl<
       //
       // Therefore: if the result is 0 or NaR, we have to "round up" if `sticky != 0`, and
       // to "round down" if there was a sign change in the bits.
-      let is_special = Posit::<N2, ES2, Int2>::from_bits(bits).is_special();
+      let is_special = Posit::<N2, ES2, Int2, RS2>::from_bits(bits).is_special();
       let round_up = round_up | ((round | sticky) & Int2::from(is_special));
-      let bits_rounded = Posit::<N2, ES2, Int2>::sign_extend(bits.wrapping_add(round_up));
+      let bits_rounded = Posit::<N2, ES2, Int2, RS2>::sign_extend(bits.wrapping_add(round_up));
       let overflow = !(bits_rounded ^ bits).is_positive();
       Posit::from_bits(bits_rounded.wrapping_sub(Int2::from(overflow)))
     }
   }
 
-  /// Slower, the `ES` may be different.
+  /// Slower, the `ES` and `RS` may be different.
   fn round_from_slow<
     const N2: u32,
     const ES2: u32,
     Int2: crate::Int,
-  >(self) -> Posit<N2, ES2, Int2> {
+    const RS2: u32,
+  >(self) -> Posit<N2, ES2, Int2, RS2> {
     if self == Self::ZERO {
       Posit::ZERO
     } else if self == Self::NAR {
@@ -108,7 +111,8 @@ impl<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
-> Posit<N, ES, Int> {
+  const RS: u32,
+> Posit<N, ES, Int, RS> {
   /// Convert a posit into a different one, [rounding according to the standard].
   ///
   /// If the source and target types have the same ES (i.e. `ES == ES2`), such as is the case with
@@ -130,10 +134,11 @@ impl<
     const N2: u32,
     const ES2: u32,
     Int2: crate::Int,
-  >(self) -> Posit<N2, ES2, Int2> {
-    if const { ES == ES2 } {
-      // If the two ES values are the same, converting posit values is incredibly simple: just
-      // append 0s or truncate the bit pattern.
+    const RS2: u32,
+  >(self) -> Posit<N2, ES2, Int2, RS2> {
+    if const { ES == ES2 && RS == RS2 } {
+      // If the two ES and RS values are the same, converting posit values is incredibly simple:
+      // just append 0s or truncate the bit pattern.
       self.round_from_fast()
     } else {
       // Otherwise, we need to decode and re-encode.
@@ -191,6 +196,14 @@ mod tests {
         test_exhaustive!{posit_3_0_exhaustive,  $src, Posit<3, 0, i8>}
         test_exhaustive!{posit_4_0_exhaustive,  $src, Posit<4, 0, i8>}
         test_exhaustive!{posit_4_1_exhaustive,  $src, Posit<4, 1, i8>}
+        test_exhaustive!{bposit_8_3_6_exhaustive,  $src, Posit::<8, 3, i8, 6>}
+        test_exhaustive!{bposit_16_5_6_exhaustive, $src, Posit::<16, 5, i16, 6>}
+        test_exhaustive!{bposit_32_5_6_exhaustive, $src, Posit::<32, 5, i32, 6>}
+        test_exhaustive!{bposit_64_5_6_exhaustive, $src, Posit::<64, 5, i64, 6>}
+        test_exhaustive!{bposit_10_2_6_exhaustive, $src, Posit::<10, 2, i16, 6>}
+        test_exhaustive!{bposit_10_2_7_exhaustive, $src, Posit::<10, 2, i16, 7>}
+        test_exhaustive!{bposit_10_2_8_exhaustive, $src, Posit::<10, 2, i16, 8>}
+        test_exhaustive!{bposit_10_2_9_exhaustive, $src, Posit::<10, 2, i16, 9>}
       }
     };
   }
@@ -212,6 +225,14 @@ mod tests {
         test_proptest!{posit_3_0_proptest,  $src, Posit<3, 0, i8>}
         test_proptest!{posit_4_0_proptest,  $src, Posit<4, 0, i8>}
         test_proptest!{posit_4_1_proptest,  $src, Posit<4, 1, i8>}
+        test_proptest!{bposit_8_3_6_proptest,  $src, Posit::<8, 3, i8, 6>}
+        test_proptest!{bposit_16_5_6_proptest, $src, Posit::<16, 5, i16, 6>}
+        test_proptest!{bposit_32_5_6_proptest, $src, Posit::<32, 5, i32, 6>}
+        test_proptest!{bposit_64_5_6_proptest, $src, Posit::<64, 5, i64, 6>}
+        test_proptest!{bposit_10_2_6_proptest, $src, Posit::<10, 2, i16, 6>}
+        test_proptest!{bposit_10_2_7_proptest, $src, Posit::<10, 2, i16, 7>}
+        test_proptest!{bposit_10_2_8_proptest, $src, Posit::<10, 2, i16, 8>}
+        test_proptest!{bposit_10_2_9_proptest, $src, Posit::<10, 2, i16, 9>}
       }
     };
   }
@@ -232,4 +253,14 @@ mod tests {
   suite_exhaustive!{posit_3_0, Posit<3, 0, i8>}
   suite_exhaustive!{posit_4_0, Posit<4, 0, i8>}
   suite_exhaustive!{posit_4_1, Posit<4, 1, i8>}
+
+  suite_exhaustive!{bposit_8_3_6_exhaustive, Posit::<8, 3, i8, 6>}
+  suite_exhaustive!{bposit_16_5_6_exhaustive, Posit::<16, 5, i16, 6>}
+  suite_proptest!{bposit_32_5_6_proptest, Posit::<32, 5, i32, 6>}
+  suite_proptest!{bposit_64_5_6_proptest, Posit::<64, 5, i64, 6>}
+
+  suite_exhaustive!{bposit_10_2_6_exhaustive, Posit::<10, 2, i16, 6>}
+  suite_exhaustive!{bposit_10_2_7_exhaustive, Posit::<10, 2, i16, 7>}
+  suite_exhaustive!{bposit_10_2_8_exhaustive, Posit::<10, 2, i16, 8>}
+  suite_exhaustive!{bposit_10_2_9_exhaustive, Posit::<10, 2, i16, 9>}
 }
