@@ -14,7 +14,8 @@ unsafe fn round_from_kernel<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
->(int: FromInt) -> (Decoded<N, ES, N, Int>, Int) {
+  const RS: u32,
+>(int: FromInt) -> (Decoded<N, ES, RS, Int>, Int) {
   // If converting into a narrower type (`FromInt` → `Int`), we need to shift right, *before* we
   // convert to the narrower type. Some bits will be lost in this conversion; we will accumulate
   // them into `sticky`.
@@ -61,7 +62,8 @@ fn round_into_kernel<
   const N: u32,
   const ES: u32,
   Int: crate::Int,
->(decoded: Decoded<N, ES, N, Int>) -> ToInt {
+  const RS: u32,
+>(decoded: Decoded<N, ES, RS, Int>) -> ToInt {
   // If converting into a narrower type (`Int` → `ToInt`), we need to shift right, *before* we
   // convert to the narrower type. Some bits will be lost in this conversion; we will accumulate
   // them into `sticky`.
@@ -109,7 +111,7 @@ fn round_into_kernel<
   //     all bits (in which case `ToInt::ZERO` is returned).
 
   // This is the amount that `frac` needs to be shifted right (or left, if negative).
-  let shift = Int::of_u32(Decoded::<N, ES, N, Int>::FRAC_WIDTH).wrapping_sub(decoded.exp);
+  let shift = Int::of_u32(Decoded::<N, ES, RS, Int>::FRAC_WIDTH).wrapping_sub(decoded.exp);
 
   // If `shift` is negative: the `ToInt` type needs to be wide enough to hold the value.
   if shift < Int::ZERO {
@@ -163,7 +165,8 @@ macro_rules! make_impl {
       const N: u32,
       const ES: u32,
       Int: crate::Int,
-    > RoundFrom<$t> for Posit<N, ES, Int> {
+      const RS: u32,
+    > RoundFrom<$t> for Posit<N, ES, Int, RS> {
       #[doc = concat!("Convert an `", stringify!($t), "` into a `Posit`, [rounding according to the standard]:")]
       ///
       #[doc = concat!("  - If the value is [`", stringify!($t), "::MIN`] (i.e. the value where the most significant bit is 1 and the rest are 0), it converts to [NaR](Posit::NAR).")]
@@ -178,8 +181,8 @@ macro_rules! make_impl {
 
         // This piece of code is only necessary in really extreme cases, like converting i128::MAX
         // to an 8-bit posit. But in those cases, we do need to guard against overflow on `exp`.
-        if const { <$t>::BITS as i128 > 1 << Decoded::<N, ES, N, Int>::FRAC_WIDTH } {
-          let limit = 1 << (1 << Decoded::<N, ES, N, Int>::FRAC_WIDTH);
+        if const { <$t>::BITS as i128 > 1 << Decoded::<N, ES, RS, Int>::FRAC_WIDTH } {
+          let limit = 1 << (1 << Decoded::<N, ES, RS, Int>::FRAC_WIDTH);
           if value >=  limit { return Posit::MAX }
           if value <= -limit { return Posit::MIN }
         }
@@ -195,7 +198,8 @@ macro_rules! make_impl {
       const N: u32,
       const ES: u32,
       Int: crate::Int,
-    > RoundFrom<Posit<N, ES, Int>> for $t {
+      const RS: u32,
+    > RoundFrom<Posit<N, ES, Int, RS>> for $t {
       #[doc = concat!("Convert a `Posit` into an `", stringify!($t), "`, [rounding according to the standard]:")]
       ///
       #[doc = concat!("  - If the value is [NaR](Posit::NAR), or if overflows the target type, then it converts to [`", stringify!($t), "::MIN`] (i.e. the value where the most significant bit is 1 and the rest are 0).")]
@@ -203,7 +207,7 @@ macro_rules! make_impl {
       ///
       /// [rounding according to the standard]: https://posithub.org/docs/posit_standard-2.pdf#subsection.6.4
       // TODO examples? here and in the other conversions
-      fn round_from(value: Posit<N, ES, Int>) -> Self {
+      fn round_from(value: Posit<N, ES, Int, RS>) -> Self {
         if value == Posit::ZERO { return 0 }
         if value == Posit::NAR { return <$t>::MIN }
 
@@ -231,14 +235,14 @@ mod tests {
     use super::*;
 
     /// Aux function: check that `int` is converted to a posit with the correct rounding.
-    fn is_correct_rounded<FromInt: crate::Int, const N: u32, const ES: u32, Int: crate::Int>(
+    fn is_correct_rounded<FromInt: crate::Int, const N: u32, const ES: u32, Int: crate::Int, const RS: u32>(
       int: FromInt,
     ) -> bool
     where
-      FromInt: Into<Rational> + RoundInto<Posit<N, ES, Int>>,
-      Rational: TryFrom<Posit<N, ES, Int>, Error = super::rational::IsNaR>,
+      FromInt: Into<Rational> + RoundInto<Posit<N, ES, Int, RS>>,
+      Rational: TryFrom<Posit<N, ES, Int, RS>, Error = super::rational::IsNaR>,
     {
-      let posit: Posit<N, ES, Int> = int.round_into();
+      let posit: Posit<N, ES, Int, RS> = int.round_into();
       if int == FromInt::MIN {
         posit == Posit::NAR
       } else {
@@ -255,84 +259,140 @@ mod tests {
           #[test]
           fn posit_10_0_exhaustive() {
             for int in $t::MIN ..= $t::MAX {
-              assert!(is_correct_rounded::<$t, 10, 0, i16>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 10, 0, i16, 10>(int), "{:?}", int)
             }
           }
 
           #[test]
           fn posit_10_1_exhaustive() {
             for int in $t::MIN ..= $t::MAX {
-              assert!(is_correct_rounded::<$t, 10, 1, i16>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 10, 1, i16, 10>(int), "{:?}", int)
             }
           }
 
           #[test]
           fn posit_10_2_exhaustive() {
             for int in $t::MIN ..= $t::MAX {
-              assert!(is_correct_rounded::<$t, 10, 2, i16>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 10, 2, i16, 10>(int), "{:?}", int)
             }
           }
 
           #[test]
           fn posit_10_3_exhaustive() {
             for int in $t::MIN ..= $t::MAX {
-              assert!(is_correct_rounded::<$t, 10, 3, i16>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 10, 3, i16, 10>(int), "{:?}", int)
             }
           }
 
           #[test]
           fn posit_8_0_exhaustive() {
             for int in $t::MIN ..= $t::MAX {
-              assert!(is_correct_rounded::<$t, 8, 0, i8>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 8, 0, i8, 8>(int), "{:?}", int)
             }
           }
 
           #[test]
           fn p8_exhaustive() {
             for int in $t::MIN ..= $t::MAX {
-              assert!(is_correct_rounded::<$t, 8, 2, i8>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 8, 2, i8, 8>(int), "{:?}", int)
             }
           }
 
           #[test]
           fn p16_exhaustive() {
             for int in $t::MIN ..= $t::MAX {
-              assert!(is_correct_rounded::<$t, 16, 2, i16>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 16, 2, i16, 16>(int), "{:?}", int)
             }
           }
 
           #[test]
           fn p32_exhaustive() {
             for int in $t::MIN ..= $t::MAX {
-              assert!(is_correct_rounded::<$t, 32, 2, i32>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 32, 2, i32, 32>(int), "{:?}", int)
             }
           }
 
           #[test]
           fn p64_exhaustive() {
             for int in $t::MIN ..= $t::MAX {
-              assert!(is_correct_rounded::<$t, 64, 2, i64>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 64, 2, i64, 64>(int), "{:?}", int)
             }
           }
 
           #[test]
           fn posit_3_0_exhaustive() {
             for int in $t::MIN ..= $t::MAX {
-              assert!(is_correct_rounded::<$t, 3, 0, i8>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 3, 0, i8, 3>(int), "{:?}", int)
             }
           }
 
           #[test]
           fn posit_4_0_exhaustive() {
             for int in $t::MIN ..= $t::MAX {
-              assert!(is_correct_rounded::<$t, 4, 0, i8>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 4, 0, i8, 4>(int), "{:?}", int)
             }
           }
 
           #[test]
           fn posit_4_1_exhaustive() {
             for int in $t::MIN ..= $t::MAX {
-              assert!(is_correct_rounded::<$t, 4, 1, i8>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 4, 1, i8, 4>(int), "{:?}", int)
+            }
+          }
+
+          #[test]
+          fn bposit_8_3_6_proptest() {
+            for int in $t::MIN ..= $t::MAX {
+              assert!(is_correct_rounded::<$t, 8, 3, i8, 6>(int), "{:?}", int)
+            }
+          }
+
+          #[test]
+          fn bposit_16_5_6_proptest() {
+            for int in $t::MIN ..= $t::MAX {
+              assert!(is_correct_rounded::<$t, 16, 5, i16, 6>(int), "{:?}", int)
+            }
+          }
+
+          #[test]
+          fn bposit_32_5_6_proptest() {
+            for int in $t::MIN ..= $t::MAX {
+              assert!(is_correct_rounded::<$t, 32, 5, i32, 6>(int), "{:?}", int)
+            }
+          }
+
+          #[test]
+          fn bposit_64_5_6_proptest() {
+            for int in $t::MIN ..= $t::MAX {
+              assert!(is_correct_rounded::<$t, 64, 5, i64, 6>(int), "{:?}", int)
+            }
+          }
+
+          #[test]
+          fn bposit_10_2_6_proptest() {
+            for int in $t::MIN ..= $t::MAX {
+              assert!(is_correct_rounded::<$t, 10, 2, i16, 6>(int), "{:?}", int)
+            }
+          }
+
+          #[test]
+          fn bposit_10_2_7_proptest() {
+            for int in $t::MIN ..= $t::MAX {
+              assert!(is_correct_rounded::<$t, 10, 2, i16, 7>(int), "{:?}", int)
+            }
+          }
+
+          #[test]
+          fn bposit_10_2_8_proptest() {
+            for int in $t::MIN ..= $t::MAX {
+              assert!(is_correct_rounded::<$t, 10, 2, i16, 8>(int), "{:?}", int)
+            }
+          }
+
+          #[test]
+          fn bposit_10_2_9_proptest() {
+            for int in $t::MIN ..= $t::MAX {
+              assert!(is_correct_rounded::<$t, 10, 2, i16, 9>(int), "{:?}", int)
             }
           }
         }
@@ -349,62 +409,102 @@ mod tests {
 
             #[test]
             fn posit_10_0_proptest(int in any::<$t>()) {
-              assert!(is_correct_rounded::<$t, 10, 0, i16>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 10, 0, i16, 10>(int), "{:?}", int)
             }
 
             #[test]
             fn posit_10_1_proptest(int in any::<$t>()) {
-              assert!(is_correct_rounded::<$t, 10, 1, i16>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 10, 1, i16, 10>(int), "{:?}", int)
             }
 
             #[test]
             fn posit_10_2_proptest(int in any::<$t>()) {
-              assert!(is_correct_rounded::<$t, 10, 2, i16>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 10, 2, i16, 10>(int), "{:?}", int)
             }
 
             #[test]
             fn posit_10_3_proptest(int in any::<$t>()) {
-              assert!(is_correct_rounded::<$t, 10, 3, i16>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 10, 3, i16, 10>(int), "{:?}", int)
             }
 
             #[test]
             fn posit_8_0_proptest(int in any::<$t>()) {
-              assert!(is_correct_rounded::<$t, 8, 0, i8>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 8, 0, i8, 8>(int), "{:?}", int)
             }
 
             #[test]
             fn p8_proptest(int in any::<$t>()) {
-              assert!(is_correct_rounded::<$t, 8, 2, i8>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 8, 2, i8, 8>(int), "{:?}", int)
             }
 
             #[test]
             fn p16_proptest(int in any::<$t>()) {
-              assert!(is_correct_rounded::<$t, 16, 2, i16>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 16, 2, i16, 16>(int), "{:?}", int)
             }
 
             #[test]
             fn p32_proptest(int in any::<$t>()) {
-              assert!(is_correct_rounded::<$t, 32, 2, i32>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 32, 2, i32, 32>(int), "{:?}", int)
             }
 
             #[test]
             fn p64_proptest(int in any::<$t>()) {
-              assert!(is_correct_rounded::<$t, 64, 2, i64>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 64, 2, i64, 64>(int), "{:?}", int)
             }
 
             #[test]
             fn posit_3_0_proptest(int in any::<$t>()) {
-              assert!(is_correct_rounded::<$t, 3, 0, i8>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 3, 0, i8, 3>(int), "{:?}", int)
             }
 
             #[test]
             fn posit_4_0_proptest(int in any::<$t>()) {
-              assert!(is_correct_rounded::<$t, 4, 0, i8>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 4, 0, i8, 4>(int), "{:?}", int)
             }
 
             #[test]
             fn posit_4_1_proptest(int in any::<$t>()) {
-              assert!(is_correct_rounded::<$t, 4, 1, i8>(int), "{:?}", int);
+              assert!(is_correct_rounded::<$t, 4, 1, i8, 4>(int), "{:?}", int)
+            }
+
+            #[test]
+            fn bposit_8_3_6_proptest(int in any::<$t>()) {
+              assert!(is_correct_rounded::<$t, 8, 3, i8, 6>(int), "{:?}", int)
+            }
+
+            #[test]
+            fn bposit_16_5_6_proptest(int in any::<$t>()) {
+              assert!(is_correct_rounded::<$t, 16, 5, i16, 6>(int), "{:?}", int)
+            }
+
+            #[test]
+            fn bposit_32_5_6_proptest(int in any::<$t>()) {
+              assert!(is_correct_rounded::<$t, 32, 5, i32, 6>(int), "{:?}", int)
+            }
+
+            #[test]
+            fn bposit_64_5_6_proptest(int in any::<$t>()) {
+              assert!(is_correct_rounded::<$t, 64, 5, i64, 6>(int), "{:?}", int)
+            }
+
+            #[test]
+            fn bposit_10_2_6_proptest(int in any::<$t>()) {
+              assert!(is_correct_rounded::<$t, 10, 2, i16, 6>(int), "{:?}", int)
+            }
+
+            #[test]
+            fn bposit_10_2_7_proptest(int in any::<$t>()) {
+              assert!(is_correct_rounded::<$t, 10, 2, i16, 7>(int), "{:?}", int)
+            }
+
+            #[test]
+            fn bposit_10_2_8_proptest(int in any::<$t>()) {
+              assert!(is_correct_rounded::<$t, 10, 2, i16, 8>(int), "{:?}", int)
+            }
+
+            #[test]
+            fn bposit_10_2_9_proptest(int in any::<$t>()) {
+              assert!(is_correct_rounded::<$t, 10, 2, i16, 9>(int), "{:?}", int)
             }
           }
         }
@@ -422,13 +522,13 @@ mod tests {
     use super::*;
 
     /// Aux function: check that `posit` rounds to `int`.
-    fn is_correct_rounded<ToInt: crate::Int, const N: u32, const ES: u32, Int: crate::Int>(
-      posit: Posit<N, ES, Int>,
+    fn is_correct_rounded<ToInt: crate::Int, const N: u32, const ES: u32, Int: crate::Int, const RS: u32>(
+      posit: Posit<N, ES, Int, RS>,
       int: ToInt,
     ) -> bool
     where
-      ToInt: RoundFrom<Posit<N, ES, Int>>,
-      Rational: From<i32> + From<ToInt> + TryFrom<Posit<N, ES, Int>, Error = super::rational::IsNaR>,
+      ToInt: RoundFrom<Posit<N, ES, Int, RS>>,
+      Rational: From<i32> + From<ToInt> + TryFrom<Posit<N, ES, Int, RS>, Error = super::rational::IsNaR>,
       // TODO Why do I need the `From<i32>` bound hereeeeeee, rust pls fix
     {
       match Rational::try_from(posit) {
@@ -552,5 +652,13 @@ mod tests {
     make_exhaustive!{posit_3_0, Posit::<3, 0, i8>}
     make_exhaustive!{posit_4_0, Posit::<4, 0, i8>}
     make_exhaustive!{posit_4_1, Posit::<4, 1, i8>}
+    make_exhaustive!{bposit_8_3_6,  Posit::<8, 3, i8, 6>}
+    make_exhaustive!{bposit_16_5_6, Posit::<16, 5, i16, 6>}
+    make_proptest!{bposit_32_5_6, Posit::<32, 5, i32, 6>}
+    make_proptest!{bposit_64_5_6, Posit::<64, 5, i64, 6>}
+    make_exhaustive!{bposit_10_2_6, Posit::<10, 2, i16, 6>}
+    make_exhaustive!{bposit_10_2_7, Posit::<10, 2, i16, 7>}
+    make_exhaustive!{bposit_10_2_8, Posit::<10, 2, i16, 8>}
+    make_exhaustive!{bposit_10_2_9, Posit::<10, 2, i16, 9>}
   }
 }
